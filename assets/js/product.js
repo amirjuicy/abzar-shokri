@@ -29,6 +29,7 @@
 
     var el = $('#product-detail-content');
     if (!el) return;
+    var actualReviewCount = AppData.reviews.filter(function(r) { return r.productId === p.id; }).length;
     el.innerHTML = '\
     <div class="breadcrumb"><div class="container"><div class="breadcrumb-list">\
       <span class="breadcrumb-item"><a href="index.html">خانه</a></span>\
@@ -52,7 +53,7 @@
       <div class="product-info">\
         <span class="product-info__brand"><a href="brand.html?brand='+p.brand+'" style="color:inherit">'+p.brandName+'</a></span>\
         <h1 class="product-info__title">'+p.name+'</h1>\
-        <div class="product-info__rating"><span class="product-info__stars">'+stars+'</span><span class="product-info__rating-text">'+p.rating+' از ۵ ('+Format.toPersianNumber(p.reviewCount)+' نظر)</span></div>\
+        <div class="product-info__rating"><span class="product-info__stars">'+stars+'</span><span class="product-info__rating-text">'+p.rating+' از ۵ ('+Format.toPersianNumber(actualReviewCount)+' نظر)</span></div>\
         <span class="product-info__sku">کد محصول: '+p.sku+'</span>\
         '+(badges.length ? '<div style="display:flex;gap:var(--space-2)">'+badges.join('')+'</div>' : '')+'\
         <div class="product-info__price-box">\
@@ -83,7 +84,7 @@
       <div class="product-tabs__nav">\
         <button class="product-tabs__tab is-active" data-tab="desc">توضیحات</button>\
         <button class="product-tabs__tab" data-tab="specs">مشخصات فنی</button>\
-        <button class="product-tabs__tab" data-tab="reviews">نظرات کاربران ('+Format.toPersianNumber(p.reviewCount)+')</button>\
+        <button class="product-tabs__tab" data-tab="reviews">نظرات کاربران'+(actualReviewCount > 0 ? ' ('+Format.toPersianNumber(actualReviewCount)+')' : '')+'</button>\
         <button class="product-tabs__tab" data-tab="qa">پرسش و پاسخ</button>\
       </div>\
       <div class="product-tabs__panel is-active" id="tab-desc"><div class="static-page__content"><p>'+p.description+'</p></div></div>\
