@@ -96,8 +96,8 @@
         orders.unshift(order);
         App.setUserData('orders', orders);
 
-        /* Clear cart */
-        localStorage.setItem('as_cart', '[]');
+        /* Clear cart via user-scoped API */
+        App.clearCart();
 
         App.showToast('سفارش شما با موفقیت ثبت شد! شماره سفارش: ' + order.id, 'success');
         if (btn) { btn.textContent = 'پرداخت و ثبت سفارش'; btn.disabled = false; }

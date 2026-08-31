@@ -2,28 +2,33 @@
    Abzar Shokri — Common Layout & Shared Components
    Renders header, footer, overlays on all internal pages.
    Manages user auth session, per-user data isolation.
+
+   localStorage keys:
+     as_users          — [{id, firstName, lastName, mobile, email, joinDate}]
+     as_session        — {userId: "u_xxxxx"} | null
+     as_guest_session  — "guest_xxxxx" (for anonymous visitors)
+     as_user_{id}_profile   — {firstName, lastName, mobile, email}
+     as_user_{id}_orders    — [order objects]
+     as_user_{id}_addresses — [address objects]
+     as_user_{id}_cart      — [{id, name, price, quantity, brandName}]
+     as_user_{id}_wishlist  — [productIds]
+     as_guest_cart_{guestId}      — [{id, name, price, quantity, brandName}]
+     as_guest_wishlist_{guestId}  — [productIds]
    ================================================================ */
 
 (function () {
   'use strict';
 
   /* ════════════════════════════════════════════════════════════
-     USER MANAGEMENT
-     ============================================================
-     localStorage keys:
-       as_users          — [{id, firstName, lastName, mobile, email, password, joinDate}]
-       as_session        — {userId: "u_xxxxx"} | null
-       as_user_{id}_profile   — {firstName, lastName, mobile, email}
-       as_user_{id}_orders    — [order objects]
-       as_user_{id}_addresses — [address objects]
-     Public / non-user-scoped (guest-friendly):
-       as_cart           — [{id, name, price, quantity, brandName}]
-       as_wishlist       — [productIds]
+     HELPERS
      ============================================================ */
 
-  /* ── Helpers ──────────────────────────────────────────────── */
   function generateId() {
     return 'u_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+  }
+
+  function generateGuestId() {
+    return 'guest_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 8);
   }
 
   function generateOrderId() {
@@ -39,7 +44,21 @@
     localStorage.setItem(key, JSON.stringify(value));
   }
 
-  /* ── Session / Auth ──────────────────────────────────────── */
+  /* ════════════════════════════════════════════════════════════
+     GUEST SESSION
+     ============================================================ */
+  function getGuestSession() {
+    var guest = localStorage.getItem('as_guest_session');
+    if (!guest) {
+      guest = generateGuestId();
+      localStorage.setItem('as_guest_session', guest);
+    }
+    return guest;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     USER AUTH / SESSION
+     ============================================================ */
   function getSession() {
     return readJSON('as_session', null);
   }
@@ -63,12 +82,14 @@
     return getCurrentUser() !== null;
   }
 
+  /* ════════════════════════════════════════════════════════════
+     PER-USER DATA READ/WRITE
+     ============================================================ */
   function userPrefix() {
     var user = getCurrentUser();
     return user ? 'as_user_' + user.id + '_' : null;
   }
 
-  /* ── Per-User Data ───────────────────────────────────────── */
   function getUserData(key, fallback) {
     var prefix = userPrefix();
     if (!prefix) return fallback;
@@ -81,13 +102,84 @@
     writeJSON(prefix + key, value);
   }
 
-  /* ── Registration ────────────────────────────────────────── */
+  /* ════════════════════════════════════════════════════════════
+     CART — user-scoped or guest-scoped
+     ============================================================ */
+  function getCartStorageKey() {
+    var user = getCurrentUser();
+    if (user) return 'as_user_' + user.id + '_cart';
+    return 'as_guest_cart_' + getGuestSession();
+  }
+
+  function loadCart() {
+    return readJSON(getCartStorageKey(), []);
+  }
+
+  function saveCart(cart) {
+    writeJSON(getCartStorageKey(), cart);
+  }
+
+  function mergeGuestCartIntoUserCart(userId) {
+    var guestKey = 'as_guest_cart_' + getGuestSession();
+    var guestCart = readJSON(guestKey, []);
+    if (guestCart.length === 0) return;
+
+    var userKey = 'as_user_' + userId + '_cart';
+    var userCart = readJSON(userKey, []);
+
+    guestCart.forEach(function (gItem) {
+      var existing = userCart.find(function (uItem) { return uItem.id === gItem.id; });
+      if (existing) {
+        existing.quantity += gItem.quantity;
+      } else {
+        userCart.push(gItem);
+      }
+    });
+
+    writeJSON(userKey, userCart);
+    localStorage.removeItem(guestKey);
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     WISHLIST — user-scoped or guest-scoped
+     ============================================================ */
+  function getWishlistStorageKey() {
+    var user = getCurrentUser();
+    if (user) return 'as_user_' + user.id + '_wishlist';
+    return 'as_guest_wishlist_' + getGuestSession();
+  }
+
+  function loadWishlist() {
+    return readJSON(getWishlistStorageKey(), []);
+  }
+
+  function saveWishlist(wishlist) {
+    writeJSON(getWishlistStorageKey(), wishlist);
+  }
+
+  function mergeGuestWishlistIntoUserCart(userId) {
+    var guestKey = 'as_guest_wishlist_' + getGuestSession();
+    var guestWish = readJSON(guestKey, []);
+    if (guestWish.length === 0) return;
+
+    var userKey = 'as_user_' + userId + '_wishlist';
+    var userWish = readJSON(userKey, []);
+
+    guestWish.forEach(function (id) {
+      if (userWish.indexOf(id) === -1) userWish.push(id);
+    });
+
+    writeJSON(userKey, userWish);
+    localStorage.removeItem(guestKey);
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     AUTH: REGISTER / LOGIN / LOGOUT
+     ============================================================ */
   function register(data) {
     var users = readJSON('as_users', []);
-    // Check duplicate mobile
     var exists = users.find(function (u) { return u.mobile === data.mobile; });
     if (exists) return { success: false, error: 'این شماره موبایل قبلاً ثبت‌نام شده است.' };
-    // Check duplicate email
     if (data.email) {
       var emailExists = users.find(function (u) { return u.email === data.email; });
       if (emailExists) return { success: false, error: 'این ایمیل قبلاً ثبت‌نام شده است.' };
@@ -105,50 +197,67 @@
     users.push(user);
     writeJSON('as_users', users);
 
-    // Initialize empty per-user data
+    /* Initialize empty per-user data */
     writeJSON('as_user_' + user.id + '_profile', {
-      firstName: user.firstName,
-      lastName: user.lastName,
-      mobile: user.mobile,
-      email: user.email
+      firstName: user.firstName, lastName: user.lastName,
+      mobile: user.mobile, email: user.email
     });
     writeJSON('as_user_' + user.id + '_orders', []);
     writeJSON('as_user_' + user.id + '_addresses', []);
 
-    // Auto-login after registration
+    /* Merge any guest cart/wishlist into the new user */
     setSession(user.id);
+    mergeGuestCartIntoUserCart(user.id);
+    mergeGuestWishlistIntoUserCart(user.id);
+    /* Refresh in-memory state from the user's storage */
+    refreshState();
+
     return { success: true, user: user };
   }
 
-  /* ── Login ───────────────────────────────────────────────── */
   function login(identifier, password) {
     var users = readJSON('as_users', []);
     var user = users.find(function (u) {
       return u.mobile === identifier || u.email === identifier;
     });
     if (!user) return { success: false, error: 'کاربری با این مشخصات یافت نشد.' };
-    // In production, compare hashed passwords. For prototype, we skip password check.
+
     setSession(user.id);
+    /* Merge any guest cart/wishlist into the logged-in user */
+    mergeGuestCartIntoUserCart(user.id);
+    mergeGuestWishlistIntoUserCart(user.id);
+    /* Refresh in-memory state from the user's storage */
+    refreshState();
+
     return { success: true, user: user };
   }
 
-  /* ── Logout ──────────────────────────────────────────────── */
   function logout() {
     setSession(null);
+    /* Clear in-memory state so nothing leaks */
+    state.cart = [];
+    state.wishlist = [];
+    /* A new guest session will be created on next access */
   }
 
-  /* ── State ───────────────────────────────────────────────── */
-  const state = {
-    cart: JSON.parse(localStorage.getItem('as_cart') || '[]'),
-    wishlist: JSON.parse(localStorage.getItem('as_wishlist') || '[]'),
+  /* ════════════════════════════════════════════════════════════
+     IN-MEMORY STATE (loaded from user/guest-scoped storage)
+     ============================================================ */
+  var state = {
+    cart: [],
+    wishlist: [],
     searchOpen: false,
     mobileMenuOpen: false,
     cartDrawerOpen: false,
     activePage: ''
   };
 
-  function saveCart() { localStorage.setItem('as_cart', JSON.stringify(state.cart)); }
-  function saveWishlist() { localStorage.setItem('as_wishlist', JSON.stringify(state.wishlist)); }
+  /* Load initial state from the correct storage key */
+  function refreshState() {
+    state.cart = loadCart();
+    state.wishlist = loadWishlist();
+  }
+  refreshState();
 
   const $ = (sel, ctx) => (ctx || document).querySelector(sel);
   const $$ = (sel, ctx) => [...(ctx || document).querySelectorAll(sel)];
@@ -173,18 +282,18 @@
     setTimeout(function () { t.remove(); }, 300);
   }
 
-  /* ── Cart ─────────────────────────────────────────────────── */
+  /* ── Cart Operations ─────────────────────────────────────── */
   function addToCart(id) {
     var p = AppData.products.find(function (x) { return x.id === id; });
     if (!p) return;
     var ex = state.cart.find(function (x) { return x.id === id; });
     if (ex) { ex.quantity += 1; } else { state.cart.push({ id: p.id, name: p.name, price: p.price, quantity: 1, brandName: p.brandName }); }
-    saveCart(); updateCartUI(); showToast(p.name + ' به سبد خرید اضافه شد');
+    saveCart(state.cart); updateCartUI(); showToast(p.name + ' به سبد خرید اضافه شد');
   }
 
   function removeFromCart(id) {
     state.cart = state.cart.filter(function (x) { return x.id !== id; });
-    saveCart(); updateCartUI(); showToast('محصول از سبد خرید حذف شد', 'info');
+    saveCart(state.cart); updateCartUI(); showToast('محصول از سبد خرید حذف شد', 'info');
   }
 
   function updateCartQty(id, delta) {
@@ -192,7 +301,7 @@
     if (!item) return;
     item.quantity += delta;
     if (item.quantity <= 0) { removeFromCart(id); return; }
-    saveCart(); updateCartUI();
+    saveCart(state.cart); updateCartUI();
   }
 
   function getCartTotal() { return state.cart.reduce(function (s, i) { return s + i.price * i.quantity; }, 0); }
@@ -201,7 +310,12 @@
   function updateCartUI() {
     var badges = $$('.header-action__badge');
     var count = getCartCount();
-    badges.forEach(function (b) { b.textContent = count; b.style.display = count > 0 ? 'flex' : 'none'; });
+    badges.forEach(function (b) {
+      if (b.textContent && !isNaN(parseInt(b.textContent))) {
+        b.textContent = count;
+        b.style.display = count > 0 ? 'flex' : 'none';
+      }
+    });
     renderCartDrawer();
   }
 
@@ -224,11 +338,11 @@
     }
   }
 
-  /* ── Wishlist ─────────────────────────────────────────────── */
+  /* ── Wishlist Operations ──────────────────────────────────── */
   function toggleWishlist(id) {
     var idx = state.wishlist.indexOf(id);
     if (idx === -1) { state.wishlist.push(id); showToast('به علاقه‌مندی‌ها اضافه شد'); } else { state.wishlist.splice(idx, 1); showToast('از علاقه‌مندی‌ها حذف شد', 'info'); }
-    saveWishlist(); updateWishlistUI();
+    saveWishlist(state.wishlist); updateWishlistUI();
   }
 
   function updateWishlistUI() {
@@ -286,7 +400,7 @@
 
     var user = getCurrentUser();
     var authHtml = user
-      ? '<a href="account.html" class="header-action" data-tooltip="حساب کاربری">' + Icons.user.replace('width="22" height="22"', '') + '<span class="header-action__badge" style="display:none;font-size:8px;min-width:14px;height:14px;right:-4px;top:-4px">●</span></a>'
+      ? '<a href="account.html" class="header-action" data-tooltip="حساب کاربری">' + Icons.user.replace('width="22" height="22"', '') + '</a>'
       : '<a href="login.html" class="header-action" data-tooltip="حساب کاربری">' + Icons.user.replace('width="22" height="22"', '') + '</a>';
 
     el.innerHTML = '\
@@ -363,7 +477,6 @@
     <div class="modal-overlay search-modal"><div class="modal"><div class="modal__header"><h3 class="modal__title">جستجوی محصولات</h3><button class="modal__close" aria-label="بستن">' + Icons.close + '</button></div><div class="modal__body"><div class="search-input-wrapper"><input type="text" class="search-input" placeholder="نام محصول، برند یا دسته‌بندی را تایپ کنید..."><span class="search-icon">' + Icons.search + '</span></div><div class="search-suggestions"></div></div></div></div>\
     <div class="toast-container"></div>';
 
-    /* Add home icon for mobile menu */
     var homeLink = el.querySelector('.mobile-menu__link');
     if (homeLink) {
       var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
@@ -410,6 +523,12 @@
 
   /* ── Init ─────────────────────────────────────────────────── */
   function init() {
+    /* Ensure guest session exists for anonymous users */
+    getGuestSession();
+
+    /* Refresh state from correct storage key (user or guest) */
+    refreshState();
+
     var headerEl = $('#site-header');
     var footerEl = $('#site-footer');
     var overlaysEl = $('#site-overlays');
@@ -436,6 +555,7 @@
     getUserData: getUserData,
     setUserData: setUserData,
     generateOrderId: generateOrderId,
+    refreshState: refreshState,
     /* Cart */
     addToCart: addToCart,
     removeFromCart: removeFromCart,
@@ -443,6 +563,7 @@
     getCart: function () { return state.cart; },
     getCartTotal: getCartTotal,
     getCartCount: getCartCount,
+    clearCart: function () { state.cart = []; saveCart([]); updateCartUI(); },
     /* Wishlist */
     toggleWishlist: toggleWishlist,
     getWishlist: function () { return state.wishlist; },

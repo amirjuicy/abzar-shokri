@@ -5,14 +5,35 @@
 (function () {
   'use strict';
 
+  /* ── Helpers ──────────────────────────────────────────────── */
+  function readJSON(key, fallback) {
+    try { return JSON.parse(localStorage.getItem(key)) || fallback; }
+    catch (e) { return fallback; }
+  }
+  function writeJSON(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+  function getGuestSession() {
+    var g = localStorage.getItem('as_guest_session');
+    if (!g) { g = 'guest_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 8); localStorage.setItem('as_guest_session', g); }
+    return g;
+  }
+  function getSession() { return readJSON('as_session', null); }
+  function getCurrentUser() {
+    var s = getSession(); if (!s || !s.userId) return null;
+    return readJSON('as_users', []).find(function(u) { return u.id === s.userId; }) || null;
+  }
+  function getCartKey() { var u = getCurrentUser(); return u ? 'as_user_' + u.id + '_cart' : 'as_guest_cart_' + getGuestSession(); }
+  function getWishlistKey() { var u = getCurrentUser(); return u ? 'as_user_' + u.id + '_wishlist' : 'as_guest_wishlist_' + getGuestSession(); }
+
   /* ── State ────────────────────────────────────────────────── */
   const state = {
-    cart: [],
-    wishlist: [],
+    cart: readJSON(getCartKey(), []),
+    wishlist: readJSON(getWishlistKey(), []),
     searchOpen: false,
     mobileMenuOpen: false,
     cartDrawerOpen: false
   };
+  function saveCart() { writeJSON(getCartKey(), state.cart); }
+  function saveWishlist() { writeJSON(getWishlistKey(), state.wishlist); }
 
   /* ── DOM Cache ────────────────────────────────────────────── */
   const $ = (sel, ctx = document) => ctx.querySelector(sel);
@@ -64,12 +85,14 @@
       state.cart.push({ ...product, quantity: 1 });
     }
 
+    saveCart();
     updateCartUI();
     showToast(`${product.name} به سبد خرید اضافه شد`, 'success');
   }
 
   function removeFromCart(productId) {
     state.cart = state.cart.filter(item => item.id !== productId);
+    saveCart();
     updateCartUI();
     showToast('محصول از سبد خرید حذف شد', 'info');
   }
@@ -84,6 +107,7 @@
       return;
     }
 
+    saveCart();
     updateCartUI();
   }
 
@@ -185,6 +209,7 @@
       state.wishlist.splice(index, 1);
       showToast('از لیست علاقه‌مندی‌ها حذف شد', 'info');
     }
+    saveWishlist();
     updateWishlistUI();
   }
 
