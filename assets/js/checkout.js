@@ -10,6 +10,11 @@
   function render() {
     var cart = App.getCart();
     if (cart.length === 0) { window.location.href = 'cart.html'; return; }
+    if (!App.isLoggedIn()) {
+      App.showToast('برای تکمیل خرید ابتدا وارد حساب کاربری شوید.', 'info');
+      window.location.href = 'login.html';
+      return;
+    }
     renderSummary();
     renderProvinces();
   }
