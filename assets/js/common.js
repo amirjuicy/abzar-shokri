@@ -1,12 +1,143 @@
 /* ================================================================
    Abzar Shokri — Common Layout & Shared Components
-   Renders header, footer, overlays on all internal pages
+   Renders header, footer, overlays on all internal pages.
+   Manages user auth session, per-user data isolation.
    ================================================================ */
 
 (function () {
   'use strict';
 
-  /* ── State ────────────────────────────────────────────────── */
+  /* ════════════════════════════════════════════════════════════
+     USER MANAGEMENT
+     ============================================================
+     localStorage keys:
+       as_users          — [{id, firstName, lastName, mobile, email, password, joinDate}]
+       as_session        — {userId: "u_xxxxx"} | null
+       as_user_{id}_profile   — {firstName, lastName, mobile, email}
+       as_user_{id}_orders    — [order objects]
+       as_user_{id}_addresses — [address objects]
+     Public / non-user-scoped (guest-friendly):
+       as_cart           — [{id, name, price, quantity, brandName}]
+       as_wishlist       — [productIds]
+     ============================================================ */
+
+  /* ── Helpers ──────────────────────────────────────────────── */
+  function generateId() {
+    return 'u_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+  }
+
+  function generateOrderId() {
+    return 'ORD-' + Date.now().toString(36).toUpperCase().substr(-8);
+  }
+
+  function readJSON(key, fallback) {
+    try { return JSON.parse(localStorage.getItem(key)) || fallback; }
+    catch (e) { return fallback; }
+  }
+
+  function writeJSON(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+
+  /* ── Session / Auth ──────────────────────────────────────── */
+  function getSession() {
+    return readJSON('as_session', null);
+  }
+
+  function setSession(userId) {
+    if (userId) {
+      writeJSON('as_session', { userId: userId });
+    } else {
+      localStorage.removeItem('as_session');
+    }
+  }
+
+  function getCurrentUser() {
+    var session = getSession();
+    if (!session || !session.userId) return null;
+    var users = readJSON('as_users', []);
+    return users.find(function (u) { return u.id === session.userId; }) || null;
+  }
+
+  function isLoggedIn() {
+    return getCurrentUser() !== null;
+  }
+
+  function userPrefix() {
+    var user = getCurrentUser();
+    return user ? 'as_user_' + user.id + '_' : null;
+  }
+
+  /* ── Per-User Data ───────────────────────────────────────── */
+  function getUserData(key, fallback) {
+    var prefix = userPrefix();
+    if (!prefix) return fallback;
+    return readJSON(prefix + key, fallback);
+  }
+
+  function setUserData(key, value) {
+    var prefix = userPrefix();
+    if (!prefix) return;
+    writeJSON(prefix + key, value);
+  }
+
+  /* ── Registration ────────────────────────────────────────── */
+  function register(data) {
+    var users = readJSON('as_users', []);
+    // Check duplicate mobile
+    var exists = users.find(function (u) { return u.mobile === data.mobile; });
+    if (exists) return { success: false, error: 'این شماره موبایل قبلاً ثبت‌نام شده است.' };
+    // Check duplicate email
+    if (data.email) {
+      var emailExists = users.find(function (u) { return u.email === data.email; });
+      if (emailExists) return { success: false, error: 'این ایمیل قبلاً ثبت‌نام شده است.' };
+    }
+
+    var user = {
+      id: generateId(),
+      firstName: data.firstName,
+      lastName: data.lastName,
+      mobile: data.mobile,
+      email: data.email || '',
+      joinDate: new Date().toLocaleDateString('fa-IR')
+    };
+
+    users.push(user);
+    writeJSON('as_users', users);
+
+    // Initialize empty per-user data
+    writeJSON('as_user_' + user.id + '_profile', {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      mobile: user.mobile,
+      email: user.email
+    });
+    writeJSON('as_user_' + user.id + '_orders', []);
+    writeJSON('as_user_' + user.id + '_addresses', []);
+
+    // Auto-login after registration
+    setSession(user.id);
+    return { success: true, user: user };
+  }
+
+  /* ── Login ───────────────────────────────────────────────── */
+  function login(identifier, password) {
+    var users = readJSON('as_users', []);
+    var user = users.find(function (u) {
+      return u.mobile === identifier || u.email === identifier;
+    });
+    if (!user) return { success: false, error: 'کاربری با این مشخصات یافت نشد.' };
+    // In production, compare hashed passwords. For prototype, we skip password check.
+    setSession(user.id);
+    return { success: true, user: user };
+  }
+
+  /* ── Logout ──────────────────────────────────────────────── */
+  function logout() {
+    setSession(null);
+  }
+
+  /* ── State ───────────────────────────────────────────────── */
   const state = {
     cart: JSON.parse(localStorage.getItem('as_cart') || '[]'),
     wishlist: JSON.parse(localStorage.getItem('as_wishlist') || '[]'),
@@ -153,13 +284,18 @@
     var currentPage = window.location.pathname.split('/').pop() || 'index.html';
     function isActive(page) { return currentPage === page ? 'is-active' : ''; }
 
+    var user = getCurrentUser();
+    var authHtml = user
+      ? '<a href="account.html" class="header-action" data-tooltip="حساب کاربری">' + Icons.user.replace('width="22" height="22"', '') + '<span class="header-action__badge" style="display:none;font-size:8px;min-width:14px;height:14px;right:-4px;top:-4px">●</span></a>'
+      : '<a href="login.html" class="header-action" data-tooltip="حساب کاربری">' + Icons.user.replace('width="22" height="22"', '') + '</a>';
+
     el.innerHTML = '\
     <div class="top-bar"><div class="container"><div class="top-bar__contact"><span class="top-bar__contact-item">' + Icons.phone.replace('width="14" height="14"', '') + ' ۰۲۱-XXXX-XXXX</span><span class="top-bar__contact-item">' + Icons.mail.replace('width="14" height="14"', '') + ' info@abzarshokri.com</span></div><div class="top-bar__links"><a href="shipping.html" class="top-bar__link">' + Icons.truck.replace('width="14" height="14"', '') + ' ارسال رایگان</a><a href="returns.html" class="top-bar__link">' + Icons.refreshCw.replace('width="14" height="14"', '') + ' ۷ روز ضمانت بازگشت</a></div></div></div>\
     <header class="site-header"><div class="header-main"><div class="container">\
     <a href="index.html" class="header-logo"><span class="header-logo__icon">' + Icons.flash.replace('width="24" height="24"', '') + '</span><span class="header-logo__text"><span class="header-logo__title">ابزار شکری</span><span class="header-logo__subtitle">فروشگاه تخصصی ابزارآلات</span></span></a>\
     <div class="header-search"><div class="search-input-wrapper"><input type="text" class="search-input" placeholder="جستجوی محصولات، برندها و دسته‌بندی‌ها..." readonly><span class="search-icon">' + Icons.search.replace('width="20" height="20"', '') + '</span></div></div>\
     <div class="header-actions">\
-    <a href="login.html" class="header-action" data-tooltip="حساب کاربری">' + Icons.user.replace('width="22" height="22"', '') + '</a>\
+    ' + authHtml + '\
     <a href="account/wishlist.html" class="header-action" data-tooltip="علاقه‌مندی‌ها">' + Icons.heart.replace('width="22" height="22"', '') + '</a>\
     <button class="header-action header-action--cart" data-action="cart" data-tooltip="سبد خرید">' + Icons.cart.replace('width="22" height="22"', '') + '<span class="header-action__badge" style="display:none">0</span></button>\
     </div></div></div></header>\
@@ -177,11 +313,16 @@
 
   /* ── Render Mobile Header ─────────────────────────────────── */
   function renderMobileHeader(el) {
+    var user = getCurrentUser();
+    var authHtml = user
+      ? '<a href="account.html" class="header-action" style="width:36px;height:36px">' + Icons.user + '</a>'
+      : '<a href="login.html" class="header-action" style="width:36px;height:36px">' + Icons.user + '</a>';
+
     el.innerHTML = '\
     <div class="container">\
     <button class="mobile-header__menu-btn" aria-label="منو">' + Icons.menu + '</button>\
     <button class="mobile-header__search-btn">' + Icons.search + ' جستجوی محصولات...</button>\
-    <a href="login.html" class="header-action" style="width:36px;height:36px">' + Icons.user + '</a>\
+    ' + authHtml + '\
     <button class="header-action header-action--cart" data-action="cart" style="width:36px;height:36px">' + Icons.cart + '<span class="header-action__badge" style="display:none;top:2px;left:2px;min-width:16px;height:16px;font-size:9px">0</span></button>\
     </div>';
   }
@@ -285,19 +426,32 @@
 
   /* ── Public API ───────────────────────────────────────────── */
   window.App = {
+    /* Auth */
+    register: register,
+    login: login,
+    logout: logout,
+    isLoggedIn: isLoggedIn,
+    getCurrentUser: getCurrentUser,
+    getSession: getSession,
+    getUserData: getUserData,
+    setUserData: setUserData,
+    generateOrderId: generateOrderId,
+    /* Cart */
     addToCart: addToCart,
     removeFromCart: removeFromCart,
     updateCartQty: updateCartQty,
+    getCart: function () { return state.cart; },
+    getCartTotal: getCartTotal,
+    getCartCount: getCartCount,
+    /* Wishlist */
     toggleWishlist: toggleWishlist,
+    getWishlist: function () { return state.wishlist; },
+    /* UI */
     toggleSearch: toggleSearch,
     toggleMobileMenu: toggleMobileMenu,
     toggleCartDrawer: toggleCartDrawer,
     setSearchValue: setSearchValue,
-    showToast: showToast,
-    getCart: function () { return state.cart; },
-    getWishlist: function () { return state.wishlist; },
-    getCartTotal: getCartTotal,
-    getCartCount: getCartCount
+    showToast: showToast
   };
 
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }

@@ -95,19 +95,9 @@ const AppData = {
     { id: 8, productId: 5, author: 'فریدون صالحی', date: '۶ مرداد ۱۴۰۵', rating: 4, title: 'ست کامل و خوب', text: 'ست آچار کامل و با کیفیتی است.' }
   ],
 
-  orders: [
-    { id: 'ORD-14050728', date: '۲۸ تیر ۱۴۰۵', status: 'delivered', statusText: 'تحویل داده شده', total: 5150000, itemsCount: 3, items: [{ productId: 1, name: 'دریل شارژی بوش مدل GSR 180-LI', price: 2850000, quantity: 1 }, { productId: 5, name: 'ست آچار استنلی ۱۰ پارچه', price: 850000, quantity: 1 }, { productId: 10, name: 'کلاه ایمنی سپکو HardHat', price: 120000, quantity: 2 }], shipping: 0, discount: 0, timeline: [{ step: 'ثبت سفارش', date: '۲۸ تیر ۱۴۰۵ - ۱۰:۳۰', done: true }, { step: 'تأیید پرداخت', date: '۲۸ تیر ۱۴۰۵ - ۱۰:۳۲', done: true }, { step: 'در حال پردازش', date: '۲۸ تیر ۱۴۰۵ - ۱۴:۰۰', done: true }, { step: 'تحویل به پست', date: '۲۹ تیر ۱۴۰۵ - ۰۹:۰۰', done: true }, { step: 'تحویل شده', date: '۱ مرداد ۱۴۰۵ - ۱۱:۲۰', done: true }], address: 'تهران، خیابان ولیعصر، پلاک ۱۲۳', paymentMethod: 'پرداخت آنلاین' },
-    { id: 'ORD-14050803', date: '۳ مرداد ۱۴۰۵', status: 'shipping', statusText: 'ارسال شده', total: 3800000, itemsCount: 1, items: [{ productId: 6, name: 'سنباده متابو WEV 17-125', price: 3800000, quantity: 1 }], shipping: 0, discount: 0, timeline: [{ step: 'ثبت سفارش', date: '۳ مرداد ۱۴۰۵ - ۱۵:۴۵', done: true }, { step: 'تأیید پرداخت', date: '۳ مرداد ۱۴۰۵ - ۱۵:۴۷', done: true }, { step: 'در حال پردازش', date: '۴ مرداد ۱۴۰۵ - ۰۹:۰۰', done: true }, { step: 'تحویل به پست', date: '۵ مرداد ۱۴۰۵ - ۱۰:۳۰', done: true }, { step: 'تحویل شده', date: '—', done: false }], address: 'تهران، خیابان ولیعصر، پلاک ۱۲۳', paymentMethod: 'پرداخت آنلاین' },
-    { id: 'ORD-14050810', date: '۱۰ مرداد ۱۴۰۵', status: 'processing', statusText: 'در حال پردازش', total: 7300000, itemsCount: 2, items: [{ productId: 4, name: 'دریل M18 FUEL', price: 5200000, quantity: 1 }, { productId: 11, name: 'اره عمود بر دونگ‌چنگ', price: 1350000, quantity: 1 }], shipping: 0, discount: 0, timeline: [{ step: 'ثبت سفارش', date: '۱۰ مرداد ۱۴۰۵ - ۰۹:۱۵', done: true }, { step: 'تأیید پرداخت', date: '۱۰ مرداد ۱۴۰۵ - ۰۹:۱۷', done: true }, { step: 'در حال پردازش', date: '۱۰ مرداد ۱۴۰۵ - ۱۴:۰۰', done: true }, { step: 'تحویل به پست', date: '—', done: false }, { step: 'تحویل شده', date: '—', done: false }], address: 'تهران، خیابان ولیعصر، پلاک ۱۲۳', paymentMethod: 'پرداخت آنلاین' },
-    { id: 'ORD-14050815', date: '۱۵ مرداد ۱۴۰۵', status: 'pending', statusText: 'در انتظار پرداخت', total: 285000, itemsCount: 1, items: [{ productId: 18, name: 'ست پیچ‌گوشتی استنلی ۶ پارچه', price: 280000, quantity: 1 }], shipping: 0, discount: 0, timeline: [{ step: 'ثبت سفارش', date: '۱۵ مرداد ۱۴۰۵ - ۲۰:۰۰', done: true }, { step: 'تأیید پرداخت', date: '—', done: false }, { step: 'در حال پردازش', date: '—', done: false }, { step: 'تحویل به پست', date: '—', done: false }, { step: 'تحویل شده', date: '—', done: false }], address: 'تهران، خیابان ولیعصر، پلاک ۱۲۳', paymentMethod: '—' }
-  ],
-
-  addresses: [
-    { id: 1, title: 'خانه', name: 'علی رضایی', mobile: '۰۹۱۲۱۲۳۴۵۶۷', province: 'تهران', city: 'تهران', address: 'خیابان ولیعصر، نبش کوچه گلستان، پلاک ۱۲۳، واحد ۴', postalCode: '۱۴۱۵۶۶۵۴۳۲', isDefault: true },
-    { id: 2, title: 'محل کار', name: 'علی رضایی', mobile: '۰۹۱۲۱۲۳۴۵۶۷', province: 'تهران', city: 'تهران', address: 'خیابان آزادی، ساختمان اداری، طبقه سوم', postalCode: '۱۴۵۷۸۶۳۲۱۴', isDefault: false }
-  ],
-
-  user: { firstName: 'علی', lastName: 'رضایی', mobile: '۰۹۱۲۱۲۳۴۵۶۷', email: 'ali.rezaei@email.com', joinDate: '۱۵ فروردین ۱۴۰۴' },
+  /* orders, addresses, and user data are stored per-user in localStorage.
+     See common.js for user management (register/login/session).
+     User-specific data keys: as_user_{id}_orders, as_user_{id}_addresses, as_user_{id}_profile */
 
   provinces: [
     { name: 'تهران', cities: ['تهران', 'ری', 'اسلامشهر', 'ورامین', 'پاکدشت'] },

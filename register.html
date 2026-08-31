@@ -20,12 +20,12 @@
         <div class="auth-box__logo"><span style="width:40px;height:40px;background:var(--color-primary);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;color:white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span><span style="font-weight:var(--font-weight-black);font-size:var(--font-size-lg);color:var(--color-primary)">ابزار شکری</span></div>
         <h2 class="auth-box__title">ایجاد حساب کاربری</h2>
         <form id="register-form">
-          <div class="form-row"><div class="form-group"><label class="input-label">نام</label><input class="input" required placeholder="نام"></div><div class="form-group"><label class="input-label">نام خانوادگی</label><input class="input" required placeholder="نام خانوادگی"></div></div>
-          <div class="form-group" style="margin-top:var(--space-4)"><label class="input-label">شماره موبایل</label><input class="input" dir="ltr" type="tel" placeholder="09XXXXXXXXX" required></div>
-          <div class="form-group" style="margin-top:var(--space-4)"><label class="input-label">ایمیل (اختیاری)</label><input class="input" dir="ltr" type="email" placeholder="email@example.com"></div>
+          <div class="form-row"><div class="form-group"><label class="input-label">نام</label><input class="input" id="reg-firstname" required placeholder="نام"></div><div class="form-group"><label class="input-label">نام خانوادگی</label><input class="input" id="reg-lastname" required placeholder="نام خانوادگی"></div></div>
+          <div class="form-group" style="margin-top:var(--space-4)"><label class="input-label">شماره موبایل</label><input class="input" dir="ltr" type="tel" placeholder="09XXXXXXXXX" id="reg-mobile" required></div>
+          <div class="form-group" style="margin-top:var(--space-4)"><label class="input-label">ایمیل (اختیاری)</label><input class="input" dir="ltr" type="email" placeholder="email@example.com" id="reg-email"></div>
           <div class="form-group" style="margin-top:var(--space-4)"><label class="input-label">رمز عبور</label><input class="input" type="password" id="reg-password" placeholder="حداقل ۸ کاراکتر" required minlength="8"></div>
           <div class="form-group" style="margin-top:var(--space-4)"><label class="input-label">تکرار رمز عبور</label><input class="input" type="password" id="reg-password-confirm" placeholder="تکرار رمز عبور" required></div>
-          <label class="filter-option" style="margin-top:var(--space-4);padding:0"><input type="checkbox" required><span style="font-size:var(--font-size-sm)">شرایط و قوانین را مطالعه کرده و می‌پذیرم</span></label>
+          <label class="filter-option" style="margin-top:var(--space-4);padding:0"><input type="checkbox" id="reg-terms" required><span style="font-size:var(--font-size-sm)">شرایط و قوانین را مطالعه کرده و می‌پذیرم</span></label>
           <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:var(--space-4)">ثبت‌نام</button>
         </form>
         <div class="auth-box__footer">قبلاً ثبت‌نام کرده‌اید؟ <a href="login.html">ورود</a></div>

@@ -64,8 +64,44 @@
       var btn = form.querySelector('button[type="submit"]');
       if (btn) { btn.textContent = 'در حال پردازش...'; btn.disabled = true; }
       setTimeout(function() {
-        App.showToast('سفارش شما با موفقیت ثبت شد! (شبیه‌سازی)', 'success');
+        /* Save order to user-scoped localStorage */
+        var cart = App.getCart();
+        var total = App.getCartTotal();
+        var shippingCost = selectedShipping === 'express' ? 35000 : 0;
+        var now = new Date();
+        var persianDate = now.toLocaleDateString('fa-IR');
+        var order = {
+          id: App.generateOrderId(),
+          date: persianDate,
+          status: 'pending',
+          statusText: 'در انتظار پرداخت',
+          total: total + shippingCost,
+          itemsCount: cart.reduce(function(s, i) { return s + i.quantity; }, 0),
+          items: cart.map(function(item) {
+            return { productId: item.id, name: item.name, price: item.price, quantity: item.quantity };
+          }),
+          shipping: shippingCost,
+          discount: 0,
+          timeline: [
+            { step: 'ثبت سفارش', date: persianDate + ' - ' + now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0'), done: true },
+            { step: 'تأیید پرداخت', date: '—', done: false },
+            { step: 'در حال پردازش', date: '—', done: false },
+            { step: 'تحویل به پست', date: '—', done: false },
+            { step: 'تحویل شده', date: '—', done: false }
+          ],
+          address: 'آدرس ثبت‌شده در فرم',
+          paymentMethod: 'پرداخت آنلاین'
+        };
+        var orders = App.getUserData('orders', []);
+        orders.unshift(order);
+        App.setUserData('orders', orders);
+
+        /* Clear cart */
+        localStorage.setItem('as_cart', '[]');
+
+        App.showToast('سفارش شما با موفقیت ثبت شد! شماره سفارش: ' + order.id, 'success');
         if (btn) { btn.textContent = 'پرداخت و ثبت سفارش'; btn.disabled = false; }
+        setTimeout(function() { window.location.href = 'account/orders/' + order.id + '.html'; }, 1500);
       }, 2000);
     });
   }
