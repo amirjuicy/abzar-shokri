@@ -155,3 +155,15 @@ const Format = {
   brandSlug(b) { return b.name || 'brand-' + b.id; },
   toPersianNumber(n) { const d = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹']; return String(n).replace(/\d/g, x => d[x]); }
 };
+
+/* ================================================================
+   Derived review helpers — always computed from actual reviews array
+   ================================================================ */
+function getReviewCount(productId) {
+  return AppData.reviews.filter(function (r) { return r.productId === productId; }).length;
+}
+function getAvgRating(productId) {
+  var list = AppData.reviews.filter(function (r) { return r.productId === productId; });
+  if (list.length === 0) return 0;
+  return list.reduce(function (s, r) { return s + r.rating; }, 0) / list.length;
+}

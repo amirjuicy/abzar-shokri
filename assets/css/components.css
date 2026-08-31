@@ -24,6 +24,11 @@
 .btn:active {
   transform: scale(0.98);
 }
+.btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
 
 /* Primary */
 .btn-primary {
@@ -323,6 +328,7 @@
   gap: 1px;
   color: var(--color-accent);
 }
+.product-card__stars svg { width: 14px; height: 14px; }
 
 .product-card__price {
   display: flex;

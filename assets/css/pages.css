@@ -58,17 +58,18 @@
 .product-detail { padding: var(--space-6) 0; }
 .product-detail__main { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-8); }
 .product-gallery { position: sticky; top: 120px; }
-.product-gallery__main { background: var(--color-gray-100); border-radius: var(--radius-lg); aspect-ratio: 1; display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-3); overflow: hidden; color: var(--text-muted); }
-.product-gallery__main svg { width: 120px; height: 120px; opacity: 0.3; }
+.product-gallery__main { background: var(--color-gray-100); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-3); overflow: hidden; color: var(--text-muted); padding: var(--space-8); }
+.product-gallery__main svg { width: 100%; height: 100%; max-width: 280px; max-height: 280px; }
 .product-gallery__thumbs { display: flex; gap: var(--space-2); }
-.product-gallery__thumb { width: 72px; height: 72px; background: var(--color-gray-100); border-radius: var(--radius-md); border: 2px solid transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color var(--transition-fast); }
+.product-gallery__thumb { width: 80px; height: 80px; background: var(--color-gray-100); border-radius: var(--radius-md); border: 2px solid transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color var(--transition-fast); padding: 6px; }
 .product-gallery__thumb.is-active, .product-gallery__thumb:hover { border-color: var(--color-primary); }
-.product-gallery__thumb svg { width: 28px; height: 28px; color: var(--text-muted); }
+.product-gallery__thumb svg { width: 100%; height: 100%; }
 .product-info { display: flex; flex-direction: column; gap: var(--space-4); }
 .product-info__brand { font-size: var(--font-size-sm); color: var(--color-primary); font-weight: var(--font-weight-medium); }
 .product-info__title { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary); line-height: var(--line-height-tight); }
 .product-info__rating { display: flex; align-items: center; gap: var(--space-2); }
 .product-info__stars { display: flex; gap: 2px; color: var(--color-accent); }
+.product-info__stars svg { width: 16px; height: 16px; }
 .product-info__rating-text { font-size: var(--font-size-sm); color: var(--text-muted); }
 .product-info__sku { font-size: var(--font-size-xs); color: var(--text-muted); }
 .product-info__price-box { background: var(--color-gray-50); border: var(--border-width) solid var(--border-color-light); border-radius: var(--radius-lg); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
@@ -76,6 +77,7 @@
 .product-info__price-old { font-size: var(--font-size-base); color: var(--text-muted); text-decoration: line-through; }
 .product-info__price-discount { background: var(--color-danger); color: var(--text-inverse); padding: 2px 8px; border-radius: var(--radius-sm); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); }
 .product-info__stock { display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); }
+.product-info__stock svg { width: 18px; height: 18px; flex-shrink: 0; }
 .product-info__stock--in { color: var(--color-success); }
 .product-info__stock--out { color: var(--color-danger); }
 .product-info__actions { display: flex; gap: var(--space-3); align-items: center; }
@@ -107,6 +109,7 @@
 .review-item__author { font-weight: var(--font-weight-semibold); font-size: var(--font-size-sm); }
 .review-item__date { font-size: var(--font-size-xs); color: var(--text-muted); }
 .review-item__stars { display: flex; gap: 2px; color: var(--color-accent); margin-bottom: var(--space-2); }
+.review-item__stars svg { width: 18px; height: 18px; }
 .review-item__title { font-weight: var(--font-weight-semibold); font-size: var(--font-size-base); margin-bottom: var(--space-1); }
 .review-item__text { font-size: var(--font-size-sm); color: var(--text-secondary); line-height: var(--line-height-normal); }
 

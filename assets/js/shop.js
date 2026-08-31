@@ -80,7 +80,7 @@
     // Sort
     switch (sort) {
       case 'newest': products.sort(function(a,b) { return b.id - a.id; }); break;
-      case 'bestseller': products.sort(function(a,b) { return b.reviewCount - a.reviewCount; }); break;
+      case 'bestseller': products.sort(function(a,b) { return getReviewCount(b.id) - getReviewCount(a.id); }); break;
       case 'cheapest': products.sort(function(a,b) { return a.price - b.price; }); break;
       case 'expensive': products.sort(function(a,b) { return b.price - a.price; }); break;
       default: products.sort(function(a,b) { return (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0); });
@@ -144,7 +144,7 @@
     return '<div class="product-card"><div class="product-card__image"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-muted)"><span style="width:48px;height:48px">' + Icons.package + '</span></div>' +
       (badges.length ? '<div class="product-card__badges">' + badges.join('') + '</div>' : '') +
       '<div class="product-card__actions"><button class="product-card__action-btn" data-wishlist="' + p.id + '" onclick="App.toggleWishlist(' + p.id + ')" aria-label="علاقه‌مندی‌ها">' + (App.getWishlist().includes(p.id) ? Icons.heartFill : Icons.heart) + '</button></div>' +
-      '</div><div class="product-card__body"><span class="product-card__brand">' + p.brandName + '</span><a href="product.html?slug=' + p.slug + '" class="product-card__title" style="color:inherit;text-decoration:none">' + p.name + '</a><div class="product-card__rating"><span class="product-card__stars">' + stars + '</span><span>(' + p.reviewCount + ')</span></div><div class="product-card__price"><span class="product-card__price-current">' + Format.price(p.price) + ' <span class="product-card__price-currency">تومان</span></span>' + (p.oldPrice ? '<span class="product-card__price-old">' + Format.price(p.oldPrice) + '</span>' : '') + '</div>' + stockBtn + '</div></div>';
+      '</div><div class="product-card__body"><span class="product-card__brand">' + p.brandName + '</span><a href="product.html?slug=' + p.slug + '" class="product-card__title" style="color:inherit;text-decoration:none">' + p.name + '</a><div class="product-card__rating"><span class="product-card__stars">' + stars + '</span><span>(' + getReviewCount(p.id) + ')</span></div><div class="product-card__price"><span class="product-card__price-current">' + Format.price(p.price) + ' <span class="product-card__price-currency">تومان</span></span>' + (p.oldPrice ? '<span class="product-card__price-old">' + Format.price(p.oldPrice) + '</span>' : '') + '</div>' + stockBtn + '</div></div>';
   }
 
   function renderPagination(total) {

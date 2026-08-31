@@ -41,7 +41,7 @@
       '<div class="product-card__body">' +
         '<span class="product-card__brand">' + product.brandName + '</span>' +
         '<a href="product.html?slug=' + product.slug + '" class="product-card__title" style="color:inherit;text-decoration:none">' + product.name + '</a>' +
-        '<div class="product-card__rating"><span class="product-card__stars">' + stars + '</span><span>(' + product.reviewCount + ')</span></div>' +
+        '<div class="product-card__rating"><span class="product-card__stars">' + stars + '</span><span>(' + getReviewCount(product.id) + ')</span></div>' +
         '<div class="product-card__price">' +
           '<span class="product-card__price-current">' + Format.price(product.price) + ' <span class="product-card__price-currency">تومان</span></span>' +
           (product.oldPrice ? '<span class="product-card__price-old">' + Format.price(product.oldPrice) + '</span>' : '') +
