@@ -1008,7 +1008,7 @@
   max-width: 320px;
   height: 100vh;
   background-color: var(--bg-surface);
-  z-index: var(--z-overlay);
+  z-index: calc(var(--z-overlay) + 1);
   transform: translateX(100%);
   transition: transform var(--transition-slow);
   display: flex;

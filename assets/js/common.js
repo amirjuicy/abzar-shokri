@@ -414,7 +414,10 @@
     <button class="header-action header-action--cart" data-action="cart" data-tooltip="سبد خرید">' + Icons.cart.replace('width="22" height="22"', '') + '<span class="header-action__badge" style="display:none">0</span></button>\
     </div></div></div></header>\
     <nav class="site-nav"><div class="container">\
-    <button class="nav-categories-btn">' + Icons.menu.replace('width="18" height="18"', '') + ' دسته‌بندی محصولات</button>\
+    <div style="position:relative">\
+    <button type="button" class="nav-categories-btn">' + Icons.menu.replace('width="18" height="18"', '') + ' دسته‌بندی محصولات</button>\
+    <div class="categories-dropdown" id="categories-dropdown"></div>\
+    </div>\
     <div class="nav-right">\
     <a href="index.html" class="nav-link ' + isActive('index.html') + '">صفحه اصلی</a>\
     <a href="shop.html" class="nav-link ' + isActive('shop.html') + '">فروشگاه</a>\
@@ -506,8 +509,31 @@
     var menuBtn = $('.mobile-header__menu-btn');
     if (menuBtn) menuBtn.addEventListener('click', toggleMobileMenu);
 
-    /* Nav categories button → navigate to shop */
-    $$('.nav-categories-btn').forEach(function (btn) { btn.addEventListener('click', function () { window.location.href = 'shop.html'; }); });
+    /* Nav categories button → toggle category dropdown */
+    $$('.nav-categories-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var dropdown = document.querySelector('.categories-dropdown');
+        if (dropdown) dropdown.classList.toggle('is-active');
+      });
+    });
+    /* Close category dropdown on outside click */
+    document.addEventListener('click', function (e) {
+      var dropdown = document.querySelector('.categories-dropdown');
+      var btn = document.querySelector('.nav-categories-btn');
+      if (dropdown && dropdown.classList.contains('is-active')) {
+        if (!dropdown.contains(e.target) && (!btn || !btn.contains(e.target))) {
+          dropdown.classList.remove('is-active');
+        }
+      }
+    });
+    /* Close category dropdown on Escape */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        var dropdown = document.querySelector('.categories-dropdown');
+        if (dropdown) dropdown.classList.remove('is-active');
+      }
+    });
 
     var mobileMenuClose = $('.mobile-menu .drawer__close');
     if (mobileMenuClose) mobileMenuClose.addEventListener('click', toggleMobileMenu);
@@ -519,7 +545,7 @@
     if (cartClose) cartClose.addEventListener('click', toggleCartDrawer);
 
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { if (state.searchOpen) toggleSearch(); if (state.mobileMenuOpen) toggleMobileMenu(); if (state.cartDrawerOpen) toggleCartDrawer(); }
+      if (e.key === 'Escape') { if (state.searchOpen) toggleSearch(); if (state.mobileMenuOpen) toggleMobileMenu(); if (state.cartDrawerOpen) toggleCartDrawer(); var dd = document.querySelector('.categories-dropdown'); if (dd) dd.classList.remove('is-active'); }
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); toggleSearch(); }
     });
   }
@@ -541,6 +567,15 @@
     if (mobileHeaderEl) renderMobileHeader(mobileHeaderEl);
     if (footerEl) renderFooter(footerEl);
     if (overlaysEl) renderOverlays(overlaysEl);
+
+    /* Render categories dropdown if container exists */
+    var dd = document.getElementById('categories-dropdown');
+    if (dd) {
+      dd.innerHTML = AppData.categories.map(function(cat) {
+        var realCount = AppData.products.filter(function(p) { return p.categorySlug === cat.slug; }).length;
+        return '<a href="shop.html?category=' + cat.slug + '" class="categories-dropdown__link"><span>' + cat.name + '</span><span class="categories-dropdown__count">' + realCount + '</span></a>';
+      }).join('');
+    }
 
     bindEvents();
     updateCartUI();

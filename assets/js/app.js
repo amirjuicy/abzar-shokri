@@ -129,8 +129,18 @@
   }
 
   /* ── Init ─────────────────────────────────────────────────── */
+  function renderCategoriesDropdown() {
+    var dd = document.getElementById('categories-dropdown');
+    if (!dd) return;
+    dd.innerHTML = AppData.categories.map(function(cat) {
+      var realCount = AppData.products.filter(function(p) { return p.categorySlug === cat.slug; }).length;
+      return '<a href="shop.html?category=' + cat.slug + '" class="categories-dropdown__link">' + getCategoryIcon(cat.icon) + '<span>' + cat.name + '</span><span class="categories-dropdown__count">' + realCount + '</span></a>';
+    }).join('');
+  }
+
   function init() {
     renderCategories();
+    renderCategoriesDropdown();
     renderBestSellers();
     renderNewProducts();
     renderSpecialOffers();
