@@ -15,7 +15,8 @@
     var grid = document.getElementById('categories-grid');
     if (!grid) return;
     grid.innerHTML = AppData.categories.slice(0, 6).map(function(cat) {
-      return '<div class="category-card"><div class="category-card__icon">' + getCategoryIcon(cat.icon) + '</div><span class="category-card__name">' + cat.name + '</span><span class="category-card__count">' + cat.count + ' محصول</span></div>';
+      var realCount = AppData.products.filter(function(p) { return p.categorySlug === cat.slug; }).length;
+      return '<a href="shop.html?category=' + cat.slug + '" class="category-card" style="color:inherit;text-decoration:none"><div class="category-card__icon">' + getCategoryIcon(cat.icon) + '</div><span class="category-card__name">' + cat.name + '</span><span class="category-card__count">' + realCount + ' محصول</span></a>';
     }).join('');
   }
 
@@ -77,7 +78,8 @@
     var grid = document.getElementById('brands-grid');
     if (!grid) return;
     grid.innerHTML = AppData.brands.slice(0, 6).map(function(brand) {
-      return '<div class="brand-card"><span class="brand-card__name">' + brand.displayName + '</span></div>';
+      var realCount = AppData.products.filter(function(p) { return p.brand === brand.name; }).length;
+      return '<a href="brand-detail.html?brand=' + brand.name + '" class="brand-card" style="color:inherit;text-decoration:none"><span class="brand-card__name">' + brand.displayName + '</span><span class="brand-card__count" style="font-size:var(--font-size-xs);color:var(--text-muted)">' + realCount + ' محصول</span></a>';
     }).join('');
   }
 

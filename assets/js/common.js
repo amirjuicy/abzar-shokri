@@ -506,6 +506,9 @@
     var menuBtn = $('.mobile-header__menu-btn');
     if (menuBtn) menuBtn.addEventListener('click', toggleMobileMenu);
 
+    /* Nav categories button → navigate to shop */
+    $$('.nav-categories-btn').forEach(function (btn) { btn.addEventListener('click', function () { window.location.href = 'shop.html'; }); });
+
     var mobileMenuClose = $('.mobile-menu .drawer__close');
     if (mobileMenuClose) mobileMenuClose.addEventListener('click', toggleMobileMenu);
 
