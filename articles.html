@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مقالات | ابزار شکری</title>
+<link rel="stylesheet" href="assets/css/design-system.css"><link rel="stylesheet" href="assets/css/base.css"><link rel="stylesheet" href="assets/css/components.css"><link rel="stylesheet" href="assets/css/header.css"><link rel="stylesheet" href="assets/css/footer.css"><link rel="stylesheet" href="assets/css/pages.css">
+</head>
+<body>
+<header id="site-header"></header>
+<div id="mobile-header" class="mobile-header"></div>
+<main>
+<div class="breadcrumb"><div class="container"><div class="breadcrumb-list"><span class="breadcrumb-item"><a href="index.html">خانه</a></span><span class="breadcrumb-sep">‹</span><span class="breadcrumb-item breadcrumb-item--active">مقالات</span></div></div></div>
+<div class="page-header"><div class="container"><h1 class="page-header__title">مقالات و راهنماها</h1><p class="page-header__desc">آخرین مقالات آموزشی و راهنمای خرید ابزارآلات</p></div></div>
+<div class="container">
+<div class="faq-categories" id="article-cat-filter"></div>
+<div class="articles-grid" id="articles-grid"></div>
+</div>
+</main>
+<footer id="site-footer"></footer>
+<div id="site-overlays"></div>
+<script src="assets/js/data.js"></script><script src="assets/js/icons.js"></script><script src="assets/js/common.js"></script>
+<script>
+(function(){
+var catFilter=document.getElementById('article-cat-filter');
+var grid=document.getElementById('articles-grid');
+var activeCat='';
+function render(){
+var articles=activeCat?AppData.articles.filter(function(a){return a.categorySlug===activeCat;}):AppData.articles;
+if(grid)grid.innerHTML=articles.map(function(a){
+return '<div class="article-card" onclick="window.location.href=\'article-detail.html?id='+a.id+'\'" style="cursor:pointer"><div class="article-card__image"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-muted)"><span style="width:48px;height:48px"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span></div><span class="article-card__category">'+a.category+'</span></div><div class="article-card__body"><h3 class="article-card__title">'+a.title+'</h3><p class="article-card__excerpt">'+a.excerpt+'</p><div class="article-card__meta"><span class="article-card__meta-item"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> '+a.date+'</span><span class="article-card__meta-item"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> '+a.readTime+'</span></div></div></div>';
+}).join('');
+}
+if(catFilter){
+catFilter.innerHTML='<button class="faq-cat-btn is-active" onclick="filterArticles(\'\')">همه</button>'+AppData.articleCategories.map(function(c){return '<button class="faq-cat-btn" onclick="filterArticles(\''+c.slug+'\')">'+c.name+'</button>';}).join('');
+}
+window.filterArticles=function(slug){activeCat=slug;if(catFilter){catFilter.querySelectorAll('.faq-cat-btn').forEach(function(b){b.classList.toggle('is-active',slug===''?b.textContent==='همه':false);});catFilter.querySelectorAll('.faq-cat-btn').forEach(function(b){if(slug===''&&b.textContent==='همه')b.classList.add('is-active');if(b.getAttribute('onclick').includes(slug)&&slug!=='')b.classList.add('is-active');});}render();};
+render();
+})();
+</script>
+</body></html>

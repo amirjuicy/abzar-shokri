@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ورود | ابزار شکری</title>
+  <link rel="stylesheet" href="assets/css/design-system.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/header.css">
+  <link rel="stylesheet" href="assets/css/footer.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+</head>
+<body>
+  <header id="site-header"></header>
+  <div id="mobile-header" class="mobile-header"></div>
+  <main>
+    <div class="auth-page">
+      <div class="auth-box">
+        <div class="auth-box__logo"><span style="width:40px;height:40px;background:var(--color-primary);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;color:white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span><span style="font-weight:var(--font-weight-black);font-size:var(--font-size-lg);color:var(--color-primary)">ابزار شکری</span></div>
+        <h2 class="auth-box__title">ورود به حساب کاربری</h2>
+        <form id="login-form">
+          <div id="login-password-form">
+            <div class="form-group"><label class="input-label">موبایل یا ایمیل</label><input class="input" type="text" dir="ltr" placeholder="شماره موبایل یا ایمیل" required></div>
+            <div class="form-group"><label class="input-label">رمز عبور</label><input class="input" type="password" placeholder="رمز عبور" required></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin:var(--space-3) 0"><label class="filter-option" style="padding:0"><input type="checkbox"><span style="font-size:var(--font-size-sm)">مرا به خاطر بسپار</span></label><a href="forgot-password.html" style="font-size:var(--font-size-sm);color:var(--color-primary)">فراموشی رمز عبور</a></div>
+            <button type="submit" class="btn btn-primary btn-block btn-lg">ورود</button>
+          </div>
+          <div id="login-otp-form" style="display:none">
+            <div class="form-group"><label class="input-label">شماره موبایل</label><input class="input" type="tel" dir="ltr" placeholder="09XXXXXXXXX" required></div>
+            <button type="button" class="btn btn-primary btn-block btn-lg" id="otp-login-btn" style="margin-top:var(--space-4)">ارسال کد تأیید و ورود</button>
+          </div>
+        </form>
+        <div class="auth-divider">یا</div>
+        <button id="otp-toggle" class="btn btn-secondary btn-block auth-otp-btn">ورود با کد یکبار مصرف</button>
+        <div class="auth-box__footer">حساب کاربری ندارید؟ <a href="register.html">ثبت‌نام کنید</a></div>
+      </div>
+    </div>
+  </main>
+  <footer id="site-footer"></footer>
+  <div id="site-overlays"></div>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/icons.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/auth.js"></script>
+</body>
+</html>

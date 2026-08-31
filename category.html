@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دسته‌بندی | ابزار شکری</title>
+<link rel="stylesheet" href="assets/css/design-system.css"><link rel="stylesheet" href="assets/css/base.css"><link rel="stylesheet" href="assets/css/components.css"><link rel="stylesheet" href="assets/css/header.css"><link rel="stylesheet" href="assets/css/footer.css"><link rel="stylesheet" href="assets/css/pages.css">
+</head>
+<body>
+<header id="site-header"></header>
+<div id="mobile-header" class="mobile-header"></div>
+<main>
+<div class="breadcrumb"><div class="container"><div class="breadcrumb-list">
+<span class="breadcrumb-item"><a href="index.html">خانه</a></span>
+<span class="breadcrumb-sep">‹</span>
+<span class="breadcrumb-item"><a href="shop.html">فروشگاه</a></span>
+<span class="breadcrumb-sep">‹</span>
+<span class="breadcrumb-item breadcrumb-item--active" id="category-name-bc"></span>
+</div></div></div>
+<div class="page-header"><div class="container">
+<h1 class="page-header__title" id="page-title"></h1>
+<p class="page-header__desc" id="page-desc"></p>
+<p class="page-header__count"><span id="product-count"></span></p>
+</div></div>
+<div class="container">
+<div class="shop-toolbar"><div class="shop-toolbar__actions">
+<select class="shop-sort" id="shop-sort">
+<option value="relevance">مرتب‌سازی: مرتبط‌ترین</option>
+<option value="newest">جدیدترین</option>
+<option value="bestseller">پرفروش‌ترین</option>
+<option value="cheapest">ارزان‌ترین</option>
+<option value="expensive">گران‌ترین</option>
+</select>
+</div></div>
+<div class="product-listing-grid" id="shop-products-grid"></div>
+<div id="pagination"></div>
+</div>
+</main>
+<footer id="site-footer"></footer>
+<div id="site-overlays"></div>
+<script src="assets/js/data.js"></script><script src="assets/js/icons.js"></script><script src="assets/js/common.js"></script><script src="assets/js/shop.js"></script>
+</body></html>

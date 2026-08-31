@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>برندها | ابزار شکری</title>
+<link rel="stylesheet" href="assets/css/design-system.css"><link rel="stylesheet" href="assets/css/base.css"><link rel="stylesheet" href="assets/css/components.css"><link rel="stylesheet" href="assets/css/header.css"><link rel="stylesheet" href="assets/css/footer.css"><link rel="stylesheet" href="assets/css/pages.css">
+</head>
+<body>
+<header id="site-header"></header>
+<div id="mobile-header" class="mobile-header"></div>
+<main>
+<div class="breadcrumb"><div class="container"><div class="breadcrumb-list"><span class="breadcrumb-item"><a href="index.html">خانه</a></span><span class="breadcrumb-sep">‹</span><span class="breadcrumb-item breadcrumb-item--active">برندها</span></div></div></div>
+<div class="page-header"><div class="container"><h1 class="page-header__title">برندها</h1><p class="page-header__desc">برندهای معتبر ابزارآلات جهان</p></div></div>
+<div class="container"><div class="brands-page-grid" id="brands-list"></div></div>
+</main>
+<footer id="site-footer"></footer>
+<div id="site-overlays"></div>
+<script src="assets/js/data.js"></script><script src="assets/js/icons.js"></script><script src="assets/js/common.js"></script>
+<script>
+(function(){
+var el=document.getElementById('brands-list');
+if(!el)return;
+el.innerHTML=AppData.brands.map(function(b){
+return '<a href="brand-detail.html?brand='+b.name+'" class="brand-page-card"><div class="brand-page-card__logo">'+b.displayName+'</div><div class="brand-page-card__name">'+b.displayName+'</div><div class="brand-page-card__country">'+b.country+'</div></a>';
+}).join('');
+})();
+</script>
+</body></html>
