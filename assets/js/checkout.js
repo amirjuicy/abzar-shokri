@@ -101,7 +101,7 @@
 
         App.showToast('سفارش شما با موفقیت ثبت شد! شماره سفارش: ' + order.id, 'success');
         if (btn) { btn.textContent = 'پرداخت و ثبت سفارش'; btn.disabled = false; }
-        setTimeout(function() { window.location.href = 'account/orders/' + order.id + '.html'; }, 1500);
+        setTimeout(function() { window.location.href = 'account-order-detail.html?id=' + encodeURIComponent(order.id); }, 1500);
       }, 2000);
     });
   }

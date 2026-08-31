@@ -32,7 +32,7 @@
   }
 
   function generateOrderId() {
-    return 'ORD-' + Date.now().toString(36).toUpperCase().substr(-8);
+    return 'ORD-' + Date.now().toString(36).toUpperCase().substr(-8) + Math.random().toString(36).substr(2, 3).toUpperCase();
   }
 
   function readJSON(key, fallback) {
@@ -410,7 +410,7 @@
     <div class="header-search"><div class="search-input-wrapper"><input type="text" class="search-input" placeholder="جستجوی محصولات، برندها و دسته‌بندی‌ها..." readonly><span class="search-icon">' + Icons.search.replace('width="20" height="20"', '') + '</span></div></div>\
     <div class="header-actions">\
     ' + authHtml + '\
-    <a href="account/wishlist.html" class="header-action" data-tooltip="علاقه‌مندی‌ها">' + Icons.heart.replace('width="22" height="22"', '') + '</a>\
+    <a href="account-wishlist.html" class="header-action" data-tooltip="علاقه‌مندی‌ها">' + Icons.heart.replace('width="22" height="22"', '') + '</a>\
     <button class="header-action header-action--cart" data-action="cart" data-tooltip="سبد خرید">' + Icons.cart.replace('width="22" height="22"', '') + '<span class="header-action__badge" style="display:none">0</span></button>\
     </div></div></div></header>\
     <nav class="site-nav"><div class="container">\
@@ -467,7 +467,7 @@
     <a href="articles.html" class="mobile-menu__link">' + Icons.layers + ' مقالات</a>\
     <div class="mobile-menu__divider"></div>\
     <a href="login.html" class="mobile-menu__link">' + Icons.user + ' حساب کاربری</a>\
-    <a href="account/wishlist.html" class="mobile-menu__link">' + Icons.heart + ' علاقه‌مندی‌ها</a>\
+    <a href="account-wishlist.html" class="mobile-menu__link">' + Icons.heart + ' علاقه‌مندی‌ها</a>\
     <div class="mobile-menu__divider"></div>\
     <a href="contact.html" class="mobile-menu__link">' + Icons.mail + ' تماس با ما</a>\
     <a href="about.html" class="mobile-menu__link">' + Icons.infoCircle + ' درباره ما</a>\

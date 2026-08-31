@@ -10,7 +10,7 @@
 
   function getPage() {
     var path = window.location.pathname;
-    if (path.includes('orders/')) return 'order-detail';
+    if (path.includes('account-order-detail') || path.includes('orders/')) return 'order-detail';
     if (path.includes('orders')) return 'orders';
     if (path.includes('profile')) return 'profile';
     if (path.includes('addresses')) return 'addresses';
@@ -145,14 +145,15 @@
   function renderOrdersTable(orders) {
     if (orders.length === 0) return '';
     return '<table class="orders-table"><thead><tr><th>شماره سفارش</th><th>تاریخ</th><th>وضعیت</th><th>تعداد اقلام</th><th>مبلغ</th><th>عملیات</th></tr></thead><tbody>' + orders.map(function(o) {
-      return '<tr><td style="font-weight:var(--font-weight-semibold)">' + o.id + '</td><td>' + o.date + '</td><td><span class="order-status order-status--' + o.status + '">' + o.statusText + '</span></td><td>' + Format.toPersianNumber(o.itemsCount) + ' عدد</td><td style="font-weight:var(--font-weight-semibold)">' + Format.priceWithCurrency(o.total) + '</td><td><a href="account/orders/' + o.id + '.html" class="btn btn-sm btn-secondary">مشاهده</a></td></tr>';
+      return '<tr><td style="font-weight:var(--font-weight-semibold)">' + o.id + '</td><td>' + o.date + '</td><td><span class="order-status order-status--' + o.status + '">' + o.statusText + '</span></td><td>' + Format.toPersianNumber(o.itemsCount) + ' عدد</td><td style="font-weight:var(--font-weight-semibold)">' + Format.priceWithCurrency(o.total) + '</td><td><a href="account-order-detail.html?id=' + o.id + '\" class="btn btn-sm btn-secondary">مشاهده</a></td></tr>';
     }).join('') + '</tbody></table>';
   }
 
   /* ── Order Detail ──────────────────────────────────────── */
   function renderOrderDetail(el) {
     var path = window.location.pathname;
-    var orderId = path.split('/').pop().replace('.html', '');
+    var urlParams = new URLSearchParams(window.location.search);
+    var orderId = urlParams.get('id') || path.split('/').pop().replace('.html', '');
     var orders = App.getUserData('orders', []);
     var order = orders.find(function(o) { return o.id === orderId; });
 
