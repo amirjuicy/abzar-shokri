@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>فروشگاه | ابزار شکری</title>
+  <link rel="stylesheet" href="assets/css/design-system.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/header.css">
+  <link rel="stylesheet" href="assets/css/footer.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+</head>
+<body>
+  <header id="site-header"></header>
+  <div id="mobile-header" class="mobile-header"></div>
+  <main>
+    <div class="breadcrumb"><div class="container"><div class="breadcrumb-list">
+      <span class="breadcrumb-item"><a href="index.html">خانه</a></span>
+      <span class="breadcrumb-sep">‹</span>
+      <span class="breadcrumb-item breadcrumb-item--active">فروشگاه</span>
+    </div></div></div>
+    <div class="page-header"><div class="container">
+      <h1 class="page-header__title" id="page-title">فروشگاه</h1>
+      <p class="page-header__desc" id="page-desc">مجموعه کامل محصولات ابزار شکری</p>
+      <p class="page-header__count"><span id="product-count"></span></p>
+    </div></div>
+    <div class="container">
+      <div class="shop-layout">
+        <aside class="shop-sidebar">
+          <button id="filter-toggle" class="shop-filter-toggle" style="display:none">فیلترها</button>
+          <div class="shop-sidebar__section">
+            <h3 class="shop-sidebar__title">جستجو در محصولات</h3>
+            <div class="search-input-wrapper"><input type="text" class="search-input input-sm" id="shop-search" placeholder="نام محصول..."><span class="search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span></div>
+          </div>
+          <div class="shop-sidebar__section">
+            <h3 class="shop-sidebar__title">دسته‌بندی</h3>
+            <div id="filter-categories"></div>
+          </div>
+          <div class="shop-sidebar__section">
+            <h3 class="shop-sidebar__title">برند</h3>
+            <div id="filter-brands"></div>
+          </div>
+          <div class="shop-sidebar__section">
+            <h3 class="shop-sidebar__title">محدوده قیمت</h3>
+            <div class="price-range">
+              <input type="number" class="input input-sm" id="price-min" placeholder="از">
+              <span class="price-range__sep">تا</span>
+              <input type="number" class="input input-sm" id="price-max" placeholder="تا">
+            </div>
+            <button class="btn btn-primary btn-sm btn-block" id="price-filter-btn" style="margin-top:var(--space-2)">اعمال قیمت</button>
+          </div>
+          <div class="shop-sidebar__section">
+            <label class="filter-option"><input type="checkbox" id="filter-stock"><span>فقط موجود در انبار</span></label>
+          </div>
+          <button class="btn btn-ghost btn-block btn-sm" onclick="ShopFilter.clearFilters()">پاک کردن فیلترها</button>
+        </aside>
+        <div>
+          <div class="shop-toolbar">
+            <button id="filter-toggle-mobile" class="shop-filter-toggle" onclick="document.querySelector('.shop-sidebar').classList.toggle('is-active')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> فیلترها</button>
+            <div class="shop-toolbar__actions">
+              <select class="shop-sort" id="shop-sort">
+                <option value="relevance">مرتب‌سازی: مرتبط‌ترین</option>
+                <option value="newest">جدیدترین</option>
+                <option value="bestseller">پرفروش‌ترین</option>
+                <option value="cheapest">ارزان‌ترین</option>
+                <option value="expensive">گران‌ترین</option>
+              </select>
+            </div>
+          </div>
+          <div class="product-listing-grid" id="shop-products-grid"></div>
+          <div id="pagination"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer id="site-footer"></footer>
+  <div id="site-overlays"></div>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/icons.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/shop.js"></script>
+</body>
+</html>
