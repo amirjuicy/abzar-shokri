@@ -48,18 +48,22 @@
     container.innerHTML = cart.map(function(item) {
       return '<div class="cart-item-row">\
         <div class="cart-item-row__image"><img src="' + item.image + '" alt="' + item.name + '" loading="lazy" class="cart-item__img"></div>\
-        <div class="cart-item-row__details">\
-          <span class="cart-item-row__brand">'+item.brandName+'</span>\
-          <span class="cart-item-row__title">'+item.name+'</span>\
-          <span class="cart-item-row__price">'+Format.priceWithCurrency(item.price)+'</span>\
-        </div>\
-        <div class="cart-item-row__actions">\
-          <div class="qty-selector">\
-            <button class="qty-selector__btn" onclick="CartPage.changeQty('+item.id+',-1)">'+Icons.minus+'</button>\
-            <div class="qty-selector__value">'+Format.toPersianNumber(item.quantity)+'</div>\
-            <button class="qty-selector__btn" onclick="CartPage.changeQty('+item.id+',1)">'+Icons.plus+'</button>\
+        <div class="cart-item-row__info">\
+          <div class="cart-item-row__details">\
+            <span class="cart-item-row__brand">'+item.brandName+'</span>\
+            <a href="product.html?slug='+item.slug+'" class="cart-item-row__title">'+item.name+'</a>\
           </div>\
-          <button class="cart-item-row__remove" onclick="CartPage.removeItem('+item.id+')">'+Icons.trash+' حذف</button>\
+          <div class="cart-item-row__bottom">\
+            <span class="cart-item-row__price">'+Format.priceWithCurrency(item.price)+'</span>\
+            <div class="cart-item-row__actions">\
+              <div class="qty-selector">\
+                <button class="qty-selector__btn" onclick="CartPage.changeQty('+item.id+',-1)" aria-label="کاهش تعداد">'+Icons.minus+'</button>\
+                <div class="qty-selector__value">'+Format.toPersianNumber(item.quantity)+'</div>\
+                <button class="qty-selector__btn" onclick="CartPage.changeQty('+item.id+',1)" aria-label="افزایش تعداد">'+Icons.plus+'</button>\
+              </div>\
+              <button class="cart-item-row__remove" onclick="CartPage.removeItem('+item.id+')" aria-label="حذف محصول">'+Icons.trash+'</button>\
+            </div>\
+          </div>\
         </div>\
       </div>';
     }).join('');

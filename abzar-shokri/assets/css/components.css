@@ -1070,17 +1070,25 @@
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-md);
   overflow: hidden;
-  background: var(--color-gray-100);
+  background: var(--bg-surface);
 }
 
 .qty-selector__btn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-secondary);
   transition: all var(--transition-fast);
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.qty-selector__btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .qty-selector__btn:hover {
@@ -1089,14 +1097,14 @@
 }
 
 .qty-selector__value {
-  width: 44px;
+  width: 36px;
   text-align: center;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   border-left: var(--border-width) solid var(--border-color);
   border-right: var(--border-width) solid var(--border-color);
-  height: 36px;
-  line-height: 36px;
+  height: 32px;
+  line-height: 32px;
 }
 
 /* ── Empty state ────────────────────────────────────────────── */
