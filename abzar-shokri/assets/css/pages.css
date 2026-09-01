@@ -48,12 +48,12 @@
 .product-listing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
 
 /* ── Pagination ────────────────────────────────────────────── */
-.pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; padding: var(--space-8) 0; }
-.pagination__btn { min-width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: var(--border-width) solid var(--border-color); border-radius: var(--radius-md); font-size: var(--font-size-sm); color: var(--text-secondary); background: var(--bg-surface); transition: all var(--transition-fast); cursor: pointer; padding: 0 var(--space-2); box-sizing: border-box; line-height: 1; }
-.pagination__btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+.pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-1); padding: var(--space-8) 0; }
+.pagination__btn { min-width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: var(--border-width) solid var(--border-color); border-radius: var(--radius-md); font-size: var(--font-size-sm); color: var(--text-secondary); background: var(--bg-surface); transition: all var(--transition-fast); cursor: pointer; padding: 0 var(--space-2); box-sizing: border-box; }
+.pagination__btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .pagination__btn.is-active { background: var(--color-primary); color: var(--text-inverse); border-color: var(--color-primary); }
-.pagination__btn--prev, .pagination__btn--next { padding: 0 14px; font-size: var(--font-size-xs); }
-.pagination__btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+.pagination__btn--prev, .pagination__btn--next { padding: 0 var(--space-3); }
+.pagination__btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Product Detail ────────────────────────────────────────── */
 .product-detail { padding: var(--space-6) 0; }

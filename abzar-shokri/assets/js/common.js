@@ -432,8 +432,8 @@
   function renderMobileHeader(el) {
     var user = getCurrentUser();
     var authHtml = user
-      ? '<a href="account.html" class="header-action">' + Icons.user + '</a>'
-      : '<a href="login.html" class="header-action">' + Icons.user + '</a>';
+      ? '<a href="account.html" class="header-action" style="width:36px;height:36px">' + Icons.user + '</a>'
+      : '<a href="login.html" class="header-action" style="width:36px;height:36px">' + Icons.user + '</a>';
 
     el.innerHTML = '\
     <div class="container">\
