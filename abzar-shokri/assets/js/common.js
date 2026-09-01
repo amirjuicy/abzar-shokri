@@ -334,7 +334,7 @@
     if (footer) {
       footer.style.display = 'block';
       var total = getCartTotal();
-      footer.innerHTML = '<div class="cart-summary"><div class="cart-summary__row"><span>جمع سبد خرید</span><span>' + Format.priceWithCurrency(total) + '</span></div><div class="cart-summary__row cart-summary__row--total"><span>مبلغ قابل پرداخت</span><span>' + Format.priceWithCurrency(total) + '</span></div><a href="checkout.html" class="btn btn-primary btn-block btn-lg">تکمیل خرید</a><a href="cart.html" class="btn btn-secondary btn-block" onclick="App.toggleCartDrawer()">مشاهده سبد خرید</a></div>';
+      footer.innerHTML = '<div class="cart-summary"><div class="cart-summary__row"><span>جمع سبد خرید</span><span>' + Format.priceWithCurrency(total) + '</span></div><div class="cart-summary__row cart-summary__row--total"><span>مبلغ قابل پرداخت</span><span>' + Format.priceWithCurrency(total) + '</span></div><a href="checkout.html" class="btn btn-primary btn-block">تکمیل خرید</a><a href="cart.html" class="btn btn-secondary btn-block" onclick="App.toggleCartDrawer()">مشاهده سبد خرید</a></div>';
     }
   }
 

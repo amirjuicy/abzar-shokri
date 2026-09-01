@@ -33,7 +33,7 @@
         <div class="cart-summary-box__row"><span>هزینه ارسال</span><span>'+(shipping === 0 ? '<span style="color:var(--color-success)">رایگان</span>' : Format.priceWithCurrency(shipping))+'</span></div>\
         <div class="cart-summary-box__row cart-summary-box__row--total"><span>مبلغ قابل پرداخت</span><span>'+Format.priceWithCurrency(total + shipping)+'</span></div>\
         <div class="cart-summary-box__actions">\
-          <a href="checkout.html" class="btn btn-primary btn-block btn-lg">تکمیل خرید</a>\
+          <a href="checkout.html" class="btn btn-primary btn-block">تکمیل خرید</a>\
           <a href="shop.html" class="btn btn-secondary btn-block">ادامه خرید</a>\
         </div>\
       </div>\

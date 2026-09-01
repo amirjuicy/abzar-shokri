@@ -48,7 +48,7 @@
           '<span class="product-card__price-current">' + Format.price(product.price) + ' <span class="product-card__price-currency">تومان</span></span>' +
           (product.oldPrice ? '<span class="product-card__price-old">' + Format.price(product.oldPrice) + '</span>' : '') +
         '</div>' +
-        '<button class="btn btn-primary btn-block btn-sm product-card__add-to-cart" onclick="App.addToCart(' + product.id + ')">افزودن به سبد خرید</button>' +
+        '<button class="btn btn-primary btn-block product-card__add-to-cart" onclick="App.addToCart(' + product.id + ')">افزودن به سبد خرید</button>' +
       '</div>' +
     '</div>';
   }

@@ -138,7 +138,7 @@
     if (!p.inStock) badges.push('<span class="badge badge-outline" style="color:var(--color-danger)">ناموجود</span>');
 
     var stockBtn = p.inStock
-      ? '<button class="btn btn-primary btn-block btn-sm" onclick="App.addToCart(' + p.id + ')">افزودن به سبد خرید</button>'
+      ? '<button class="btn btn-primary btn-block" onclick="App.addToCart(' + p.id + ')">افزودن به سبد خرید</button>'
       : '<button class="btn btn-secondary btn-block btn-sm" disabled>ناموجود</button>';
 
     return '<div class="product-card"><div class="product-card__image"><img src="' + p.image + '" alt="' + p.name + '" loading="lazy" class="product-card__img">' +
