@@ -404,18 +404,18 @@
       : '<a href="login.html" class="header-action" data-tooltip="حساب کاربری">' + Icons.user.replace('width="22" height="22"', '') + '</a>';
 
     el.innerHTML = '\
-    <div class="top-bar"><div class="container"><div class="top-bar__contact"><span class="top-bar__contact-item">' + Icons.phone.replace('width="14" height="14"', '') + ' ۰۲۱-XXXX-XXXX</span><span class="top-bar__contact-item">' + Icons.mail.replace('width="14" height="14"', '') + ' info@abzarshokri.com</span></div><div class="top-bar__links"><a href="shipping.html" class="top-bar__link">' + Icons.truck.replace('width="14" height="14"', '') + ' ارسال رایگان</a><a href="returns.html" class="top-bar__link">' + Icons.refreshCw.replace('width="14" height="14"', '') + ' ۷ روز ضمانت بازگشت</a></div></div></div>\
+    <div class="top-bar"><div class="container"><div class="top-bar__contact"><span class="top-bar__contact-item">' + Icons.phone.replace('width="14" height="14"', '').replace('width="13" height="13"', '') + ' ۰۲۱-XXXX-XXXX</span><span class="top-bar__contact-item">' + Icons.mail.replace('width="14" height="14"', '').replace('width="13" height="13"', '') + ' info@abzarshokri.com</span></div><div class="top-bar__links"><a href="shipping.html" class="top-bar__link">' + Icons.truck.replace('width="14" height="14"', '').replace('width="13" height="13"', '') + ' ارسال رایگان</a><a href="returns.html" class="top-bar__link">' + Icons.refreshCw.replace('width="14" height="14"', '').replace('width="13" height="13"', '') + ' ۷ روز ضمانت بازگشت</a></div></div></div>\
     <header class="site-header"><div class="header-main"><div class="container">\
-    <a href="index.html" class="header-logo"><span class="header-logo__icon">' + Icons.flash.replace('width="24" height="24"', '') + '</span><span class="header-logo__text"><span class="header-logo__title">ابزار شکری</span><span class="header-logo__subtitle">فروشگاه تخصصی ابزارآلات</span></span></a>\
-    <div class="header-search"><div class="search-input-wrapper"><input type="text" class="search-input" placeholder="جستجوی محصولات، برندها و دسته‌بندی‌ها..." readonly><span class="search-icon">' + Icons.search.replace('width="20" height="20"', '') + '</span></div></div>\
+    <a href="index.html" class="header-logo"><span class="header-logo__icon">' + Icons.flash.replace('width="24" height="24"', '').replace('width="20" height="20"', '') + '</span><span class="header-logo__text"><span class="header-logo__title">ابزار شکری</span><span class="header-logo__subtitle">فروشگاه تخصصی ابزارآلات</span></span></a>\
+    <div class="header-search"><div class="search-input-wrapper"><input type="text" class="search-input" placeholder="جستجوی محصولات، برندها و دسته‌بندی‌ها..." readonly><span class="search-icon">' + Icons.search.replace('width="20" height="20"', '').replace('width="18" height="18"', '') + '</span></div></div>\
     <div class="header-actions">\
     ' + authHtml + '\
-    <a href="account-wishlist.html" class="header-action" data-tooltip="علاقه‌مندی‌ها">' + Icons.heart.replace('width="22" height="22"', '') + '</a>\
-    <button class="header-action header-action--cart" data-action="cart" data-tooltip="سبد خرید">' + Icons.cart.replace('width="22" height="22"', '') + '<span class="header-action__badge" style="display:none">0</span></button>\
+    <a href="account-wishlist.html" class="header-action" data-tooltip="علاقه‌مندی‌ها">' + Icons.heart.replace('width="22" height="22"', '').replace('width="20" height="20"', '') + '</a>\
+    <button class="header-action header-action--cart" data-action="cart" data-tooltip="سبد خرید">' + Icons.cart.replace('width="22" height="22"', '').replace('width="20" height="20"', '') + '<span class="header-action__badge" style="display:none">0</span></button>\
     </div></div></div></header>\
     <nav class="site-nav"><div class="container">\
     <div style="position:relative">\
-    <button type="button" class="nav-categories-btn">' + Icons.menu.replace('width="18" height="18"', '') + ' دسته‌بندی محصولات</button>\
+    <button type="button" class="nav-categories-btn">' + Icons.menu.replace('width="18" height="18"', '').replace('width="16" height="16"', '') + ' دسته‌بندی محصولات</button>\
     <div class="categories-dropdown" id="categories-dropdown"></div>\
     </div>\
     <div class="nav-right">\
@@ -440,7 +440,7 @@
     <button class="mobile-header__menu-btn" aria-label="منو">' + Icons.menu + '</button>\
     <button class="mobile-header__search-btn">' + Icons.search + ' جستجوی محصولات...</button>\
     ' + authHtml + '\
-    <button class="header-action header-action--cart" data-action="cart" style="width:36px;height:36px">' + Icons.cart + '<span class="header-action__badge" style="display:none;top:2px;left:2px;min-width:16px;height:16px;font-size:9px">0</span></button>\
+    <button class="header-action header-action--cart" data-action="cart">' + Icons.cart + '<span class="header-action__badge" style="display:none">0</span></button>\
     </div>';
   }
 
