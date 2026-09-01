@@ -1070,6 +1070,7 @@
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-md);
   overflow: hidden;
+  background: var(--color-gray-100);
 }
 
 .qty-selector__btn {
