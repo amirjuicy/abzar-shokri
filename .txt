@@ -1,0 +1,304 @@
+
+Filename        LineNumber Line                                                                                                                                                     
+--------        ---------- ----                                                                                                                                                     
+account.js             118   var ADMIN_PANEL_URL = 'admin/index.html';                                                                                                              
+account.js             294   /* -- Dedicated notifications page (account-notifications.html) -- */                                                                                  
+account.js             917       if (href.includes(page) || (page === 'dashboard' && (href === '/account' || href === 'account.html'))) {                                           
+account.js             925      On any other account page, and on contact.html which reuses the same                                                                                
+auth.js                 10      When the user was sent to login.html from another storefront page,                                                                                  
+auth.js                 16     return s.indexOf('login.html') !== -1 || s.indexOf('register.html') !== -1 ||                                                                        
+auth.js                 17            s.indexOf('forgot-password.html') !== -1 || s.indexOf('/admin') !== -1 ||                                                                     
+auth.js                 18            s.indexOf('offline.html') !== -1;                                                                                                             
+checkout.js            263        cart. Two false-empty cases resulted in a wrong redirect to account-cart.html:                                                                    
+checkout.js            265        (b) stale/empty server cart wiping a valid local cart (account-cart.html renders                                                                  
+checkout.js            269        to the server). Only when BOTH are empty is account-cart.html correct. */                                                                         
+common.js             1360     <a href="/" class="nav-link ' + isActive('index.html') + '">' + Icons.home + ' ???? ????</a>\                                                        
+common.js             1361     <a href="/shop" class="nav-link ' + isActive('shop.html') + '">' + Icons.store + ' ???????</a>\                                                      
+common.js             1362     <a href="/brands" class="nav-link ' + isActive('brands.html') + '">' + Icons.star + ' ??????</a>\                                                    
+common.js             1363     <a href="/articles" class="nav-link ' + isActive('articles.html') + '">' + Icons.layers + ' ??????</a>\                                              
+common.js             1364     <a href="/contact" class="nav-link ' + isActive('contact.html') + '">' + Icons.phone + ' ???? ?? ??</a>\                                             
+common.js             1365     <a href="/about" class="nav-link ' + isActive('about.html') + '">' + Icons.infoCircle + ' ?????? ??</a>\                                             
+common.js             1652   var CHAT_HIDDEN_PAGES = ['login.html', 'register.html', 'forgot-password.html', 'checkout.html', 'checkout-step4.html', 'offline.html'];               
+common.js             2203       if (_currentPage === 'index.html') {                                                                                                               
+common.js             2389           '/': 'index.html',                                                                                                                             
+common.js             2390           '/shop': 'shop.html',                                                                                                                          
+common.js             2391           '/brands': 'brands.html',                                                                                                                      
+common.js             2392           '/categories': 'categories.html',                                                                                                              
+common.js             2393           '/articles': 'articles.html',                                                                                                                  
+common.js             2394           '/login': 'login.html',                                                                                                                        
+common.js             2395           '/register': 'register.html',                                                                                                                  
+common.js             2396           '/forgot-password': 'forgot-password.html',                                                                                                    
+common.js             2397           '/offline': 'offline.html',                                                                                                                    
+common.js             2398           '/cart': 'account-cart.html',                                                                                                                  
+common.js             2399           '/account': 'account.html',                                                                                                                    
+common.js             2400           '/account/orders': 'account-orders.html',                                                                                                      
+common.js             2401           '/account/profile': 'account-profile.html',                                                                                                    
+common.js             2402           '/account/addresses': 'account-addresses.html',                                                                                                
+common.js             2403           '/account/wishlist': 'account-wishlist.html',                                                                                                  
+common.js             2404           '/account/notifications': 'account-notifications.html',                                                                                        
+common.js             2405           '/checkout': 'checkout.html',                                                                                                                  
+common.js             2406           '/checkout/step1': 'checkout-step1.html',                                                                                                      
+common.js             2407           '/checkout/step2': 'checkout-step2.html',                                                                                                      
+common.js             2408           '/checkout/step3': 'checkout-step3.html',                                                                                                      
+common.js             2409           '/checkout/step4': 'checkout-step4.html',                                                                                                      
+common.js             2410           '/about': 'about.html',                                                                                                                        
+common.js             2411           '/contact': 'contact.html',                                                                                                                    
+common.js             2412           '/faq': 'faq.html',                                                                                                                            
+common.js             2413           '/returns': 'returns.html',                                                                                                                    
+common.js             2414           '/shipping': 'shipping.html',                                                                                                                  
+common.js             2415           '/privacy': 'privacy.html',                                                                                                                    
+common.js             2416           '/terms': 'terms.html',                                                                                                                        
+common.js             2417           '/authenticity': 'authenticity.html',                                                                                                          
+common.js             2418           '/pricing': 'pricing.html'                                                                                                                     
+common.js             2423           return { product: 'product.html', category: 'category.html', brand: 'brand-detail.html', article: 'article-detail.html', page: 'page.html' }...
+common.js             2425         if (/^\/account\/orders\/[^\/]+\/?$/.test(p)) return 'account-order-detail.html';                                                                
+common.js             2426         var f = p.split('/').pop() || 'index.html';                                                                                                      
+common.js             2427         return f.split('?')[0].split('#')[0] || 'index.html';                                                                                            
+common.js             2428       }catch(e){ return 'index.html'; }                                                                                                                  
+common.js             2445           'index.html': '/',                                                                                                                             
+common.js             2446           'shop.html': '/shop',                                                                                                                          
+common.js             2447           'brands.html': '/brands',                                                                                                                      
+common.js             2448           'categories.html': '/categories',                                                                                                              
+common.js             2449           'articles.html': '/articles',                                                                                                                  
+common.js             2450           'login.html': '/login',                                                                                                                        
+common.js             2451           'register.html': '/register',                                                                                                                  
+common.js             2452           'forgot-password.html': '/forgot-password',                                                                                                    
+common.js             2453           'offline.html': '/offline',                                                                                                                    
+common.js             2454           'account.html': '/account',                                                                                                                    
+common.js             2455           'account-cart.html': '/cart',                                                                                                                  
+common.js             2456           'account-orders.html': '/account/orders',                                                                                                      
+common.js             2457           'account-profile.html': '/account/profile',                                                                                                    
+common.js             2458           'account-addresses.html': '/account/addresses',                                                                                                
+common.js             2459           'account-wishlist.html': '/account/wishlist',                                                                                                  
+common.js             2460           'account-notifications.html': '/account/notifications',                                                                                        
+common.js             2461           'checkout.html': '/checkout',                                                                                                                  
+common.js             2462           'checkout-step1.html': '/checkout/step1',                                                                                                      
+common.js             2463           'checkout-step2.html': '/checkout/step2',                                                                                                      
+common.js             2464           'checkout-step3.html': '/checkout/step3',                                                                                                      
+common.js             2465           'checkout-step4.html': '/checkout/step4',                                                                                                      
+common.js             2466           'about.html': '/about',                                                                                                                        
+common.js             2467           'contact.html': '/contact',                                                                                                                    
+common.js             2468           'faq.html': '/faq',                                                                                                                            
+common.js             2469           'returns.html': '/returns',                                                                                                                    
+common.js             2470           'shipping.html': '/shipping',                                                                                                                  
+common.js             2471           'privacy.html': '/privacy',                                                                                                                    
+common.js             2472           'terms.html': '/terms',                                                                                                                        
+common.js             2473           'authenticity.html': '/authenticity',                                                                                                          
+common.js             2474           'pricing.html': '/pricing'                                                                                                                     
+common.js             2479           if (f === 'product.html' && r) canon = '/product/' + encodeURIComponent(r);                                                                    
+common.js             2480           else if (f === 'category.html' && r) canon = '/category/' + encodeURIComponent(r);                                                             
+common.js             2481           else if (f === 'brand-detail.html' && r) canon = '/brand/' + encodeURIComponent(r);                                                            
+common.js             2482           else if (f === 'article-detail.html' && r) canon = '/article/' + encodeURIComponent(r);                                                        
+common.js             2483           else if (f === 'page.html' && r) canon = '/page/' + encodeURIComponent(r);                                                                     
+common.js             2484           else if (f === 'account-order-detail.html' && r) canon = '/account/orders/' + encodeURIComponent(r);                                           
+common.js             2495         if(p==='index.html'||p==='' ) return 'home';                                                                                                     
+common.js             3228   /* Plain <a href="login.html">/register.html links (header, menus, prompts):                                                                           
+common.js             3231   /* Clean-URL aware page-name normalization: /login and login.html both mean login.html. */                                                             
+common.js             3234       var CLEAN_AUTH = { '/login': 'login.html', '/register': 'register.html', '/forgot-password': 'forgot-password.html', '/offline': 'offline.html' }; 
+common.js             3248     if (target !== 'login.html' && target !== 'register.html') return;                                                                                   
+common.js             3251     if (current === target || current === 'login.html' || current === 'register.html' || current === 'forgot-password.html' || current === 'offline.ht...
+home-address.js          1 (function(){"use strict";function g(a){if(!a||!a.length)return"????? ???? ??? ?? ??? ????";var d=a.find(function(x){return x.isDefault})||a[0];return ...
+pwa.js                   3    - Registers sw.js (next to index.html) with scope "./" on all pages                                                                                   
+site-page.js             1 /* Public CMS page renderer: /page.html?slug=xxx -> GET /api/pages/:slug (DB content) */                                                                 
+account.js             118   var ADMIN_PANEL_URL = 'admin/index.html';                                                                                                              
+account.js             294   /* -- Dedicated notifications page (account-notifications.html) -- */                                                                                  
+account.js             917       if (href.includes(page) || (page === 'dashboard' && (href === '/account' || href === 'account.html'))) {                                           
+account.js             925      On any other account page, and on contact.html which reuses the same                                                                                
+auth.js                 10      When the user was sent to login.html from another storefront page,                                                                                  
+auth.js                 16     return s.indexOf('login.html') !== -1 || s.indexOf('register.html') !== -1 ||                                                                        
+auth.js                 17            s.indexOf('forgot-password.html') !== -1 || s.indexOf('/admin') !== -1 ||                                                                     
+auth.js                 18            s.indexOf('offline.html') !== -1;                                                                                                             
+checkout.js            438        cart. Two false-empty cases resulted in a wrong redirect to account-cart.html:                                                                    
+checkout.js            440        (b) stale/empty server cart wiping a valid local cart (account-cart.html renders                                                                  
+checkout.js            444        to the server). Only when BOTH are empty is account-cart.html correct. */                                                                         
+common.js             1362     <a href="/" class="nav-link ' + isActive('index.html') + '">' + Icons.home + ' ???? ????</a>\                                                        
+common.js             1363     <a href="/shop" class="nav-link ' + isActive('shop.html') + '">' + Icons.store + ' ???????</a>\                                                      
+common.js             1364     <a href="/brands" class="nav-link ' + isActive('brands.html') + '">' + Icons.star + ' ??????</a>\                                                    
+common.js             1365     <a href="/articles" class="nav-link ' + isActive('articles.html') + '">' + Icons.layers + ' ??????</a>\                                              
+common.js             1366     <a href="/contact" class="nav-link ' + isActive('contact.html') + '">' + Icons.phone + ' ???? ?? ??</a>\                                             
+common.js             1367     <a href="/about" class="nav-link ' + isActive('about.html') + '">' + Icons.infoCircle + ' ?????? ??</a>\                                             
+common.js             1991   var CHAT_HIDDEN_PAGES = ['login.html', 'register.html', 'forgot-password.html', 'checkout.html', 'checkout-step4.html', 'offline.html'];               
+common.js             2545       if (_currentPage === 'index.html') {                                                                                                               
+common.js             2728           '/': 'index.html',                                                                                                                             
+common.js             2729           '/shop': 'shop.html',                                                                                                                          
+common.js             2730           '/brands': 'brands.html',                                                                                                                      
+common.js             2731           '/categories': 'categories.html',                                                                                                              
+common.js             2732           '/articles': 'articles.html',                                                                                                                  
+common.js             2733           '/login': 'login.html',                                                                                                                        
+common.js             2734           '/register': 'register.html',                                                                                                                  
+common.js             2735           '/forgot-password': 'forgot-password.html',                                                                                                    
+common.js             2736           '/offline': 'offline.html',                                                                                                                    
+common.js             2737           '/cart': 'account-cart.html',                                                                                                                  
+common.js             2738           '/account': 'account.html',                                                                                                                    
+common.js             2739           '/account/orders': 'account-orders.html',                                                                                                      
+common.js             2740           '/account/profile': 'account-profile.html',                                                                                                    
+common.js             2741           '/account/addresses': 'account-addresses.html',                                                                                                
+common.js             2742           '/account/wishlist': 'account-wishlist.html',                                                                                                  
+common.js             2743           '/account/notifications': 'account-notifications.html',                                                                                        
+common.js             2744           '/checkout': 'checkout.html',                                                                                                                  
+common.js             2745           '/checkout/step1': 'checkout-step1.html',                                                                                                      
+common.js             2746           '/checkout/step2': 'checkout-step2.html',                                                                                                      
+common.js             2747           '/checkout/step3': 'checkout-step3.html',                                                                                                      
+common.js             2748           '/checkout/step4': 'checkout-step4.html',                                                                                                      
+common.js             2749           '/about': 'about.html',                                                                                                                        
+common.js             2750           '/contact': 'contact.html',                                                                                                                    
+common.js             2751           '/faq': 'faq.html',                                                                                                                            
+common.js             2752           '/returns': 'returns.html',                                                                                                                    
+common.js             2753           '/shipping': 'shipping.html',                                                                                                                  
+common.js             2754           '/privacy': 'privacy.html',                                                                                                                    
+common.js             2755           '/terms': 'terms.html',                                                                                                                        
+common.js             2756           '/authenticity': 'authenticity.html',                                                                                                          
+common.js             2757           '/pricing': 'pricing.html'                                                                                                                     
+common.js             2762           return { product: 'product.html', category: 'category.html', brand: 'brand-detail.html', article: 'article-detail.html', page: 'page.html' }...
+common.js             2764         if (/^\/account\/orders\/[^\/]+\/?$/.test(p)) return 'account-order-detail.html';                                                                
+common.js             2765         var f = p.split('/').pop() || 'index.html';                                                                                                      
+common.js             2766         return f.split('?')[0].split('#')[0] || 'index.html';                                                                                            
+common.js             2767       }catch(e){ return 'index.html'; }                                                                                                                  
+common.js             2784           'index.html': '/',                                                                                                                             
+common.js             2785           'shop.html': '/shop',                                                                                                                          
+common.js             2786           'brands.html': '/brands',                                                                                                                      
+common.js             2787           'categories.html': '/categories',                                                                                                              
+common.js             2788           'articles.html': '/articles',                                                                                                                  
+common.js             2789           'login.html': '/login',                                                                                                                        
+common.js             2790           'register.html': '/register',                                                                                                                  
+common.js             2791           'forgot-password.html': '/forgot-password',                                                                                                    
+common.js             2792           'offline.html': '/offline',                                                                                                                    
+common.js             2793           'account.html': '/account',                                                                                                                    
+common.js             2794           'account-cart.html': '/cart',                                                                                                                  
+common.js             2795           'account-orders.html': '/account/orders',                                                                                                      
+common.js             2796           'account-profile.html': '/account/profile',                                                                                                    
+common.js             2797           'account-addresses.html': '/account/addresses',                                                                                                
+common.js             2798           'account-wishlist.html': '/account/wishlist',                                                                                                  
+common.js             2799           'account-notifications.html': '/account/notifications',                                                                                        
+common.js             2800           'checkout.html': '/checkout',                                                                                                                  
+common.js             2801           'checkout-step1.html': '/checkout/step1',                                                                                                      
+common.js             2802           'checkout-step2.html': '/checkout/step2',                                                                                                      
+common.js             2803           'checkout-step3.html': '/checkout/step3',                                                                                                      
+common.js             2804           'checkout-step4.html': '/checkout/step4',                                                                                                      
+common.js             2805           'about.html': '/about',                                                                                                                        
+common.js             2806           'contact.html': '/contact',                                                                                                                    
+common.js             2807           'faq.html': '/faq',                                                                                                                            
+common.js             2808           'returns.html': '/returns',                                                                                                                    
+common.js             2809           'shipping.html': '/shipping',                                                                                                                  
+common.js             2810           'privacy.html': '/privacy',                                                                                                                    
+common.js             2811           'terms.html': '/terms',                                                                                                                        
+common.js             2812           'authenticity.html': '/authenticity',                                                                                                          
+common.js             2813           'pricing.html': '/pricing'                                                                                                                     
+common.js             2818           if (f === 'product.html' && r) canon = '/product/' + encodeURIComponent(r);                                                                    
+common.js             2819           else if (f === 'category.html' && r) canon = '/category/' + encodeURIComponent(r);                                                             
+common.js             2820           else if (f === 'brand-detail.html' && r) canon = '/brand/' + encodeURIComponent(r);                                                            
+common.js             2821           else if (f === 'article-detail.html' && r) canon = '/article/' + encodeURIComponent(r);                                                        
+common.js             2822           else if (f === 'page.html' && r) canon = '/page/' + encodeURIComponent(r);                                                                     
+common.js             2823           else if (f === 'account-order-detail.html' && r) canon = '/account/orders/' + encodeURIComponent(r);                                           
+common.js             2834         if(p==='index.html'||p==='' ) return 'home';                                                                                                     
+common.js             3567   /* Plain <a href="login.html">/register.html links (header, menus, prompts):                                                                           
+common.js             3570   /* Clean-URL aware page-name normalization: /login and login.html both mean login.html. */                                                             
+common.js             3573       var CLEAN_AUTH = { '/login': 'login.html', '/register': 'register.html', '/forgot-password': 'forgot-password.html', '/offline': 'offline.html' }; 
+common.js             3587     if (target !== 'login.html' && target !== 'register.html') return;                                                                                   
+common.js             3590     if (current === target || current === 'login.html' || current === 'register.html' || current === 'forgot-password.html' || current === 'offline.ht...
+home-address.js          1 (function(){"use strict";function g(a){if(!a||!a.length)return"????? ???? ??? ?? ??? ????";var d=a.find(function(x){return x.isDefault})||a[0];return ...
+pwa.js                   3    - Registers sw.js (next to index.html) with scope "./" on all pages                                                                                   
+site-page.js             1 /* Public CMS page renderer: /page.html?slug=xxx -> GET /api/pages/:slug (DB content) */                                                                 
+account.js             118   var ADMIN_PANEL_URL = 'admin/index.html';                                                                                                              
+account.js             294   /* -- Dedicated notifications page (account-notifications.html) -- */                                                                                  
+account.js             917       if (href.includes(page) || (page === 'dashboard' && (href === '/account' || href === 'account.html'))) {                                           
+account.js             925      On any other account page, and on contact.html which reuses the same                                                                                
+auth.js                 10      When the user was sent to login.html from another storefront page,                                                                                  
+auth.js                 16     return s.indexOf('login.html') !== -1 || s.indexOf('register.html') !== -1 ||                                                                        
+auth.js                 17            s.indexOf('forgot-password.html') !== -1 || s.indexOf('/admin') !== -1 ||                                                                     
+auth.js                 18            s.indexOf('offline.html') !== -1;                                                                                                             
+auth.js                 98                         window.location.href = 'admin/index.html';                                                                                       
+auth.js                107               setTimeout(function() { window.location.href = isAdmin ? 'admin/index.html' : getPostLoginUrl(); }, 800);                                  
+checkout.js            263        cart. Two false-empty cases resulted in a wrong redirect to account-cart.html:                                                                    
+checkout.js            265        (b) stale/empty server cart wiping a valid local cart (account-cart.html renders                                                                  
+checkout.js            269        to the server). Only when BOTH are empty is account-cart.html correct. */                                                                         
+common.js             1357     <a href="/" class="nav-link ' + isActive('index.html') + '">' + Icons.home + ' ???? ????</a>\                                                        
+common.js             1358     <a href="/shop" class="nav-link ' + isActive('shop.html') + '">' + Icons.store + ' ???????</a>\                                                      
+common.js             1359     <a href="/brands" class="nav-link ' + isActive('brands.html') + '">' + Icons.star + ' ??????</a>\                                                    
+common.js             1360     <a href="/articles" class="nav-link ' + isActive('articles.html') + '">' + Icons.layers + ' ??????</a>\                                              
+common.js             1361     <a href="/contact" class="nav-link ' + isActive('contact.html') + '">' + Icons.phone + ' ???? ?? ??</a>\                                             
+common.js             1362     <a href="/about" class="nav-link ' + isActive('about.html') + '">' + Icons.infoCircle + ' ?????? ??</a>\                                             
+common.js             1598   var CHAT_HIDDEN_PAGES = ['login.html', 'register.html', 'forgot-password.html', 'checkout.html', 'checkout-step4.html', 'offline.html'];               
+common.js             2149       if (_currentPage === 'index.html') {                                                                                                               
+common.js             2332           '/': 'index.html',                                                                                                                             
+common.js             2333           '/shop': 'shop.html',                                                                                                                          
+common.js             2334           '/brands': 'brands.html',                                                                                                                      
+common.js             2335           '/categories': 'categories.html',                                                                                                              
+common.js             2336           '/articles': 'articles.html',                                                                                                                  
+common.js             2337           '/login': 'login.html',                                                                                                                        
+common.js             2338           '/register': 'register.html',                                                                                                                  
+common.js             2339           '/forgot-password': 'forgot-password.html',                                                                                                    
+common.js             2340           '/offline': 'offline.html',                                                                                                                    
+common.js             2341           '/cart': 'account-cart.html',                                                                                                                  
+common.js             2342           '/account': 'account.html',                                                                                                                    
+common.js             2343           '/account/orders': 'account-orders.html',                                                                                                      
+common.js             2344           '/account/profile': 'account-profile.html',                                                                                                    
+common.js             2345           '/account/addresses': 'account-addresses.html',                                                                                                
+common.js             2346           '/account/wishlist': 'account-wishlist.html',                                                                                                  
+common.js             2347           '/account/notifications': 'account-notifications.html',                                                                                        
+common.js             2348           '/checkout': 'checkout.html',                                                                                                                  
+common.js             2349           '/checkout/step1': 'checkout-step1.html',                                                                                                      
+common.js             2350           '/checkout/step2': 'checkout-step2.html',                                                                                                      
+common.js             2351           '/checkout/step3': 'checkout-step3.html',                                                                                                      
+common.js             2352           '/checkout/step4': 'checkout-step4.html',                                                                                                      
+common.js             2353           '/about': 'about.html',                                                                                                                        
+common.js             2354           '/contact': 'contact.html',                                                                                                                    
+common.js             2355           '/faq': 'faq.html',                                                                                                                            
+common.js             2356           '/returns': 'returns.html',                                                                                                                    
+common.js             2357           '/shipping': 'shipping.html',                                                                                                                  
+common.js             2358           '/privacy': 'privacy.html',                                                                                                                    
+common.js             2359           '/terms': 'terms.html',                                                                                                                        
+common.js             2360           '/authenticity': 'authenticity.html',                                                                                                          
+common.js             2361           '/pricing': 'pricing.html'                                                                                                                     
+common.js             2366           return { product: 'product.html', category: 'category.html', brand: 'brand-detail.html', article: 'article-detail.html', page: 'page.html' }...
+common.js             2368         if (/^\/account\/orders\/[^\/]+\/?$/.test(p)) return 'account-order-detail.html';                                                                
+common.js             2369         var f = p.split('/').pop() || 'index.html';                                                                                                      
+common.js             2370         return f.split('?')[0].split('#')[0] || 'index.html';                                                                                            
+common.js             2371       }catch(e){ return 'index.html'; }                                                                                                                  
+common.js             2388           'index.html': '/',                                                                                                                             
+common.js             2389           'shop.html': '/shop',                                                                                                                          
+common.js             2390           'brands.html': '/brands',                                                                                                                      
+common.js             2391           'categories.html': '/categories',                                                                                                              
+common.js             2392           'articles.html': '/articles',                                                                                                                  
+common.js             2393           'login.html': '/login',                                                                                                                        
+common.js             2394           'register.html': '/register',                                                                                                                  
+common.js             2395           'forgot-password.html': '/forgot-password',                                                                                                    
+common.js             2396           'offline.html': '/offline',                                                                                                                    
+common.js             2397           'account.html': '/account',                                                                                                                    
+common.js             2398           'account-cart.html': '/cart',                                                                                                                  
+common.js             2399           'account-orders.html': '/account/orders',                                                                                                      
+common.js             2400           'account-profile.html': '/account/profile',                                                                                                    
+common.js             2401           'account-addresses.html': '/account/addresses',                                                                                                
+common.js             2402           'account-wishlist.html': '/account/wishlist',                                                                                                  
+common.js             2403           'account-notifications.html': '/account/notifications',                                                                                        
+common.js             2404           'checkout.html': '/checkout',                                                                                                                  
+common.js             2405           'checkout-step1.html': '/checkout/step1',                                                                                                      
+common.js             2406           'checkout-step2.html': '/checkout/step2',                                                                                                      
+common.js             2407           'checkout-step3.html': '/checkout/step3',                                                                                                      
+common.js             2408           'checkout-step4.html': '/checkout/step4',                                                                                                      
+common.js             2409           'about.html': '/about',                                                                                                                        
+common.js             2410           'contact.html': '/contact',                                                                                                                    
+common.js             2411           'faq.html': '/faq',                                                                                                                            
+common.js             2412           'returns.html': '/returns',                                                                                                                    
+common.js             2413           'shipping.html': '/shipping',                                                                                                                  
+common.js             2414           'privacy.html': '/privacy',                                                                                                                    
+common.js             2415           'terms.html': '/terms',                                                                                                                        
+common.js             2416           'authenticity.html': '/authenticity',                                                                                                          
+common.js             2417           'pricing.html': '/pricing'                                                                                                                     
+common.js             2422           if (f === 'product.html' && r) canon = '/product/' + encodeURIComponent(r);                                                                    
+common.js             2423           else if (f === 'category.html' && r) canon = '/category/' + encodeURIComponent(r);                                                             
+common.js             2424           else if (f === 'brand-detail.html' && r) canon = '/brand/' + encodeURIComponent(r);                                                            
+common.js             2425           else if (f === 'article-detail.html' && r) canon = '/article/' + encodeURIComponent(r);                                                        
+common.js             2426           else if (f === 'page.html' && r) canon = '/page/' + encodeURIComponent(r);                                                                     
+common.js             2427           else if (f === 'account-order-detail.html' && r) canon = '/account/orders/' + encodeURIComponent(r);                                           
+common.js             2438         if(p==='index.html'||p==='' ) return 'home';                                                                                                     
+common.js             3171   /* Plain <a href="login.html">/register.html links (header, menus, prompts):                                                                           
+common.js             3174   /* Clean-URL aware page-name normalization: /login and login.html both mean login.html. */                                                             
+common.js             3177       var CLEAN_AUTH = { '/login': 'login.html', '/register': 'register.html', '/forgot-password': 'forgot-password.html', '/offline': 'offline.html' }; 
+common.js             3191     if (target !== 'login.html' && target !== 'register.html') return;                                                                                   
+common.js             3194     if (current === target || current === 'login.html' || current === 'register.html' || current === 'forgot-password.html' || current === 'offline.ht...
+home-address.js          1 (function(){"use strict";function g(a){if(!a||!a.length)return"????? ???? ??? ?? ??? ????";var d=a.find(function(x){return x.isDefault})||a[0];return ...
+pwa.js                   3    - Registers sw.js (next to index.html) with scope "./" on all pages                                                                                   
+
+
+
