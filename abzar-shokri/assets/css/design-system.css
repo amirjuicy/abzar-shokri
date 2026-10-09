@@ -137,6 +137,15 @@
   --radius-full: 9999px; /* pills: tags, chips, avatars, toggles */
   --radius-circle: 50%;  /* genuinely circular elements */
 
+  /* ── Form-card inputs ────────────────────────────────────────
+     Shared sizing consumed by .contact-form-card .input and
+     .ac-panel--form .input (desktop 44px/13.5px -> ≤900px 48px/14px).
+     Single source of truth for both files. */
+  --form-card-input-height:           44px;
+  --form-card-input-font-size:        13.5px;
+  --form-card-input-height-mobile:    48px;
+  --form-card-input-font-size-mobile: 14px;
+
   /* ── Transitions ────────────────────────────────────────────── */
   --transition-fast:   150ms ease-out;
   --transition-base:   200ms ease-out;

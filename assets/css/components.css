@@ -191,6 +191,82 @@
   pointer-events: none;
 }
 
+/* ── Form-control states (shared a11y baseline) ─────────────────────
+   Scope: input / textarea / select only. Buttons and checkbox/radio
+   are untouched, and the intentional page-specific focus treatments
+   (auth, contact, account-contact, header & mobile search) are
+   excluded below so their current appearance is preserved. */
+
+/* Keyboard-only focus indicator; mouse focus keeps its current look. */
+input:focus-visible:not(:where([type="checkbox"], [type="radio"], [type="hidden"])),
+textarea:focus-visible,
+select:focus-visible {
+  outline: var(--border-width-2) solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Same indicator for the shared control classes, so a page-local
+   `outline: none` on :focus cannot hide it (checkout steps, footer). */
+html .input:focus-visible,
+html .search-input:focus-visible,
+html .shop-sort:focus-visible,
+html .footer-newsletter__input:focus-visible {
+  outline: var(--border-width-2) solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Intentional page-specific focus appearances stay exactly as they are. */
+.contact-form-card .input:focus-visible,
+.ac-panel--form .input:focus-visible,
+.ac-reply .input:focus-visible,
+.header-search .search-input:focus-visible,
+html .mobile-header__search-input:focus-visible,
+body.auth-standalone .auth-box .input:focus-visible {
+  outline: none;
+  outline-offset: 0;
+}
+
+/* Disabled: the UA already blocks interaction, make it visibly distinct. */
+input:disabled:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+textarea:disabled:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+select:disabled:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.input:disabled:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.search-input:disabled:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.shop-sort:disabled:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+  background-color: var(--color-gray-50);
+}
+
+/* Read-only: still readable and selectable, but clearly not editable. */
+input[readonly]:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+textarea[readonly]:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+  cursor: default;
+}
+
+.input[readonly]:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.search-input[readonly]:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.shop-sort[readonly]:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+  background-color: var(--color-gray-50);
+}
+
+/* Validation error hook (styling only, no JS/validation logic added):
+   danger border + ring, with a doubled border weight so the state is
+   never signalled by colour alone. */
+input[aria-invalid="true"]:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+input.is-invalid:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+textarea[aria-invalid="true"]:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+textarea.is-invalid:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+select[aria-invalid="true"]:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+select.is-invalid:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+  border-color: var(--color-danger);
+  border-width: var(--border-width-2);
+  border-style: solid;
+  box-shadow: 0 0 0 3px var(--color-danger-50);
+}
+
 /* ── Cards ──────────────────────────────────────────────────── */
 .card {
   background-color: var(--bg-surface); border-radius: var(--radius-xl);

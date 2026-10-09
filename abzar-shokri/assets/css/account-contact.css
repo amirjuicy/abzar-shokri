@@ -289,10 +289,10 @@ div.ac-row--static .ac-row__chevron { display: none; }
 }
 .ac-panel--form .input-label { font-size: 12px; font-weight: 600; color: #3f4064; }
 .ac-panel--form .input {
-  height: 44px; border-radius: var(--radius-md);
+  height: var(--form-card-input-height); border-radius: var(--radius-md);
   border: 1px solid #e0e0e2;
   background: #fff;
-  font-size: 13.5px;
+  font-size: var(--form-card-input-font-size);
   font-family: inherit;
   width: 100%;
   transition: border-color .15s, box-shadow .15s;
@@ -377,7 +377,7 @@ div.ac-row--static .ac-row__chevron { display: none; }
   .ac-contact__split { grid-template-columns: 1fr; gap: 12px; }
   .ac-map { height: 170px; }
   .ac-form__grid { grid-template-columns: 1fr; gap: 0; }
-  .ac-panel--form .input { height: 48px; font-size: 14px; }
+  .ac-panel--form .input { height: var(--form-card-input-height-mobile); font-size: var(--form-card-input-font-size-mobile); }
   .ac-panel--form textarea.input { min-height: 120px; }
   .ac-form__submit { min-height: 48px; }
 }

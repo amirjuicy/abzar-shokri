@@ -706,6 +706,21 @@
   text-decoration: none;
   text-align: center;
 }
+/* checkout-step1/2 used to redefine `.input` in each page's inline <style>.
+   Only the declarations that actually differ from components.css `.input`
+   are kept: padding 12px (canonical is 8px 12px) and font-size, which must
+   stay 14px — the inline rule also outranked this file's ≤430px
+   `.input { font-size: 16px }` iOS-zoom rule (line ~962).
+   Everything else in the inline rule (border, radius, width, box-sizing,
+   background, color, font-family) already matched the canonical value and
+   was pure duplicate cascade; `.input:focus` was fully redundant too.
+   Scoped to the two step forms: checkout-step3/step4 ship no `.input`
+   override and must keep the canonical definition untouched. */
+#step1-form .input,
+#step2-form .input {
+  padding: 12px;
+  font-size: var(--font-size-base);
+}
 .checkout-layout { display: grid; grid-template-columns: 1fr 380px; gap: var(--space-6); padding: var(--space-6) 0; align-items: start; }
 .checkout-section { background: var(--bg-surface); border: var(--border-width) solid var(--border-color-light); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-4); }
 .checkout-section__title { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); margin-bottom: var(--space-4); display: flex; align-items: center; gap: var(--space-2); }

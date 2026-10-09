@@ -424,10 +424,10 @@ div.contact-method-card .contact-method-card__chevron{opacity:.6}
   color: #3f4064;
 }
 .contact-form-card .input{
-  height: 44px; border-radius: var(--radius-md);
+  height: var(--form-card-input-height); border-radius: var(--radius-md);
   border: 1px solid #e0e0e2;
   background: #fff;
-  font-size: 13.5px;
+  font-size: var(--form-card-input-font-size);
   transition: border-color .15s, box-shadow .15s;
 }
 .contact-form-card .input:focus{
@@ -513,7 +513,7 @@ div.contact-method-card .contact-method-card__chevron{opacity:.6}
   .contact-map-card{border-radius:var(--radius-xl)}
   .contact-map-card__body{height:170px}
   .contact-form-card{ border-radius: var(--radius-xl); padding:14px; border-color:#ececef}
-  .contact-form-card .input{height:48px; font-size:14px; border-radius:var(--radius-md)}
+  .contact-form-card .input{height:var(--form-card-input-height-mobile); font-size:var(--form-card-input-font-size-mobile); border-radius:var(--radius-md)}
   .contact-form-card textarea.input{min-height:110px}
   .contact-form-card .btn-primary{min-height:48px; font-size:14px}
 }

@@ -171,11 +171,10 @@ body.auth-standalone .auth-box .input-label {
   display: block;
 }
 body.auth-standalone .auth-box .input {
-  min-height: 48px; border-radius: var(--radius-md);
+  min-height: 48px;
   background: #fafafa;
   border: 1.5px solid #e6e6e6;
   padding: 12px 14px;
-  font-size: var(--font-size-base);
   transition: border-color 150ms ease-out, box-shadow 150ms ease-out, background 150ms ease-out;
 }
 body.auth-standalone .auth-box .input::placeholder { color: #b5b5b5; }
