@@ -84,7 +84,7 @@
 // pages that load header.css but not desktop.css (e.g. /page/:ref), without
 // affecting the hover background (kept below the bell's hover specificity).
 // Bump so cache-first clients pick the CSS up.
-var CACHE_NAME = 'abzar-shokri-v36';
+var CACHE_NAME = 'abzar-shokri-v37';
 var OFFLINE_URL = 'offline.html';
 
 var APP_SHELL = [

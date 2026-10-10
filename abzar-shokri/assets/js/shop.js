@@ -114,7 +114,7 @@
     if (catContainer) {
       catContainer.innerHTML = AppData.categories.map(function(c) {
         var checked = filters.categories.includes(c.name) ? 'checked' : '';
-        var catIcon = (c.icon && Icons[c.icon]) ? Icons[c.icon] : Icons.package;
+        var catIcon = getCategoryIcon(c.icon) || Icons.package;
         return '<label class="filter-option"><input type="checkbox" value="' + c.name + '" ' + checked + ' onchange="ShopFilter.toggleCategory(this.value, this.checked)"><span class="filter-option__icon">' + catIcon + '</span><span>' + c.name + '</span><span class="filter-option__count">' + c.count + '</span></label>';
       }).join('');
     }

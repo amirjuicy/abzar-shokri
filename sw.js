@@ -37,7 +37,7 @@
 // fetch with retry + explicit error instead of an endless loading
 // placeholder). Bump so persistent clients drop stale caches (including any
 // stale admin-hero-slides.js) and pick up the fixed loader.
-var CACHE_NAME = 'abzar-shokri-v25';
+var CACHE_NAME = 'abzar-shokri-v26';
 var OFFLINE_URL = 'offline.html';
 
 var APP_SHELL = [

@@ -52,6 +52,23 @@
   var DEL_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
   var FOLDER_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
 
+  /* Category illustration assigned via the media gallery (image URL/path
+     stored in c.icon); plain icon names keep the default folder glyph. */
+  function catThumb(c) {
+    var ic = c && c.icon;
+    if (typeof ic === 'string' && /^(https?:|\/)/.test(ic)) {
+      return '<img src="' + esc(ic) + '" alt="" loading="lazy" style="width:24px;height:24px;object-fit:contain">';
+    }
+    return FOLDER_SVG;
+  }
+  function syncIconPreview() {
+    var inp = $('#adm-cm-icon'), prev = $('#adm-cm-icon-preview');
+    if (!inp || !prev) return;
+    var v = inp.value.trim();
+    if (v) { prev.src = v; prev.style.visibility = 'visible'; }
+    else { prev.removeAttribute('src'); prev.style.visibility = 'hidden'; }
+  }
+
   function subNames(c) {
     if (Array.isArray(c.subcategories)) return c.subcategories.filter(Boolean).map(String);
     return [];
@@ -78,7 +95,7 @@
         var pct = Math.max(4, Math.round(((Number(c.count) || 0) / max) * 100));
         var subs = subNames(c).slice(0, 3).join('، ');
         return '<div class="adm-cat" data-id="' + c.id + '">' +
-          '<span class="adm-cat__icon">' + FOLDER_SVG + '</span>' +
+          '<span class="adm-cat__icon">' + catThumb(c) + '</span>' +
           '<div class="adm-cat__meta">' +
           '<span class="adm-cat__name">' + esc(c.name) + '</span>' +
           '<span class="adm-cat__count">' + fa(c.count || 0) + ' محصول' +
@@ -116,6 +133,7 @@
     $('#adm-cm-id').value = '';
     $('#adm-cm-title').textContent = 'افزودن دسته';
     $('#adm-cm-submit').textContent = 'ذخیره دسته';
+    syncIconPreview();
     openModal(modal);
   }
   function openEdit(id) {
@@ -124,6 +142,8 @@
     $('#adm-cm-id').value = c.id;
     $('#adm-cm-name').value = c.name || '';
     $('#adm-cm-slug').value = c.slug || '';
+    $('#adm-cm-icon').value = c.icon || '';
+    syncIconPreview();
     $('#adm-cm-desc').value = c.description || '';
     $('#adm-cm-subs').value = subNames(c).join('\n');
     $('#adm-cm-title').textContent = 'ویرایش دسته';
@@ -132,6 +152,8 @@
   }
 
   if (searchInput) searchInput.addEventListener('input', render);
+  var iconInput = $('#adm-cm-icon');
+  if (iconInput) iconInput.addEventListener('input', syncIconPreview);
   var addBtn = $('#adm-add-category-btn');
   if (addBtn) addBtn.addEventListener('click', function (e) { e.preventDefault(); openAdd(); });
 
@@ -182,6 +204,7 @@
     var id = $('#adm-cm-id').value;
     var name = $('#adm-cm-name').value.trim();
     var slug = $('#adm-cm-slug').value.trim();
+    var icon = $('#adm-cm-icon').value.trim();
     var desc = $('#adm-cm-desc').value.trim();
     var subs = $('#adm-cm-subs').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
     if (!name) { toast('نام دسته الزامی است', 'danger'); $('#adm-cm-name').focus(); return; }
@@ -190,7 +213,7 @@
     })[0];
     if (slug && dup) { toast('این نامک قبلاً ثبت شده است', 'danger'); $('#adm-cm-slug').focus(); return; }
     if (!useApi) { toast('حالت فقط‌خواندن فعال است', 'danger'); return; }
-    var payload = { name: name, description: desc, subcategories: subs };
+    var payload = { name: name, description: desc, subcategories: subs, icon: icon };
     if (slug) payload.slug = slug;
     busy = true;
     try {

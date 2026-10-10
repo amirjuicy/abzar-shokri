@@ -118,8 +118,20 @@
   }
 
   function adminLogout() {
+    var adminSession = getAdminSession();
+    var adminToken = adminSession && adminSession.token;
     var done = function () {
       setAdminSession(null);
+      /* A storefront login for this same admin mirrors the token into
+         as_session — drop it so the storefront does not stay logged in as
+         "admin:<id>" after a panel logout. Storefront sessions with a
+         different token (unrelated customers) are left untouched. */
+      try {
+        var storefront = JSON.parse(localStorage.getItem('as_session') || 'null');
+        if (storefront && storefront.token && adminToken && storefront.token === adminToken) {
+          localStorage.removeItem('as_session');
+        }
+      } catch (e) {}
       notifyAdminAuthChange();
       return { success: true };
     };

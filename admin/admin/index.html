@@ -486,6 +486,8 @@
               <div class="adm-toolbar__filters">
                 <button type="button" class="adm-chip is-active" data-status="all">همه <span class="adm-chip__count">۳۴۰</span></button>
                 <button type="button" class="adm-chip" data-status="pending">در انتظار پرداخت <span class="adm-chip__count">۲۸</span></button>
+                <button type="button" class="adm-chip" data-status="awaiting_payment_approval">در انتظار تأیید پرداخت <span class="adm-chip__count">۰</span></button>
+                <button type="button" class="adm-chip" data-status="awaiting_order_approval">در انتظار تأیید سفارش <span class="adm-chip__count">۰</span></button>
                 <button type="button" class="adm-chip" data-status="processing">در حال پردازش <span class="adm-chip__count">۴۵</span></button>
                 <button type="button" class="adm-chip" data-status="shipped">ارسال‌شده <span class="adm-chip__count">۹۶</span></button>
                 <button type="button" class="adm-chip" data-status="delivered">تحویل‌شده <span class="adm-chip__count">۱۵۱</span></button>
@@ -1802,25 +1804,54 @@
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                   گالری تصاویر
                 </h2>
-                <span class="adm-card__sub">همه تصاویر آپلودشده سایت — ذخیره‌سازی در assets/images</span>
+                <span class="adm-card__sub">مدیریت پوشه‌ها و تصاویر — ذخیره‌سازی در assets/images</span>
               </div>
               <div class="adm-card__actions">
                 <label class="btn btn-accent btn-sm" style="cursor:pointer">آپلود تصویر<input type="file" id="adm-gallery-file" accept="image/*" style="display:none"></label>
+                <button type="button" class="btn btn-secondary btn-sm" id="adm-gallery-new-folder">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  پوشه جدید
+                </button>
                 <button type="button" class="btn btn-secondary btn-sm" id="adm-gallery-refresh">به‌روزرسانی</button>
               </div>
             </div>
-            <div class="adm-toolbar">
-              <div class="adm-search">
-                <input type="search" id="adm-gallery-search" placeholder="جستجوی تصویر… (نام فایل)" aria-label="جستجوی تصویر">
+            <!-- Breadcrumb navigation -->
+            <div class="adm-toolbar" style="border-bottom:1px solid var(--border-color-light);padding-bottom:12px">
+              <nav class="adm-breadcrumb" id="adm-gallery-breadcrumb" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--text-muted);margin-bottom:8px">
+                <button type="button" class="adm-breadcrumb__item" data-path="" style="background:none;border:none;color:var(--color-primary);cursor:pointer;padding:2px 6px;border-radius:4px">ریشه</button>
+              </nav>
+              <div class="adm-search" style="flex:1;max-width:320px">
+                <input type="search" id="adm-gallery-search" placeholder="جستجوی نام فایل/پوشه…" aria-label="جستجوی گالری">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               </div>
-              <span class="adm-card__sub" id="adm-gallery-count"></span>
             </div>
-            <div class="adm-table-wrap">
-              <table class="adm-table" id="adm-gallery-table">
-                <thead><tr><th>پیش‌نمایش</th><th>نام فایل</th><th>مسیر / URL</th><th>حجم</th><th>عملیات</th></tr></thead>
-                <tbody><tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-muted)">در حال بارگذاری…</td></tr></tbody>
-              </table>
+            <!-- Bulk actions toolbar (shown when items selected) -->
+            <div class="adm-toolbar" id="adm-gallery-bulk-bar" style="display:none;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-color-light);margin-bottom:8px;background:var(--color-primary-light);border-radius:var(--radius-md);padding:10px 12px">
+              <span id="adm-gallery-selected-count" style="font-weight:500;color:var(--color-primary)"></span>
+              <button type="button" class="btn btn-danger btn-sm" id="adm-gallery-bulk-delete" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                حذف انتخاب‌ها
+              </button>
+              <div style="display:flex;align-items:center;gap:6px;margin-right:auto">
+                <span style="font-size:12px;color:var(--text-muted)">انتقال به:</span>
+                <select id="adm-gallery-move-dest" class="input" style="max-width:200px;height:32px;font-size:12px;padding:0 8px" disabled>
+                  <option value="">— انتخاب پوشه مقصد —</option>
+                </select>
+                <button type="button" class="btn btn-secondary btn-sm" id="adm-gallery-bulk-move" disabled>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 12 16 19 9"/><path d="M12 16V4"/></svg>
+                  انتقال
+                </button>
+              </div>
+              <button type="button" class="btn btn-ghost btn-sm" id="adm-gallery-clear-selection">انصراف</button>
+            </div>
+            <!-- Folder/Files grid -->
+            <div class="adm-gallery-grid-wrap" id="adm-gallery-grid-wrap">
+              <div id="adm-gallery-grid" class="adm-gallery-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:8px 0">
+                <div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:40px">در حال بارگذاری…</div>
+              </div>
+            </div>
+            <div class="adm-table-footer" style="padding-top:12px;border-top:1px solid var(--border-color-light);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+              <span class="adm-table-footer__meta" id="adm-gallery-count"></span>
             </div>
           </div>
         </section>
@@ -2003,45 +2034,6 @@
         <!-- ─── Settings ─────────────────────────────────────── -->
         <section class="admin-view" data-view="settings">
           <div class="adm-settings-grid">
-
-            <form class="adm-card" data-settings-form>
-              <div class="adm-card__header">
-                <div class="adm-card__titles">
-                  <h2 class="adm-card__title">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    اطلاعات فروشگاه (فقط‌خواندنی)
-                  </h2>
-                  <span class="adm-card__sub">این مقادیر فقط از بخش <a href="#/store-info">اطلاعات فروشگاه</a> قابل ویرایش است</span>
-                </div>
-              </div>
-              <div class="adm-card__body">
-                <div class="adm-form-grid">
-                  <div class="adm-field adm-field--full">
-                    <label class="adm-field__label" for="s-name">نام فروشگاه</label>
-                    <input class="input" type="text" id="s-name" value="ابزار شکری" readonly disabled>
-                  </div>
-                  <div class="adm-field">
-                    <label class="adm-field__label" for="s-phone">تلفن</label>
-                    <input class="input" type="tel" id="s-phone" value="۰۲۱-۴۴۵۵۶۶۷۷" dir="ltr" style="text-align:right" readonly disabled>
-                  </div>
-                  <div class="adm-field">
-                    <label class="adm-field__label" for="s-email">ایمیل</label>
-                    <input class="input" type="email" id="s-email" value="info@abzar-shokri.com" dir="ltr" style="text-align:right" readonly disabled>
-                  </div>
-                  <div class="adm-field adm-field--full">
-                    <label class="adm-field__label" for="s-address">آدرس</label>
-                    <input class="input" type="text" id="s-address" value="تهران، خیابان ولیعصر، پلاک ۱۲۳۴، مجتمع تجاری ابزار شکری" readonly disabled>
-                  </div>
-                  <div class="adm-field adm-field--full">
-                    <label class="adm-field__label" for="s-desc">توضیح کوتاه فروشگاه</label>
-                    <textarea class="input" id="s-desc" readonly disabled>فروشگاه تخصصی ابزارآلات صنعتی و ساختمانی با بیش از ۱۰ سال تجربه در ارائه بهترین برندهای ابزار جهان به هموطنان عزیز.</textarea>
-                  </div>
-                </div>
-                <div class="adm-form-actions">
-                  <a href="#/store-info" class="btn btn-accent">ویرایش در اطلاعات فروشگاه</a>
-                </div>
-              </div>
-            </form>
 
             <form class="adm-card" data-settings-form>
               <div class="adm-card__header">
@@ -2726,6 +2718,14 @@
           <div class="adm-field">
             <label class="adm-field__label" for="adm-cm-color">رنگ</label>
             <input class="input" type="color" id="adm-cm-color" value="#1E88E5" style="height:42px;padding:4px">
+          </div>
+          <div class="adm-field adm-field--full">
+            <label class="adm-field__label" for="adm-cm-icon">تصویر دسته (اختیاری — از گالری رسانه)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <img id="adm-cm-icon-preview" alt="" style="width:42px;height:42px;object-fit:contain;border:1px solid var(--border-color-light,#eee);border-radius:var(--radius-md);background:#fff;flex-shrink:0">
+              <input class="input" type="text" id="adm-cm-icon" dir="ltr" placeholder="/assets/images/categories/power-tools.svg" style="flex:1;text-align:left">
+              <button type="button" class="btn btn-secondary btn-sm" data-media-target="adm-cm-icon">انتخاب</button>
+            </div>
           </div>
           <div class="adm-field adm-field--full">
             <label class="adm-field__label" for="adm-cm-desc">توضیح</label>

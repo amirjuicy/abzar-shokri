@@ -106,6 +106,26 @@
         <div class="pb-field"><label for="pb-padding">حاشیه داخلی (px)</label><input class="input" type="number" id="pb-padding" min="0" max="200" dir="ltr"></div>
       </div>
       <div class="pb-field"><label for="pb-radius">گردی گوشه (px)</label><input class="input" type="number" id="pb-radius" min="0" max="100" dir="ltr"></div>
+      <div class="pb-sec">موقعیت و ابعاد</div>
+      <div class="pb-grid">
+        <div class="pb-field"><label for="pb-x">X (px / %)</label><input class="input" type="text" id="pb-x" dir="ltr" placeholder="0 یا 50%"></div>
+        <div class="pb-field"><label for="pb-y">Y (px / %)</label><input class="input" type="text" id="pb-y" dir="ltr" placeholder="0 یا 50%"></div>
+      </div>
+      <div class="pb-grid">
+        <div class="pb-field"><label for="pb-w">عرض (px / %)</label><input class="input" type="text" id="pb-w" dir="ltr" placeholder="auto یا 50%"></div>
+        <div class="pb-field"><label for="pb-h">ارتفاع (px / %)</label><input class="input" type="text" id="pb-h" dir="ltr" placeholder="auto یا 50%"></div>
+      </div>
+      <div class="pb-field"><label for="pb-rotate">چرخش (درجه)</label><input class="input" type="number" id="pb-rotate" min="-360" max="360" step="1" dir="ltr"></div>
+      <div class="pb-field"><label class="pb-check"><input type="checkbox" id="pb-aspect"> قفل نسبت ابعاد</label></div>
+      <div class="pb-sec">ترتیب لایه</div>
+      <div class="pb-grid">
+        <div class="pb-field"><button type="button" class="btn btn-secondary" id="pb-layer-front">به 앞으로</button></div>
+        <div class="pb-field"><button type="button" class="btn btn-secondary" id="pb-layer-back">به عقب</button></div>
+      </div>
+      <div class="pb-grid">
+        <div class="pb-field"><button type="button" class="btn btn-secondary" id="pb-layer-forward">یک مرحله جلو</button></div>
+        <div class="pb-field"><button type="button" class="btn btn-secondary" id="pb-layer-backward">یک مرحله عقب</button></div>
+      </div>
       <div class="pb-note" id="pb-style-note" style="display:none">استایل عنوان صفحه فقط در پیش‌نمایش اعمال می‌شود و ذخیره نمی‌شود.</div>
     </div>
     <div class="pb-status" id="pb-status"></div>

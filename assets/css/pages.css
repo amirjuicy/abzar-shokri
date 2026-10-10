@@ -135,8 +135,8 @@
 /* Thumbnails */
 .pdp-thumbnails { display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; }
 .pdp-thumbnails::-webkit-scrollbar { display: none; }
-.pdp-thumb { width: 72px; height: 72px; flex-shrink: 0; border-radius: var(--radius-md); border: 1px solid var(--border-color-light); overflow: hidden; cursor: pointer; transition: border-color var(--transition-fast); display: flex; align-items: center; justify-content: center; background: var(--color-gray-100); }
-.pdp-thumb.is-active { border-color: var(--color-primary); }
+.pdp-thumb { flex-shrink: 0; border-radius: var(--radius-md); border: 1px solid var(--border-color-light); overflow: hidden; cursor: pointer; transition: border-color var(--transition-fast), box-shadow var(--transition-fast); background: var(--color-gray-100); }
+.pdp-thumb.is-selected { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-100); }
 .pdp-thumb:hover { border-color: var(--color-primary); }
 .pdp-thumb img { width: 100%; height: 100%; object-fit: contain; }
 
@@ -522,44 +522,6 @@
 .cart-charity-banner__chevron svg { width: 18px; height: 18px; }
 .cart-charity-banner__desc { font-size: var(--font-size-xs); color: var(--text-muted); line-height: 1.6; }
 
-/* Empty state (Digikala style) */
-.cart-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  padding: var(--space-10) var(--space-4) var(--space-6);
-  text-align: center;
-  background: var(--bg-surface);
-  border-radius: var(--radius-lg);
-  border: var(--border-width) solid var(--border-color-light);
-}
-.cart-empty-state__icon { color: var(--color-gray-400); opacity: 0.6; }
-.cart-empty-state__icon svg { width: 100px; height: 100px; }
-.cart-empty-state__title { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); color: var(--text-primary); margin: 0; }
-.cart-empty-state__text { font-size: var(--font-size-sm); color: var(--text-muted); max-width: 320px; line-height: var(--line-height-normal); margin: 0; }
-.cart-empty-state__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-5);
-  border: 2px solid var(--color-primary);
-  border-radius: var(--radius-md);
-  color: var(--color-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  text-decoration: none;
-  transition: all var(--transition-fast);
-  cursor: pointer;
-  background: transparent;
-  height: 42px;
-  min-width: 150px;
-}
-.cart-empty-state__btn svg { width: 18px; height: 18px; }
-.cart-empty-state__btn:hover { background: var(--color-primary-50); }
-
 /* ── Recent Products Carousel (Digikala-style) ─────────────── */
 .cart-recent-section {
   margin-top: var(--space-3);
@@ -727,6 +689,38 @@
 }
 
 /* ── Checkout ──────────────────────────────────────────────── */
+/* Step pages (checkout-step1..4) render in the standalone `co-` shell and
+   need slightly larger, bolder nav buttons than the canonical .btn.
+   Scoped to .co-wrap so this never leaks into the storefront checkout page.
+   No `border` shorthand here: this selector outranks .btn-primary/.btn-ghost
+   (0,2,0 vs 0,1,0), so setting border-color would erase their gold outline.
+   components.css .btn already supplies `border: 1px solid transparent`. */
+.co-wrap .btn {
+  flex: 1;
+  border-radius: var(--radius-md);
+  padding: 13px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+}
+/* checkout-step1/2 used to redefine `.input` in each page's inline <style>.
+   Only the declarations that actually differ from components.css `.input`
+   are kept: padding 12px (canonical is 8px 12px) and font-size, which must
+   stay 14px — the inline rule also outranked this file's ≤430px
+   `.input { font-size: 16px }` iOS-zoom rule (line ~962).
+   Everything else in the inline rule (border, radius, width, box-sizing,
+   background, color, font-family) already matched the canonical value and
+   was pure duplicate cascade; `.input:focus` was fully redundant too.
+   Scoped to the two step forms: checkout-step3/step4 ship no `.input`
+   override and must keep the canonical definition untouched. */
+#step1-form .input,
+#step2-form .input {
+  padding: 12px;
+  font-size: var(--font-size-base);
+}
 .checkout-layout { display: grid; grid-template-columns: 1fr 380px; gap: var(--space-6); padding: var(--space-6) 0; align-items: start; }
 .checkout-section { background: var(--bg-surface); border: var(--border-width) solid var(--border-color-light); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-4); }
 .checkout-section__title { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); margin-bottom: var(--space-4); display: flex; align-items: center; gap: var(--space-2); }
@@ -781,9 +775,6 @@
 .orders-table tr:hover { background: var(--color-gray-50); }
 .order-status { padding: 4px 12px; border-radius: var(--radius-full); font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); white-space: nowrap; }
 .order-status--pending { background: var(--color-warning-50); color: var(--color-warning); }
-.order-status--awaiting_payment_approval { background: var(--color-warning-50); color: var(--color-warning); }
-.order-status--awaiting_order_approval { background: var(--color-warning-50); color: var(--color-warning); }
-.order-status--approved { background: var(--color-success-50); color: var(--color-success); }
 .order-status--processing { background: var(--color-info-50); color: var(--color-info); }
 .order-status--shipping { background: var(--color-primary-50); color: var(--color-primary); }
 .order-status--delivered { background: var(--color-success-50); color: var(--color-success); }
@@ -922,8 +913,6 @@
   }
   .cart-item-row__image { width: 80px; height: 80px; }
   .cart-item-row__bottom { flex-wrap: wrap; }
-  .cart-empty-state { padding: var(--space-8) var(--space-4) var(--space-6); border-radius: var(--radius-lg); }
-  .cart-empty-state__icon svg { width: 80px; height: 80px; }
   .cart-recent-section { margin-top: var(--space-4); }
   .cart-recent-card__header { padding: var(--space-3) var(--space-4); flex-wrap: nowrap; }
   .cart-recent-card__title { font-size: 14px; }
@@ -953,8 +942,6 @@
   .cart-item-row { padding: var(--space-3); border-radius: var(--radius-md); }
   .cart-item-row__image { width: 80px; height: 80px; }
   .cart-card__header-inner { padding: var(--space-3) var(--space-4); }
-  .cart-empty-state { padding: var(--space-8) var(--space-4) var(--space-5); }
-  .cart-empty-state__icon svg { width: 80px; height: 80px; }
   .cart-charity-banner { padding: var(--space-2) var(--space-3); }
   .cart-charity-banner__desc { display: none; }
   .cart-recent__item { min-width: 120px; max-width: 140px; }

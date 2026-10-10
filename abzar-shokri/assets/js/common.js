@@ -311,7 +311,13 @@
     if (isAdminSession()) return Promise.resolve(getCurrentUser());
     return apiRequest('GET', '/auth/me').then(function (data) {
       if (data && data.user) {
-        cacheSessionUser(data.user, session.token);
+        /* The request may resolve after the session changed (e.g. logout
+           during a slow handshake). Only re-cache when this is still the
+           current session — never resurrect a cleared session. */
+        var fresh = getSession();
+        if (fresh && fresh.token && fresh.token === session.token) {
+          cacheSessionUser(data.user, session.token);
+        }
         try { refreshState(); } catch (e) {}
         try { pullCartFromServer(); } catch (e) {}
         try { pullWishlistFromServer(); } catch (e) {}
@@ -687,8 +693,25 @@
 
   function logout() {
     var session = getSession();
+    /* Storefront login mirrors admin tokens into as_admin_session (see login):
+       revoke and drop that half too. POST /auth/logout only deletes
+       customer_sessions rows, so without this the admin_sessions row stays
+       valid and /admin/ remains accessible after a storefront logout. */
+    var adminSession = null;
+    try { adminSession = readJSON('as_admin_session', null); } catch (e) {}
+    var adminToken = adminSession && adminSession.token;
+    var revokeAdmin = function () {
+      if (!adminToken || !apiAvailable()) return Promise.resolve();
+      try {
+        return fetch(API_BASE + '/api/admin/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+        }).catch(function () {});
+      } catch (e) { return Promise.resolve(); }
+    };
     var done = function () {
       setSession(null);
+      try { localStorage.removeItem('as_admin_session'); } catch (e) {}
       state.cart = [];
       state.wishlist = [];
       try { refreshHeaderAuth(); } catch (e) {}
@@ -696,10 +719,12 @@
       return { success: true };
     };
     if (session && session.token && apiAvailable()) {
-      return apiRequest('POST', '/auth/logout').catch(function () {}).then(done);
+      return apiRequest('POST', '/auth/logout').catch(function () {}).then(function () {
+        return revokeAdmin();
+      }).then(done);
     }
-    try { done(); } catch (e) {}
-    return Promise.resolve({ success: true });
+    var fallback = function () { try { done(); } catch (e) {} return { success: true }; };
+    try { return revokeAdmin().then(fallback); } catch (e) { return Promise.resolve(fallback()); }
   }
 
   function updateProfile(data) {
@@ -2353,13 +2378,13 @@ el.innerHTML = '\
     if (!dd || typeof AppData === 'undefined' || !AppData.categories) return;
     /* Build Digikala-style two-panel mega menu: left = category list, right = subcategories */
     var leftPanel = AppData.categories.map(function(cat, idx) {
-      var catIcon = (cat.icon && Icons[cat.icon]) ? Icons[cat.icon] : Icons.package;
+      var catIcon = getCategoryIcon(cat.icon) || Icons.package;
       var isActive = idx === 0 ? ' is-active' : '';
       return '<a href="/shop?category=' + cat.slug + '" class="mega-cat' + isActive + '" data-cat-index="' + idx + '" data-cat-slug="' + cat.slug + '">' + catIcon + '<span class="mega-cat__name">' + cat.name + '</span>' + Icons.chevronRight + '</a>';
     }).join('');
     /* Build subcategory panels (one per category) */
     var rightPanels = AppData.categories.map(function(cat, idx) {
-      var catIcon = (cat.icon && Icons[cat.icon]) ? Icons[cat.icon] : Icons.package;
+      var catIcon = getCategoryIcon(cat.icon) || Icons.package;
       var subs = cat.subcategories || [];
       var subLinks = subs.map(function(sub) {
         return '<a href="/shop?category=' + cat.slug + '" class="mega-sub__item"><span class="mega-sub__icon">' + catIcon + '</span><span>' + sub + '</span></a>';
@@ -2389,6 +2414,11 @@ el.innerHTML = '\
 
     if (headerEl) renderHeader(headerEl);
     if (mobileHeaderEl) renderMobileHeader(mobileHeaderEl);
+    /* Pages may ship pre-rendered (Visual Builder) header markup — including a
+       baked-in logged-in account menu. renderHeader preserves it, so always
+       re-sync just the auth area from live state on init; later async auth
+       changes (fetchMe/401/logout) already re-sync via their own paths. */
+    try { refreshHeaderAuth(); } catch (e) {}
     var _currentPage = storeFile().toLowerCase();
     if (!_currentPage) _currentPage = '/';
     if (footerEl) {

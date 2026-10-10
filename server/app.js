@@ -3707,7 +3707,7 @@ function mapTicket(t) {
   if (!t) return t;
   return {
     id: t.id, userId: t.user_id,
-    userName: t.user_name || '', userMobile: t.user_mobile || '',
+    userName: t.user_name || '', userMobile: t.user_mobile || '', userEmail: t.user_email || '',
     subject: t.subject || '',
     category: t.category || 'سایر',
     priority: VALID_TICKET_PRIORITIES.has(t.priority) ? t.priority : 'normal',
@@ -3725,7 +3725,7 @@ function ticketListJoins() {
 }
 function ticketListSelect() {
   return `t.*, TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS user_name,
-    u.mobile AS user_mobile, COALESCE(mc.n, 0) AS message_count,
+    u.mobile AS user_mobile, u.email AS user_email, COALESCE(mc.n, 0) AS message_count,
     lm.message AS last_message, lm.sender AS last_sender`;
 }
 // Admin: list with search (user/mobile/subject/ID) + status/priority filters + pagination.
@@ -4447,7 +4447,7 @@ api.put('/admin/hero-slides', requireAdmin, (req,res)=>{
 });
 
 if(process.env.NODE_ENV!=='production') api.get('/_test500', (req,res,next)=> next(new Error('intentional 500')));
-// ── Gallery (admin-only): list / upload / delete site images ──
+// ── Gallery (admin-only): list / upload / delete / move / folders ──
 // Uses the existing project assets location: assets/images (+ uploads subdir).
 // Auth: existing requireAdmin (admin_sessions tokens). No new auth system.
 const fs = require('fs');
@@ -4455,6 +4455,38 @@ const IMAGES_ROOT = path.join(__dirname, '..', 'assets', 'images');
 const UPLOADS_DIR = path.join(IMAGES_ROOT, 'uploads');
 try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch (_) {}
 const IMAGE_EXTS = new Set(['.png','.jpg','.jpeg','.gif','.webp','.svg','.avif','.bmp','.ico']);
+function isSafePath(full, root) {
+  const resolvedRoot = path.resolve(root);
+  const resolvedFull = path.resolve(full);
+  return resolvedFull === resolvedRoot || resolvedFull.startsWith(resolvedRoot + path.sep);
+}
+function statItem(full, rel) {
+  const stat = fs.statSync(full);
+  const isDir = stat.isDirectory();
+  const base = path.basename(full);
+  const item = { name: base, path: '/' + rel.replace(/\\/g, '/'), isDir, size: isDir ? 0 : stat.size, mtime: stat.mtime.toISOString() };
+  if (!isDir) { item.filename = base; item.url = '/assets/images/' + rel.replace(/\\/g, '/'); }
+  return item;
+}
+function listDir(relPath) {
+  const root = path.resolve(IMAGES_ROOT);
+  const target = relPath ? path.resolve(IMAGES_ROOT, relPath) : root;
+  if (!isSafePath(target, root)) return null;
+  if (!fs.existsSync(target) || !fs.statSync(target).isDirectory()) return null;
+  const entries = fs.readdirSync(target, { withFileTypes: true });
+  const dirs = [], files = [];
+  for (const e of entries) {
+    const full = path.join(target, e.name);
+    const rel = path.relative(root, full).replace(/\\/g, '/');
+    if (e.isDirectory()) { dirs.push(statItem(full, rel)); continue; }
+    const ext = path.extname(e.name).toLowerCase();
+    if (!IMAGE_EXTS.has(ext)) continue;
+    files.push(statItem(full, rel));
+  }
+  dirs.sort((a,b)=>a.name.localeCompare(b.name));
+  files.sort((a,b)=>a.name.localeCompare(b.name));
+  return { folders: dirs, files: files, currentPath: relPath ? '/' + relPath : '/' };
+}
 function galleryListFiles() {
   const out = [];
   function walk(dir) {
@@ -4467,7 +4499,7 @@ function galleryListFiles() {
       if (!IMAGE_EXTS.has(ext)) continue;
       let stat = null;
       try { stat = fs.statSync(full); } catch (_) { continue; }
-      const rel = path.relative(ROOT, full).replace(/\\/g, '/');
+      const rel = path.relative(path.join(__dirname, '..'), full).replace(/\\/g, '/');
       out.push({ filename: e.name, path: '/' + rel, url: '/' + rel, size: stat.size, mtime: stat.mtime.toISOString() });
     }
   }
@@ -4476,7 +4508,13 @@ function galleryListFiles() {
   return out;
 }
 const galleryStorage = multer.diskStorage({
-  destination: (req, file, cb) => { try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch (_) {} cb(null, UPLOADS_DIR); },
+  destination: (req, file, cb) => {
+    const folder = req.query.folder || '';
+    const target = folder ? path.resolve(IMAGES_ROOT, folder) : UPLOADS_DIR;
+    if (!isSafePath(target, IMAGES_ROOT)) return cb(new Error('Invalid folder'), null);
+    try { fs.mkdirSync(target, { recursive: true }); } catch (_) {}
+    cb(null, target);
+  },
   filename: (req, file, cb) => {
     const base = path.basename(file.originalname || 'image', path.extname(file.originalname || '')).replace(/[^a-zA-Z0-9\u0600-\u06FF._-]+/g, '_').slice(0, 80) || 'image';
     const ext = (path.extname(file.originalname || '').toLowerCase() || '.png').slice(0, 10);
@@ -4489,7 +4527,12 @@ function galleryFileFilter(req, file, cb) {
   cb(new Error('Only image files are allowed'));
 }
 const galleryUpload = multer({ storage: galleryStorage, fileFilter: galleryFileFilter, limits: { files: 1 } });
-api.get('/admin/gallery', requireAdmin, (req, res) => { res.json({ items: galleryListFiles() }); });
+api.get('/admin/gallery', requireAdmin, (req, res) => {
+  const relPath = String(req.query.path || '').replace(/^\/+/, '');
+  const result = listDir(relPath);
+  if (!result) return res.status(400).json({ error: 'Invalid path' });
+  res.json(result);
+});
 api.post('/admin/gallery/upload', requireAdmin, (req, res) => {
   galleryUpload.single('image')(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message || 'Upload failed' });
@@ -4498,19 +4541,106 @@ api.post('/admin/gallery/upload', requireAdmin, (req, res) => {
     res.status(201).json({ filename: req.file.filename, path: '/' + rel, url: '/' + rel, size: req.file.size });
   });
 });
+api.post('/admin/gallery/folder', requireAdmin, (req, res) => {
+  const parent = String(req.query.path || req.body?.path || '').replace(/^\/+/, '');
+  const name = String(req.body?.name || '').trim();
+  if (!name || /[\\/]/.test(name)) return res.status(400).json({ error: 'Invalid folder name' });
+  const parentPath = parent ? path.resolve(IMAGES_ROOT, parent) : path.resolve(IMAGES_ROOT);
+  if (!isSafePath(parentPath, IMAGES_ROOT)) return res.status(400).json({ error: 'Invalid path' });
+  const newFolder = path.join(parentPath, name);
+  if (!isSafePath(newFolder, IMAGES_ROOT)) return res.status(400).json({ error: 'Invalid path' });
+  try {
+    if (fs.existsSync(newFolder)) return res.status(409).json({ error: 'Folder already exists' });
+    fs.mkdirSync(newFolder, { recursive: true });
+    const rel = path.relative(path.join(__dirname, '..'), newFolder).replace(/\\/g, '/');
+    res.status(201).json({ name, path: '/' + rel, isDir: true });
+  } catch (e) { res.status(500).json({ error: 'Failed to create folder' }); }
+});
 api.delete('/admin/gallery', requireAdmin, (req, res) => {
   const rel = String(req.query.path || req.body?.path || '');
   if (!rel) return res.status(400).json({ error: 'path is required' });
   const noLead = rel.replace(/^\/+/, '');
-  const full = path.resolve(path.join(__dirname, '..'), noLead);
+  const full = path.resolve(IMAGES_ROOT, noLead);
   const root = path.resolve(IMAGES_ROOT);
-  if (full !== root && !full.startsWith(root + path.sep)) return res.status(400).json({ error: 'Invalid path' });
-  if (!IMAGE_EXTS.has(path.extname(full).toLowerCase())) return res.status(400).json({ error: 'Invalid path' });
+  if (!isSafePath(full, root)) return res.status(400).json({ error: 'Invalid path' });
   try {
-    if (!fs.existsSync(full) || !fs.statSync(full).isFile()) return res.status(404).json({ error: 'File not found' });
-    fs.unlinkSync(full);
+    if (!fs.existsSync(full)) return res.status(404).json({ error: 'Not found' });
+    const stat = fs.statSync(full);
+    if (stat.isFile()) {
+      if (!IMAGE_EXTS.has(path.extname(full).toLowerCase())) return res.status(400).json({ error: 'Invalid path' });
+      fs.unlinkSync(full);
+    } else if (stat.isDirectory()) {
+      fs.rmSync(full, { recursive: true, force: true });
+    }
     res.json({ ok: true });
   } catch (e) { return res.status(500).json({ error: 'Delete failed' }); }
+});
+api.post('/admin/gallery/bulk-delete', requireAdmin, (req, res) => {
+  const paths = Array.isArray(req.body?.paths) ? req.body.paths : [];
+  if (!paths.length) return res.status(400).json({ error: 'paths array required' });
+  const root = path.resolve(IMAGES_ROOT);
+  const results = { deleted: [], failed: [] };
+  for (const rel of paths) {
+    const noLead = String(rel).replace(/^\/+/, '');
+    const full = path.resolve(IMAGES_ROOT, noLead);
+    if (!isSafePath(full, root)) { results.failed.push({ path: rel, error: 'Invalid path' }); continue; }
+    try {
+      if (!fs.existsSync(full)) { results.failed.push({ path: rel, error: 'Not found' }); continue; }
+      const stat = fs.statSync(full);
+      if (stat.isFile()) {
+        if (!IMAGE_EXTS.has(path.extname(full).toLowerCase())) { results.failed.push({ path: rel, error: 'Invalid file type' }); continue; }
+        fs.unlinkSync(full);
+      } else if (stat.isDirectory()) {
+        fs.rmSync(full, { recursive: true, force: true });
+      }
+      results.deleted.push(rel);
+    } catch (e) { results.failed.push({ path: rel, error: e.message }); }
+  }
+  res.json(results);
+});
+api.post('/admin/gallery/move', requireAdmin, (req, res) => {
+  const paths = Array.isArray(req.body?.paths) ? req.body.paths : [];
+  const dest = String(req.body?.dest || '').replace(/^\/+/, '');
+  if (!paths.length || typeof dest !== 'string') return res.status(400).json({ error: 'paths array and dest required' });
+  const root = path.resolve(IMAGES_ROOT);
+  const destFull = dest ? path.resolve(IMAGES_ROOT, dest) : root;
+  if (!isSafePath(destFull, root) || !fs.existsSync(destFull) || !fs.statSync(destFull).isDirectory()) {
+    return res.status(400).json({ error: 'Invalid destination folder' });
+  }
+  const results = { moved: [], failed: [] };
+  for (const rel of paths) {
+    const noLead = String(rel).replace(/^\/+/, '');
+    const src = path.resolve(IMAGES_ROOT, noLead);
+    if (!isSafePath(src, root)) { results.failed.push({ path: rel, error: 'Invalid path' }); continue; }
+    if (!fs.existsSync(src)) { results.failed.push({ path: rel, error: 'Not found' }); continue; }
+    const base = path.basename(src);
+    const target = path.join(destFull, base);
+    if (!isSafePath(target, root)) { results.failed.push({ path: rel, error: 'Invalid destination' }); continue; }
+    if (fs.existsSync(target)) { results.failed.push({ path: rel, error: 'Destination already exists' }); continue; }
+    try {
+      fs.renameSync(src, target);
+      const newRel = path.relative(path.join(__dirname, '..'), target).replace(/\\/g, '/');
+      results.moved.push({ from: rel, to: '/' + newRel });
+    } catch (e) { results.failed.push({ path: rel, error: e.message }); }
+  }
+  res.json(results);
+});
+api.get('/admin/gallery/folders', requireAdmin, (req, res) => {
+  const out = [];
+  function walk(dir, relPrefix) {
+    let entries = [];
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (_) { return; }
+    for (const e of entries) {
+      if (!e.isDirectory()) continue;
+      const full = path.join(dir, e.name);
+      const rel = (relPrefix ? relPrefix + '/' : '') + e.name;
+      out.push({ name: e.name, path: '/' + rel });
+      walk(full, rel);
+    }
+  }
+  walk(IMAGES_ROOT, '');
+  out.sort((a, b) => a.path.localeCompare(b.path));
+  res.json({ folders: out });
 });
 // ── Content pages (DB-backed, admin CRUD, public read) ──
 function ensurePagesTable(){

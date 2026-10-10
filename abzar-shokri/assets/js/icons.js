@@ -146,5 +146,11 @@ function getIcon(name, size) {
  * @returns {string} SVG markup
  */
 function getCategoryIcon(iconName) {
+  /* Category illustrations assigned via the media gallery are stored as
+     image URLs/paths; render those as <img>, otherwise resolve icon names. */
+  if (typeof iconName === 'string' && /^(https?:|\/)/.test(iconName)) {
+    var src = iconName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return '<img src="' + src + '" width="32" height="32" alt="" loading="lazy" style="width:32px;height:32px;object-fit:contain">';
+  }
   return getIcon(iconName, 32);
 }

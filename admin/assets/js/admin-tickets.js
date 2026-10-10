@@ -169,7 +169,7 @@
       var closed = d.status === 'closed';
       m.querySelector('#adm-tk-title').textContent = 'تیکت #' + d.id + ' — ' + (d.subject || '');
       m.querySelector('#adm-tk-meta').innerHTML = statusBadge(d.status) + ' ' + priorityBadge(d.priority)
-        + ' <span class="adm-table__sub">' + esc(d.userName || d.userId) + ' — <span dir="ltr">' + esc(d.userMobile || '') + '</span></span>';
+        + ' <span class="adm-table__sub">' + esc(d.userName || d.userId) + ' — <span dir="ltr">' + esc(d.userMobile || '') + '</span>' + (d.userEmail ? ' — <span dir="ltr">' + esc(d.userEmail) + '</span>' : '') + '</span>';
       m.querySelector('#adm-tk-body').innerHTML = (d.messages || []).map(bubble).join('') || '<p style="color:var(--text-muted)">پیامی ثبت نشده</p>';
       var body = m.querySelector('#adm-tk-body');
       body.scrollTop = body.scrollHeight;
@@ -207,6 +207,35 @@
       if (detailId != null && String(detailId) === String(id)) openDetail(id);
       load();
     }).catch(function (err) { toast(err.message || 'عملیات ناموفق بود', 'danger'); });
+  }
+
+  /* ── Ticket creator profile ──────────────────────────── */
+  function openUserProfile(userId) {
+    var m = document.getElementById('adm-tkprofile-modal');
+    if (!m || !userId) return;
+    m.querySelector('#adm-tkprofile-body').innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-muted)">در حال بارگذاری…</p>';
+    openModal(m);
+    api('/users/' + encodeURIComponent(userId)).then(function (u) {
+      var name = ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.mobile || u.id;
+      var rows = [];
+      rows.push({ label: 'نام', value: esc(name) || '—' });
+      rows.push({ label: 'شماره تماس', value: u.mobile ? '<span dir="ltr">' + esc(u.mobile) + '</span>' : '—' });
+      rows.push({ label: 'ایمیل', value: u.email ? '<span dir="ltr">' + esc(u.email) + '</span>' : '—' });
+      rows.push({ label: 'عضویت', value: esc(u.join_date || '—') });
+      m.querySelector('#adm-tkprofile-title').textContent = 'پروفایل کاربر';
+      m.querySelector('#adm-tkprofile-body').innerHTML =
+        '<div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border-color-light);border-radius:var(--radius-lg);background:var(--bg-card)">'
+        + '<div style="width:44px;height:44px;border-radius:50%;background:var(--color-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;flex-shrink:0">' + esc((name || '?').trim().charAt(0)) + '</div>'
+        + '<div><div style="font-weight:600">' + esc(name) + '</div><div style="font-size:11px;color:var(--text-muted)">شناسه: <span dir="ltr">' + esc(u.id) + '</span></div></div>'
+        + '</div>'
+        + '<div style="display:grid;gap:8px">'
+        + rows.map(function (r) {
+          return '<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 10px;border:1px solid var(--border-color-light);border-radius:var(--radius-md)"><span style="color:var(--text-muted)">' + r.label + '</span><span style="font-weight:500;word-break:break-all">' + r.value + '</span></div>';
+        }).join('')
+        + '</div>';
+    }).catch(function (err) {
+      m.querySelector('#adm-tkprofile-body').innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">' + esc(err.message || 'عدم دسترسی به پروفایل کاربر') + '</p>';
+    });
   }
 
   /* ── Create for customer ──────────────────────────────── */
@@ -312,12 +341,20 @@
       return;
     }
     if (e.target.closest && e.target.closest('[data-tk-close]')) { closeModal(document.getElementById('adm-ticket-modal')); detailId = null; return; }
+    if (e.target.closest && e.target.closest('[data-tkprofile-close]')) { closeModal(document.getElementById('adm-tkprofile-modal')); return; }
     if (e.target.closest && e.target.closest('[data-tc-close]')) { closeModal(document.getElementById('adm-ticket-create-modal')); return; }
+    var profBtn = e.target.closest ? e.target.closest('#adm-tk-profile') : null;
+    var ticketModal = document.getElementById('adm-ticket-modal');
+    if (profBtn && ticketModal && ticketModal.contains(profBtn) && detailId != null) {
+      api('/admin/tickets/' + encodeURIComponent(detailId)).then(function (d) { openUserProfile(d.userId); }).catch(function (err) { toast(err.message || 'خطا', 'danger'); });
+      return;
+    }
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       closeModal(document.getElementById('adm-ticket-modal')); detailId = null;
       closeModal(document.getElementById('adm-ticket-create-modal'));
+      closeModal(document.getElementById('adm-tkprofile-modal'));
     }
   });
 

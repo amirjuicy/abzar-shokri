@@ -8,6 +8,7 @@
 
   var overlay = null, grid = null, searchEl = null, fileEl = null, pendingCb = null;
   var cache = [];
+  var selectedUrl = null; // Track currently selected image URL
 
   function ensureUI() {
     if (overlay) return;
@@ -15,11 +16,15 @@
       var st = document.createElement('style');
       st.id = 'adm-mp-style';
       st.textContent =
-        '#adm-media-picker #adm-mp-grid{display:grid;grid-template-columns:repeat(auto-fill,140px);grid-auto-rows:max-content;justify-content:center;gap:8px;max-height:46vh;overflow:auto}' +
-        '#adm-media-picker .adm-mp-item{box-sizing:border-box;width:140px;max-width:140px;height:auto;min-height:0;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:#fff;padding:0;cursor:pointer;min-width:0;flex:none}' +
-        '#adm-media-picker .adm-mp-thumb{box-sizing:border-box;width:130px;max-width:130px;height:130px !important;min-height:130px;flex:none !important;flex-shrink:0;margin:0 auto;overflow:hidden;background:#f8f9fa;display:flex;align-items:center;justify-content:center}' +
+        '#adm-media-picker #adm-mp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));grid-auto-rows:minmax(120px,1fr);justify-content:center;gap:10px;max-height:50vh;overflow:auto}' +
+        '#adm-media-picker .adm-mp-item{box-sizing:border-box;width:100%;max-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:#fff;padding:2px;cursor:pointer;transition:border-color var(--transition-fast),background var(--transition-fast)}' +
+        '#adm-media-picker .adm-mp-item.is-selected{border-color:var(--color-primary);background:#f8f9fa}' +
+        '#adm-media-picker .adm-mp-thumb{box-sizing:border-box;width:100%;max-width:100%;height:120px;min-height:120px;flex:none !important;flex-shrink:0;margin:0 auto;overflow:hidden;background:#f8f9fa;display:flex;align-items:center;justify-content:center}' +
         '#adm-media-picker .adm-mp-thumb img{width:100% !important;height:100% !important;min-height:0;max-width:100%;max-height:100%;object-fit:contain !important;object-position:center center;display:block;flex-shrink:0;background:#f8f9fa}' +
-        '#adm-media-picker .adm-mp-name{display:block;flex:none;flex-shrink:0;box-sizing:border-box;width:100%;max-width:100%;font-size:10px;padding:4px;text-align:center;direction:ltr;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}';
+        '#adm-media-picker .adm-mp-name{display:block;flex:none;flex-shrink:0;box-sizing:border-box;width:100%;max-width:100%;font-size:10px;padding:4px;margin-top:2px;text-align:center;direction:ltr;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#fff}' +
+        '#adm-media-picker .adm-mp-name svg{width:14px;height:14px;vertical-align:text-bottom;margin-right:2px}' +
+        '#adm-media-picker .adm-mp-close-btn{position:absolute;right:6px;top:6px;width:20px;height:20px;border:none;background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}' +
+        '#adm-media-picker .adm-mp-close-btn:hover{color:var(--color-primary)}';
       document.head.appendChild(st);
     }
     overlay = document.createElement('div');
@@ -28,15 +33,15 @@
     overlay.setAttribute('aria-hidden', 'true');
     overlay.innerHTML =
       '<div class="adm-modal__backdrop" data-mp-close></div>' +
-      '<div class="adm-modal__box" role="dialog" aria-modal="true" style="max-width:720px">' +
+      '<div class="adm-modal__box" role="dialog" aria-modal="true" style="max-width:760px">' +
       '<div class="adm-modal__header"><h3 class="adm-modal__title">انتخاب تصویر از گالری</h3>' +
-      '<button type="button" class="adm-btn-icon" data-mp-close aria-label="بستن">✕</button></div>' +
-      '<div class="adm-modal__body" style="display:grid;gap:10px">' +
+      '<button type="button" class="adm-btn-icon adm-mp-close-btn" data-mp-close aria-label="بستن">✕</button></div>' +
+      '<div class="adm-modal__body" style="display:grid;gap:12px">' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
       '<input type="search" class="input" id="adm-mp-search" placeholder="جستجو…" style="flex:1;min-width:180px">' +
-      '<label class="btn btn-accent btn-sm" style="cursor:pointer">آپلود تصویر<input type="file" id="adm-mp-file" accept="image/*" style="display:none"></label>' +
+      '<label class="btn btn-accent btn-sm" style="cursor:pointer">آپلود تصویر<input type="file" id="adm-mp-file" accept="image/*,image/svg+xml" style="display:none"></label>' +
       '</div>' +
-      '<div id="adm-mp-grid" style="display:grid;grid-template-columns:repeat(auto-fill,140px);justify-content:center;gap:8px;max-height:46vh;overflow:auto"></div>' +
+      '<div id="adm-mp-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));grid-auto-rows:minmax(120px,1fr);justify-content:center;gap:10px;max-height:50vh;overflow:auto"></div>' +
       '</div>' +
       '<div class="adm-modal__footer"><button type="button" class="btn btn-secondary btn-sm" data-mp-close>انصراف</button></div>' +
       '</div>';
@@ -45,6 +50,27 @@
     searchEl = $('#adm-mp-search', overlay);
     fileEl = $('#adm-mp-file', overlay);
     overlay.addEventListener('click', function (e) {
+      var closeBtn = e.target.closest('.adm-mp-close-btn');
+      if (closeBtn) { close(); return; }
+      var item = e.target.closest('.adm-mp-item');
+      if (item) {
+        // Toggle selection state on click
+        if (item.classList.contains('is-selected')) {
+          item.classList.remove('is-selected');
+          selectedUrl = localStorage.removeItem('adm_media_picker_selected');
+        } else {
+          // Deselect any previously selected item in this picker
+          var selected = grid.querySelector('.adm-mp-item.is-selected');
+          if (selected) selected.classList.remove('is-selected');
+          item.classList.add('is-selected');
+          selectedUrl = item.getAttribute('data-mp-pick');
+          try { localStorage.setItem('adm_media_picker_selected', selectedUrl); } catch (_) {}
+        }
+        // Close picker and select this image
+        close();
+        if (pendingCb) { var cb = pendingCb; pendingCb = null; cb(selectedUrl); }
+        return;
+      }
       if (e.target.closest('[data-mp-close]')) { close(); return; }
       var item = e.target.closest('[data-mp-pick]');
       if (item) {
@@ -76,6 +102,11 @@
     });
   }
 
+  // Load selected URL from localStorage if available
+  (function () {
+    try { selectedUrl = localStorage.getItem('adm_media_picker_selected'); } catch (_) {}
+  })();
+
   function render(q) {
     q = String(q || '').trim().toLowerCase();
     var list = cache.filter(function (it) {
@@ -84,11 +115,12 @@
     if (!list.length) { grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:20px">تصویری یافت نشد.</p>'; return; }
     grid.innerHTML = list.map(function (it) {
       var url = it.url || it.path;
-      return '<button type="button" class="adm-mp-item" data-mp-pick="' + esc(url) + '" title="' + esc(it.path || url) + '" style="box-sizing:border-box;width:140px;max-width:140px;height:auto;min-height:0;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:#fff;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:stretch;min-width:0;flex:none">' +
-        '<span class="adm-mp-thumb" style="box-sizing:border-box;width:130px;max-width:130px;height:130px;min-height:130px;flex:none;flex-shrink:0;margin:0 auto;overflow:hidden;background:#f8f9fa;display:flex;align-items:center;justify-content:center">' +
+      var isSelected = url === selectedUrl;
+      return '<button type="button" class="adm-mp-item' + (isSelected ? ' is-selected' : '') + '" data-mp-pick="' + esc(url) + '" title="' + esc(it.path || url) + '" style="box-sizing:border-box;width:100%;max-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:#fff;padding:2px;cursor:pointer;transition:border-color var(--transition-fast),background var(--transition-fast))">' +
+        '<span class="adm-mp-thumb" style="box-sizing:border-box;width:100%;max-width:100%;height:120px;min-height:120px;flex:none !important;flex-shrink:0;margin:0 auto;overflow:hidden;background:#f8f9fa;display:flex;align-items:center;justify-content:center">' +
         '<img src="' + esc(url) + '" alt="' + esc(it.filename || '') + '" loading="lazy" style="width:100%;height:100%;object-fit:contain;object-position:center center;display:block;max-width:100%;max-height:100%;background:#f8f9fa;flex-shrink:0">' +
         '</span>' +
-        '<span class="adm-mp-name" style="display:block;flex:none;flex-shrink:0;box-sizing:border-box;width:100%;max-width:100%;font-size:10px;padding:4px;text-align:center;direction:ltr;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(it.filename || url) + '</span></button>';
+        '<span class="adm-mp-name" style="display:block;flex:none;flex-shrink:0;box-sizing:border-box;width:100%;max-width:100%;font-size:10px;padding:4px;margin-top:2px;text-align:center;direction:ltr;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#fff">' + esc(it.filename || url) + '</span></button>';
     }).join('');
   }
 

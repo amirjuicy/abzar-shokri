@@ -138,15 +138,6 @@ function mapOrder(r, items) {
     paymentRefId: r.payment_ref_id ?? null, payment_ref_id: r.payment_ref_id ?? null,
     paymentAmount: r.payment_amount ?? null, payment_amount: r.payment_amount ?? null,
     paidAt: r.paid_at ?? null, paid_at: r.paid_at ?? null,
-    cardId: r.card_id ?? null, card_id: r.card_id ?? null,
-    cardBankName: r.card_bank_name || '', card_bank_name: r.card_bank_name || '',
-    cardNumber: r.card_number || '', card_number: r.card_number || '',
-    cardHolder: r.card_holder || '', card_holder: r.card_holder || '',
-    cardNumberFormatted: formatCardNumber(r.card_number), card_number_formatted: formatCardNumber(r.card_number),
-    cardReceiptUrl: r.card_receipt_url || '', card_receipt_url: r.card_receipt_url || '',
-    cardReceiptName: r.card_receipt_name || '', card_receipt_name: r.card_receipt_name || '',
-    cardReceiptType: r.card_receipt_type || '', card_receipt_type: r.card_receipt_type || '',
-    cardReceiptSize: Number(r.card_receipt_size) || 0, card_receipt_size: Number(r.card_receipt_size) || 0,
     timeline: JSON.parse(r.timeline_json || '[]'),
     items: (items || []).map((i) => ({
       id: i.id, productId: i.product_id, name: i.name, price: i.price, quantity: i.quantity,
@@ -978,7 +969,6 @@ const ADMIN_SECTION_PREFIXES = [
   ['/admin/logs', 'logs'],
   ['/admin/users', 'admins'],
   ['/admin/discounts', 'discounts'],
-  ['/admin/bank-cards', 'settings'],
   ['/admin/summary', 'reports'],
   ['/admin/reports', 'reports'],
   ['/admin/reviews', 'reviews'],
@@ -1085,11 +1075,6 @@ const SETTING_DEFAULTS = {
   // ── Centralized store identity / contact (single source of truth).
   // Admin → «اطلاعات فروشگاه» is the ONLY place these keys are editable.
   'store.name': 'ابزار شکری',
-  // Single source of truth for the storefront logo (URL under assets/images or
-  // /uploads). Empty => the bundled bolt SVG stays the fallback. Favicon and
-  // PWA icons are DERIVED from this value (see /api/admin/store-logo/icons and
-  // the dynamic /manifest.webmanifest) - they are never a second editable setting.
-  'store.logo': '',
   'store.phone': '۰۲۱-۴۴۵۵۶۶۷۷',
   'store.phone2': '',
   'store.email': 'info@abzar-shokri.com',
@@ -2016,239 +2001,6 @@ api.post('/discounts/validate', (req, res) => {
   res.json({ ok: true, code: r.row.code, type: r.row.type, value: Number(r.row.value) || 0, discount: r.discount });
 });
 
-// ── کارت به کارت: admin-managed bank cards ────────────────────────────
-function ensureBankCardsTable() {
-  db.exec(`CREATE TABLE IF NOT EXISTS bank_cards (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    bank_name TEXT NOT NULL DEFAULT '',
-    card_number TEXT NOT NULL DEFAULT '',
-    card_holder TEXT NOT NULL DEFAULT '',
-    account_number TEXT NOT NULL DEFAULT '',
-    logo TEXT NOT NULL DEFAULT '',
-    note TEXT NOT NULL DEFAULT '',
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    is_enabled INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )`);
-  db.exec('CREATE INDEX IF NOT EXISTS idx_bank_cards_order ON bank_cards(sort_order, id)');
-  try {
-    const cols = db.prepare('PRAGMA table_info(orders)').all().map((c) => c.name);
-    if (cols.indexOf('card_id') === -1) db.exec('ALTER TABLE orders ADD COLUMN card_id INTEGER REFERENCES bank_cards(id) ON DELETE SET NULL');
-    if (cols.indexOf('card_bank_name') === -1) db.exec("ALTER TABLE orders ADD COLUMN card_bank_name TEXT NOT NULL DEFAULT ''");
-    if (cols.indexOf('card_number') === -1) db.exec("ALTER TABLE orders ADD COLUMN card_number TEXT NOT NULL DEFAULT ''");
-    if (cols.indexOf('card_holder') === -1) db.exec("ALTER TABLE orders ADD COLUMN card_holder TEXT NOT NULL DEFAULT ''");
-    // رسید واریز کارت به کارت: the customer's photo/screenshot of the transfer.
-    // Only the stored path + a little metadata is kept; the file itself lives
-    // on disk under uploads/receipts and is served by the existing /uploads
-    // static mount.
-    if (cols.indexOf('card_receipt_url') === -1) db.exec("ALTER TABLE orders ADD COLUMN card_receipt_url TEXT NOT NULL DEFAULT ''");
-    if (cols.indexOf('card_receipt_name') === -1) db.exec("ALTER TABLE orders ADD COLUMN card_receipt_name TEXT NOT NULL DEFAULT ''");
-    if (cols.indexOf('card_receipt_type') === -1) db.exec("ALTER TABLE orders ADD COLUMN card_receipt_type TEXT NOT NULL DEFAULT ''");
-    if (cols.indexOf('card_receipt_size') === -1) db.exec('ALTER TABLE orders ADD COLUMN card_receipt_size INTEGER NOT NULL DEFAULT 0');
-  } catch (_) {}
-}
-try { ensureBankCardsTable(); } catch (_) {}
-
-// ── کارت به کارت: customer receipt upload ───────────────────────────────
-// Reuses the same on-disk upload approach as the support-chat attachments
-// (multer diskStorage into uploads/, served by the /uploads static mount) so
-// there is no new media system. Images only.
-const receiptFs = require('fs'); // not the module-level `fs` below (same scope)
-const RECEIPT_DIR = path.join(__dirname, '..', 'uploads', 'receipts');
-try { receiptFs.mkdirSync(RECEIPT_DIR, { recursive: true }); } catch (_) {}
-const RECEIPT_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-const RECEIPT_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif']);
-const receiptUpload = multer({
-  storage: multer.diskStorage({
-    destination: (r, f, cb) => { try { receiptFs.mkdirSync(RECEIPT_DIR, { recursive: true }); } catch (_) {} cb(null, RECEIPT_DIR); },
-    filename: (r, f, cb) => {
-      const ext = (path.extname(f.originalname || '').toLowerCase() || '.jpg').slice(0, 10);
-      cb(null, 'receipt-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8) + ext);
-    },
-  }),
-  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
-  fileFilter: (r, f, cb) => {
-    const ext = path.extname(f.originalname || '').toLowerCase();
-    if (RECEIPT_MIME.has(f.mimetype) && RECEIPT_EXT.has(ext)) return cb(null, true);
-    cb(new Error('فقط تصویر (JPG، PNG، WebP یا GIF) مجاز است.'));
-  },
-});
-// Guards against a caller handing us a path that points outside uploads/.
-function safeReceiptUrl(v) {
-  const s = String(v == null ? '' : v).trim().replace(/\\/g, '/');
-  if (!s) return '';
-  if (!/^\/uploads\/receipts\/[A-Za-z0-9._-]+$/.test(s)) return '';
-  return s;
-}
-function receiptMetaFromFile(file) {
-  return { url: '/uploads/receipts/' + file.filename, name: String(file.originalname || '').slice(0, 200), type: String(file.mimetype || ''), size: Number(file.size) || 0 };
-}
-// True only when the (already sanitized) path points at a file we really have
-// on disk — i.e. the receipt image was actually uploaded before the order.
-function receiptOnDisk(url) {
-  const name = path.basename(String(url || ''));
-  if (!name) return false;
-  try { return receiptFs.existsSync(path.join(RECEIPT_DIR, name)); } catch (_) { return false; }
-}
-// Staged before the order exists: the checkout posts the image first and
-// sends the returned url along with the order payload.
-api.post('/orders/card-receipt', orderLimiter, (req, res) => {
-  receiptUpload.single('image')(req, res, (err) => {
-    if (err) return res.status(400).json({ error: err.message || 'آپلود ناموفق بود.' });
-    if (!req.file) return res.status(400).json({ error: 'فایل تصویر ارسال نشده است.' });
-    res.status(201).json(receiptMetaFromFile(req.file));
-  });
-});
-// Also reachable after creation, for orders placed before the box existed.
-api.post('/orders/:id/card-receipt', (req, res) => {
-  try { ensureBankCardsTable(); } catch (_) {}
-  const o = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
-  if (!o) return res.status(404).json({ error: 'سفارش یافت نشد.' });
-  const auth = getAuthUser(req);
-  if (!auth || String(auth.row.id) !== String(o.user_id || '')) return res.status(403).json({ error: 'دسترسی مجاز نیست.' });
-  receiptUpload.single('image')(req, res, (err) => {
-    if (err) return res.status(400).json({ error: err.message || 'آپلود ناموفق بود.' });
-    if (!req.file) return res.status(400).json({ error: 'فایل تصویر ارسال نشده است.' });
-    const m = receiptMetaFromFile(req.file);
-    try {
-      db.prepare("UPDATE orders SET card_receipt_url=?, card_receipt_name=?, card_receipt_type=?, card_receipt_size=?, updated_at=datetime('now') WHERE id=?")
-        .run(m.url, m.name, m.type, m.size, req.params.id);
-    } catch (e) { return res.status(500).json({ error: 'ثبت رسید ناموفق بود.' }); }
-    res.status(201).json(m);
-  });
-});
-
-function normalizeCardNumber(v) { return String(v == null ? '' : v).replace(/[\s-]/g, '').replace(/[^0-9]/g, ''); }
-function formatCardNumber(v) {
-  const d = normalizeCardNumber(v);
-  return d ? d.replace(/(\d{4})(?=\d)/g, '$1 ').trim() : '';
-}
-function mapBankCard(r) {
-  if (!r) return r;
-  const num = normalizeCardNumber(r.card_number);
-  return {
-    id: r.id,
-    bankName: r.bank_name || '', bank_name: r.bank_name || '',
-    cardNumber: num, card_number: num,
-    cardNumberFormatted: formatCardNumber(num), card_number_formatted: formatCardNumber(num),
-    cardHolder: r.card_holder || '', card_holder: r.card_holder || '',
-    accountNumber: r.account_number || '', account_number: r.account_number || '',
-    logo: r.logo || '', note: r.note || '',
-    sortOrder: Number(r.sort_order) || 0, sort_order: Number(r.sort_order) || 0,
-    isEnabled: !!r.is_enabled, is_enabled: !!r.is_enabled,
-    createdAt: r.created_at || null, updatedAt: r.updated_at || null,
-  };
-}
-function listBankCards(onlyEnabled) {
-  try { ensureBankCardsTable(); } catch (_) {}
-  const sql = onlyEnabled
-    ? 'SELECT * FROM bank_cards WHERE is_enabled = 1 ORDER BY sort_order ASC, id ASC'
-    : 'SELECT * FROM bank_cards ORDER BY sort_order ASC, id ASC';
-  return db.prepare(sql).all().map(mapBankCard);
-}
-function bankCardInput(b, isCreate) {
-  const out = {};
-  if (b.bankName !== undefined) out.bank_name = String(b.bankName).trim();
-  if (b.bank_name !== undefined) out.bank_name = String(b.bank_name).trim();
-  if (b.cardNumber !== undefined) out.card_number = normalizeCardNumber(b.cardNumber);
-  if (b.card_number !== undefined) out.card_number = normalizeCardNumber(b.card_number);
-  if (b.cardHolder !== undefined) out.card_holder = String(b.cardHolder).trim();
-  if (b.card_holder !== undefined) out.card_holder = String(b.card_holder).trim();
-  if (b.accountNumber !== undefined) out.account_number = normalizeCardNumber(b.accountNumber);
-  if (b.account_number !== undefined) out.account_number = normalizeCardNumber(b.account_number);
-  if (b.logo !== undefined) out.logo = String(b.logo || '').trim();
-  if (b.note !== undefined) out.note = String(b.note || '').trim();
-  if (b.sortOrder !== undefined) out.sort_order = Math.max(0, Math.round(Number(b.sortOrder) || 0));
-  if (b.sort_order !== undefined) out.sort_order = Math.max(0, Math.round(Number(b.sort_order) || 0));
-  if (b.isEnabled !== undefined) out.is_enabled = b.isEnabled ? 1 : 0;
-  if (b.is_enabled !== undefined) out.is_enabled = b.is_enabled ? 1 : 0;
-  if (isCreate) {
-    if (!out.bank_name) return { error: 'bankName is required' };
-    if (!out.card_number) return { error: 'cardNumber is required' };
-    if (out.is_enabled == null) out.is_enabled = 1;
-    if (out.sort_order == null) out.sort_order = 0;
-  }
-  if (out.card_number != null && out.card_number !== '' && out.card_number.length !== 16) {
-    return { error: 'شماره کارت باید ۱۶ رقم باشد' };
-  }
-  return { values: out };
-}
-
-// Public: checkout only ever sees enabled cards.
-api.get('/bank-cards', (req, res) => { res.json(listBankCards(true)); });
-
-api.get('/admin/bank-cards', requireAdmin, (req, res) => {
-  ensureBankCardsTable();
-  res.json(listBankCards(false));
-});
-api.post('/admin/bank-cards', requireAdmin, (req, res) => {
-  ensureBankCardsTable();
-  const { values, error } = bankCardInput(req.body || {}, true);
-  if (error) return res.status(400).json({ error });
-  const info = db.prepare(`INSERT INTO bank_cards
-    (bank_name, card_number, card_holder, account_number, logo, note, sort_order, is_enabled, updated_at)
-    VALUES (@bank_name, @card_number, @card_holder, @account_number, @logo, @note, @sort_order, @is_enabled, datetime('now'))`)
-    .run({
-      bank_name: values.bank_name, card_number: values.card_number,
-      card_holder: values.card_holder ?? '', account_number: values.account_number ?? '',
-      logo: values.logo ?? '', note: values.note ?? '',
-      sort_order: values.sort_order ?? 0, is_enabled: values.is_enabled ?? 1,
-    });
-  res.status(201).json(mapBankCard(db.prepare('SELECT * FROM bank_cards WHERE id = ?').get(info.lastInsertRowid)));
-});
-api.put('/admin/bank-cards/:id', requireAdmin, (req, res) => {
-  ensureBankCardsTable();
-  // '/order' is the bulk-reorder endpoint and must be matched before ':id'.
-  if (req.params.id === 'order') return bankCardsReorder(req, res);
-  const cur = db.prepare('SELECT * FROM bank_cards WHERE id = ?').get(req.params.id);
-  if (!cur) return res.status(404).json({ error: 'Bank card not found' });
-  const { values, error } = bankCardInput(req.body || {}, false); 
-
-  if (error) return res.status(400).json({ error });
-  const merged = {
-    bank_name: values.bank_name ?? cur.bank_name,
-    card_number: values.card_number ?? cur.card_number,
-    card_holder: values.card_holder ?? cur.card_holder,
-    account_number: values.account_number ?? cur.account_number,
-    logo: values.logo ?? cur.logo,
-    note: values.note ?? cur.note,
-    sort_order: values.sort_order ?? cur.sort_order,
-    is_enabled: values.is_enabled ?? cur.is_enabled,
-  };
-  if (!String(merged.bank_name).trim()) return res.status(400).json({ error: 'bankName is required' });
-  db.prepare(`UPDATE bank_cards SET bank_name=@bank_name, card_number=@card_number,
-    card_holder=@card_holder, account_number=@account_number, logo=@logo, note=@note,
-    sort_order=@sort_order, is_enabled=@is_enabled, updated_at=datetime('now') WHERE id=@id`)
-    .run({ ...merged, id: req.params.id });
-  res.json(mapBankCard(db.prepare('SELECT * FROM bank_cards WHERE id = ?').get(req.params.id)));
-});
-api.delete('/admin/bank-cards/:id', requireAdmin, (req, res) => {
-  ensureBankCardsTable();
-  const cur = db.prepare('SELECT * FROM bank_cards WHERE id = ?').get(req.params.id);
-  if (!cur) return res.status(404).json({ error: 'Bank card not found' });
-  // Orders keep the denormalized bank/number/holder snapshot, so historical
-  // orders still show which card the customer was instructed to transfer to.
-  db.prepare('DELETE FROM bank_cards WHERE id = ?').run(req.params.id);
-  res.json({ ok: true });
-});
-// Bulk reorder: the client sends the full id list in its desired order.
-function bankCardsReorder(req, res) {
-  ensureBankCardsTable();
-  const ids = Array.isArray(req.body?.ids) ? req.body.ids : Array.isArray(req.body) ? req.body : null;
-  if (!ids) return res.status(400).json({ error: 'ids is required' });
-  const upd = db.prepare("UPDATE bank_cards SET sort_order = ?, updated_at = datetime('now') WHERE id = ?");
-  db.exec('BEGIN IMMEDIATE');
-  try {
-    ids.forEach((id, i) => upd.run(i + 1, id));
-    db.exec('COMMIT');
-  } catch (e) {
-    try { db.exec('ROLLBACK'); } catch (_) {}
-    throw e;
-  }
-  res.json(listBankCards(false));
-}
-
 // ── Admin dashboard summary (real aggregates, read-only) ──
 api.get('/admin/summary', requireAdmin, (req, res) => {
   const orders = db.prepare('SELECT id, total, status, created_at FROM orders').all();
@@ -2684,37 +2436,6 @@ api.post('/orders', orderLimiter, (req, res) => {
     return res.status(409).json({ error: 'Payment method is disabled: ' + paymentMethod });
   }
   const paymentStatus = paymentMethod === 'cod' ? 'unpaid' : 'pending';
-  // کارت به کارت: the customer must have picked one of the admin-enabled cards.
-  // Resolved server-side and snapshotted onto the order so admin sees exactly
-  // which card the customer was told to transfer to, even if it is later
-  // edited or deleted.
-  let cardId = null, cardBankName = '', cardNumber = '', cardHolder = '';
-  let cardReceiptUrl = '', cardReceiptName = '', cardReceiptType = '', cardReceiptSize = 0;
-  if (paymentMethod === 'card') {
-    ensureBankCardsTable();
-    const rawCard = b.cardId ?? b.card_id;
-    const card = rawCard != null && String(rawCard).trim() !== ''
-      ? db.prepare('SELECT * FROM bank_cards WHERE id = ?').get(rawCard)
-      : null;
-    if (!card) return res.status(400).json({ error: 'یک کارت بانکی فعال انتخاب کنید' });
-    if (!card.is_enabled) return res.status(409).json({ error: 'کارت بانکی انتخاب‌شده غیرفعال است' });
-    cardId = card.id;
-    cardBankName = card.bank_name || '';
-    cardNumber = normalizeCardNumber(card.card_number);
-    cardHolder = card.card_holder || '';
-    // رسید واریز: REQUIRED for card-to-card only. The checkout uploads the
-    // image via /api/orders/card-receipt and passes back the stored path;
-    // safeReceiptUrl() rejects anything we did not write and receiptOnDisk()
-    // confirms the file is really there. No valid receipt => no order.
-    const rawReceipt = b.cardReceiptUrl ?? b.card_receipt_url;
-    cardReceiptUrl = safeReceiptUrl(rawReceipt);
-    cardReceiptName = String(b.cardReceiptName ?? b.card_receipt_name ?? '').slice(0, 200);
-    cardReceiptType = String(b.cardReceiptType ?? b.card_receipt_type ?? '').slice(0, 100);
-    cardReceiptSize = Math.max(0, Math.round(Number(b.cardReceiptSize ?? b.card_receipt_size) || 0));
-    if (!cardReceiptUrl || !receiptOnDisk(cardReceiptUrl)) {
-      return res.status(400).json({ error: 'برای پرداخت کارت به کارت، ابتدا تصویر رسید واریز را بارگذاری کنید.' });
-    }
-  }
   // Admin approval gate: card-to-card orders await payment approval, COD
   // orders await order approval. Only online orders start as 'pending'.
   const awaitingPaymentApproval = paymentMethod === 'card';
@@ -2731,16 +2452,12 @@ api.post('/orders', orderLimiter, (req, res) => {
     const dec = db.prepare('UPDATE products SET stock_count = stock_count - ?, in_stock = CASE WHEN stock_count - ? > 0 THEN 1 ELSE 0 END WHERE id = ? AND stock_count >= ?');
     db.prepare(`INSERT INTO orders
       (id, user_id, date, status, status_text, total, items_count, shipping, discount, discount_code,
-       address, address_id, payment_method, payment_status, timeline_json,
-       card_id, card_bank_name, card_number, card_holder,
-       card_receipt_url, card_receipt_name, card_receipt_type, card_receipt_size)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+       address, address_id, payment_method, payment_status, timeline_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .run(id, userId, b.date || '', initialStatus, initialStatusText,
         total, itemsCount, shipping, discount, discountCode,
         addressText, addressId, paymentMethod, paymentStatus,
-        serverTimeline,
-        cardId, cardBankName, cardNumber, cardHolder,
-        cardReceiptUrl, cardReceiptName, cardReceiptType, cardReceiptSize);
+        serverTimeline);
     for (const it of serverItems) {
       ins.run(id, it.productId, it.name, it.price, it.quantity);
       if (ps.allowOos) {
@@ -3990,7 +3707,7 @@ function mapTicket(t) {
   if (!t) return t;
   return {
     id: t.id, userId: t.user_id,
-    userName: t.user_name || '', userMobile: t.user_mobile || '',
+    userName: t.user_name || '', userMobile: t.user_mobile || '', userEmail: t.user_email || '',
     subject: t.subject || '',
     category: t.category || 'سایر',
     priority: VALID_TICKET_PRIORITIES.has(t.priority) ? t.priority : 'normal',
@@ -4008,7 +3725,7 @@ function ticketListJoins() {
 }
 function ticketListSelect() {
   return `t.*, TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS user_name,
-    u.mobile AS user_mobile, COALESCE(mc.n, 0) AS message_count,
+    u.mobile AS user_mobile, u.email AS user_email, COALESCE(mc.n, 0) AS message_count,
     lm.message AS last_message, lm.sender AS last_sender`;
 }
 // Admin: list with search (user/mobile/subject/ID) + status/priority filters + pagination.
@@ -4730,7 +4447,7 @@ api.put('/admin/hero-slides', requireAdmin, (req,res)=>{
 });
 
 if(process.env.NODE_ENV!=='production') api.get('/_test500', (req,res,next)=> next(new Error('intentional 500')));
-// ── Gallery (admin-only): list / upload / delete site images ──
+// ── Gallery (admin-only): list / upload / delete / move / folders ──
 // Uses the existing project assets location: assets/images (+ uploads subdir).
 // Auth: existing requireAdmin (admin_sessions tokens). No new auth system.
 const fs = require('fs');
@@ -4738,21 +4455,51 @@ const IMAGES_ROOT = path.join(__dirname, '..', 'assets', 'images');
 const UPLOADS_DIR = path.join(IMAGES_ROOT, 'uploads');
 try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch (_) {}
 const IMAGE_EXTS = new Set(['.png','.jpg','.jpeg','.gif','.webp','.svg','.avif','.bmp','.ico']);
+function isSafePath(full, root) {
+  const resolvedRoot = path.resolve(root);
+  const resolvedFull = path.resolve(full);
+  return resolvedFull === resolvedRoot || resolvedFull.startsWith(resolvedRoot + path.sep);
+}
+function statItem(full, rel) {
+  const stat = fs.statSync(full);
+  const isDir = stat.isDirectory();
+  const base = path.basename(full);
+  const item = { name: base, path: '/' + rel.replace(/\\/g, '/'), isDir, size: isDir ? 0 : stat.size, mtime: stat.mtime.toISOString() };
+  if (!isDir) { item.filename = base; item.url = '/assets/images/' + rel.replace(/\\/g, '/'); }
+  return item;
+}
+function listDir(relPath) {
+  const root = path.resolve(IMAGES_ROOT);
+  const target = relPath ? path.resolve(IMAGES_ROOT, relPath) : root;
+  if (!isSafePath(target, root)) return null;
+  if (!fs.existsSync(target) || !fs.statSync(target).isDirectory()) return null;
+  const entries = fs.readdirSync(target, { withFileTypes: true });
+  const dirs = [], files = [];
+  for (const e of entries) {
+    const full = path.join(target, e.name);
+    const rel = path.relative(root, full).replace(/\\/g, '/');
+    if (e.isDirectory()) { dirs.push(statItem(full, rel)); continue; }
+    const ext = path.extname(e.name).toLowerCase();
+    if (!IMAGE_EXTS.has(ext)) continue;
+    files.push(statItem(full, rel));
+  }
+  dirs.sort((a,b)=>a.name.localeCompare(b.name));
+  files.sort((a,b)=>a.name.localeCompare(b.name));
+  return { folders: dirs, files: files, currentPath: relPath ? '/' + relPath : '/' };
+}
 function galleryListFiles() {
   const out = [];
   function walk(dir) {
     let entries = [];
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (_) { return; }
     for (const e of entries) {
-      // Derived favicon/PWA icons are outputs of store.logo, not library media.
-      if (dir === IMAGES_ROOT && e.isDirectory() && e.name === 'store') continue;
       const full = path.join(dir, e.name);
       if (e.isDirectory()) { walk(full); continue; }
       const ext = path.extname(e.name).toLowerCase();
       if (!IMAGE_EXTS.has(ext)) continue;
       let stat = null;
       try { stat = fs.statSync(full); } catch (_) { continue; }
-      const rel = path.relative(ROOT, full).replace(/\\/g, '/');
+      const rel = path.relative(path.join(__dirname, '..'), full).replace(/\\/g, '/');
       out.push({ filename: e.name, path: '/' + rel, url: '/' + rel, size: stat.size, mtime: stat.mtime.toISOString() });
     }
   }
@@ -4761,7 +4508,13 @@ function galleryListFiles() {
   return out;
 }
 const galleryStorage = multer.diskStorage({
-  destination: (req, file, cb) => { try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch (_) {} cb(null, UPLOADS_DIR); },
+  destination: (req, file, cb) => {
+    const folder = req.query.folder || '';
+    const target = folder ? path.resolve(IMAGES_ROOT, folder) : UPLOADS_DIR;
+    if (!isSafePath(target, IMAGES_ROOT)) return cb(new Error('Invalid folder'), null);
+    try { fs.mkdirSync(target, { recursive: true }); } catch (_) {}
+    cb(null, target);
+  },
   filename: (req, file, cb) => {
     const base = path.basename(file.originalname || 'image', path.extname(file.originalname || '')).replace(/[^a-zA-Z0-9\u0600-\u06FF._-]+/g, '_').slice(0, 80) || 'image';
     const ext = (path.extname(file.originalname || '').toLowerCase() || '.png').slice(0, 10);
@@ -4774,7 +4527,12 @@ function galleryFileFilter(req, file, cb) {
   cb(new Error('Only image files are allowed'));
 }
 const galleryUpload = multer({ storage: galleryStorage, fileFilter: galleryFileFilter, limits: { files: 1 } });
-api.get('/admin/gallery', requireAdmin, (req, res) => { res.json({ items: galleryListFiles() }); });
+api.get('/admin/gallery', requireAdmin, (req, res) => {
+  const relPath = String(req.query.path || '').replace(/^\/+/, '');
+  const result = listDir(relPath);
+  if (!result) return res.status(400).json({ error: 'Invalid path' });
+  res.json(result);
+});
 api.post('/admin/gallery/upload', requireAdmin, (req, res) => {
   galleryUpload.single('image')(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message || 'Upload failed' });
@@ -4783,19 +4541,106 @@ api.post('/admin/gallery/upload', requireAdmin, (req, res) => {
     res.status(201).json({ filename: req.file.filename, path: '/' + rel, url: '/' + rel, size: req.file.size });
   });
 });
+api.post('/admin/gallery/folder', requireAdmin, (req, res) => {
+  const parent = String(req.query.path || req.body?.path || '').replace(/^\/+/, '');
+  const name = String(req.body?.name || '').trim();
+  if (!name || /[\\/]/.test(name)) return res.status(400).json({ error: 'Invalid folder name' });
+  const parentPath = parent ? path.resolve(IMAGES_ROOT, parent) : path.resolve(IMAGES_ROOT);
+  if (!isSafePath(parentPath, IMAGES_ROOT)) return res.status(400).json({ error: 'Invalid path' });
+  const newFolder = path.join(parentPath, name);
+  if (!isSafePath(newFolder, IMAGES_ROOT)) return res.status(400).json({ error: 'Invalid path' });
+  try {
+    if (fs.existsSync(newFolder)) return res.status(409).json({ error: 'Folder already exists' });
+    fs.mkdirSync(newFolder, { recursive: true });
+    const rel = path.relative(path.join(__dirname, '..'), newFolder).replace(/\\/g, '/');
+    res.status(201).json({ name, path: '/' + rel, isDir: true });
+  } catch (e) { res.status(500).json({ error: 'Failed to create folder' }); }
+});
 api.delete('/admin/gallery', requireAdmin, (req, res) => {
   const rel = String(req.query.path || req.body?.path || '');
   if (!rel) return res.status(400).json({ error: 'path is required' });
   const noLead = rel.replace(/^\/+/, '');
-  const full = path.resolve(path.join(__dirname, '..'), noLead);
+  const full = path.resolve(IMAGES_ROOT, noLead);
   const root = path.resolve(IMAGES_ROOT);
-  if (full !== root && !full.startsWith(root + path.sep)) return res.status(400).json({ error: 'Invalid path' });
-  if (!IMAGE_EXTS.has(path.extname(full).toLowerCase())) return res.status(400).json({ error: 'Invalid path' });
+  if (!isSafePath(full, root)) return res.status(400).json({ error: 'Invalid path' });
   try {
-    if (!fs.existsSync(full) || !fs.statSync(full).isFile()) return res.status(404).json({ error: 'File not found' });
-    fs.unlinkSync(full);
+    if (!fs.existsSync(full)) return res.status(404).json({ error: 'Not found' });
+    const stat = fs.statSync(full);
+    if (stat.isFile()) {
+      if (!IMAGE_EXTS.has(path.extname(full).toLowerCase())) return res.status(400).json({ error: 'Invalid path' });
+      fs.unlinkSync(full);
+    } else if (stat.isDirectory()) {
+      fs.rmSync(full, { recursive: true, force: true });
+    }
     res.json({ ok: true });
   } catch (e) { return res.status(500).json({ error: 'Delete failed' }); }
+});
+api.post('/admin/gallery/bulk-delete', requireAdmin, (req, res) => {
+  const paths = Array.isArray(req.body?.paths) ? req.body.paths : [];
+  if (!paths.length) return res.status(400).json({ error: 'paths array required' });
+  const root = path.resolve(IMAGES_ROOT);
+  const results = { deleted: [], failed: [] };
+  for (const rel of paths) {
+    const noLead = String(rel).replace(/^\/+/, '');
+    const full = path.resolve(IMAGES_ROOT, noLead);
+    if (!isSafePath(full, root)) { results.failed.push({ path: rel, error: 'Invalid path' }); continue; }
+    try {
+      if (!fs.existsSync(full)) { results.failed.push({ path: rel, error: 'Not found' }); continue; }
+      const stat = fs.statSync(full);
+      if (stat.isFile()) {
+        if (!IMAGE_EXTS.has(path.extname(full).toLowerCase())) { results.failed.push({ path: rel, error: 'Invalid file type' }); continue; }
+        fs.unlinkSync(full);
+      } else if (stat.isDirectory()) {
+        fs.rmSync(full, { recursive: true, force: true });
+      }
+      results.deleted.push(rel);
+    } catch (e) { results.failed.push({ path: rel, error: e.message }); }
+  }
+  res.json(results);
+});
+api.post('/admin/gallery/move', requireAdmin, (req, res) => {
+  const paths = Array.isArray(req.body?.paths) ? req.body.paths : [];
+  const dest = String(req.body?.dest || '').replace(/^\/+/, '');
+  if (!paths.length || typeof dest !== 'string') return res.status(400).json({ error: 'paths array and dest required' });
+  const root = path.resolve(IMAGES_ROOT);
+  const destFull = dest ? path.resolve(IMAGES_ROOT, dest) : root;
+  if (!isSafePath(destFull, root) || !fs.existsSync(destFull) || !fs.statSync(destFull).isDirectory()) {
+    return res.status(400).json({ error: 'Invalid destination folder' });
+  }
+  const results = { moved: [], failed: [] };
+  for (const rel of paths) {
+    const noLead = String(rel).replace(/^\/+/, '');
+    const src = path.resolve(IMAGES_ROOT, noLead);
+    if (!isSafePath(src, root)) { results.failed.push({ path: rel, error: 'Invalid path' }); continue; }
+    if (!fs.existsSync(src)) { results.failed.push({ path: rel, error: 'Not found' }); continue; }
+    const base = path.basename(src);
+    const target = path.join(destFull, base);
+    if (!isSafePath(target, root)) { results.failed.push({ path: rel, error: 'Invalid destination' }); continue; }
+    if (fs.existsSync(target)) { results.failed.push({ path: rel, error: 'Destination already exists' }); continue; }
+    try {
+      fs.renameSync(src, target);
+      const newRel = path.relative(path.join(__dirname, '..'), target).replace(/\\/g, '/');
+      results.moved.push({ from: rel, to: '/' + newRel });
+    } catch (e) { results.failed.push({ path: rel, error: e.message }); }
+  }
+  res.json(results);
+});
+api.get('/admin/gallery/folders', requireAdmin, (req, res) => {
+  const out = [];
+  function walk(dir, relPrefix) {
+    let entries = [];
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (_) { return; }
+    for (const e of entries) {
+      if (!e.isDirectory()) continue;
+      const full = path.join(dir, e.name);
+      const rel = (relPrefix ? relPrefix + '/' : '') + e.name;
+      out.push({ name: e.name, path: '/' + rel });
+      walk(full, rel);
+    }
+  }
+  walk(IMAGES_ROOT, '');
+  out.sort((a, b) => a.path.localeCompare(b.path));
+  res.json({ folders: out });
 });
 // ── Content pages (DB-backed, admin CRUD, public read) ──
 function ensurePagesTable(){
@@ -4928,125 +4773,8 @@ api.put('/admin/static-pages/:file', requireAdmin, (req,res)=>{
   fs.writeFileSync(p, html, 'utf8');
   res.json(parseStaticHtml(html, path.basename(p)));
 });
-// ── Store logo: derived favicon/PWA icons + dynamic web app manifest ──
-// `store.logo` is the ONLY editable logo value. Browsers and the PWA installer
-// need fixed-size PNG icons, so the Admin rasterizes the chosen logo once and
-// posts the PNGs here; the server just stores those derived files. They are
-// never editable on their own, so there is no parallel logo setting.
-// All endpoints reuse the existing requireAdmin auth and the existing gallery
-// uploads location - no new database, no new auth, no new storage root.
-const STORE_ICON_SIZES = [32, 180, 192, 512];
-const STORE_ICON_DIR = path.join(UPLOADS_DIR, 'store');
-const storeIconFile = (size) => path.join(STORE_ICON_DIR, `icon-${size}.png`);
-const storeIconUrl = (size) => `/assets/images/uploads/store/icon-${size}.png`;
-try { fs.mkdirSync(STORE_ICON_DIR, { recursive: true }); } catch (_) {}
-function storeIconExists(size) {
-  try { return fs.statSync(storeIconFile(size)).size > 0; } catch (_) { return false; }
-}
-function clearStoreIcons() {
-  for (const size of STORE_ICON_SIZES) { try { fs.unlinkSync(storeIconFile(size)); } catch (_) {} }
-}
-const storeIconUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 4 * 1024 * 1024, files: 1 },
-  // No fileFilter here on purpose: with memoryStorage the bytes are only read
-  // after the filter runs, so the real PNG check happens in the handler below.
-});
-api.post('/admin/store-logo/icons', requireAdmin, (req, res) => {
-  storeIconUpload.single('icon')(req, res, (err) => {
-    if (err) return res.status(400).json({ error: err.message || 'Upload failed' });
-    if (!req.file) return res.status(400).json({ error: 'icon file is required' });
-    const size = parseInt(req.body && req.body.size, 10);
-    if (!STORE_ICON_SIZES.includes(size)) return res.status(400).json({ error: 'unsupported icon size' });
-    const f = req.file;
-    const isPng = (f.mimetype === 'image/png' || f.mimetype === 'application/octet-stream')
-      && f.buffer && f.buffer.length > 8 && f.buffer.slice(0, 4).toString('hex') === '89504e47';
-    if (!isPng) return res.status(400).json({ error: 'PNG required' });
-    try {
-      fs.mkdirSync(STORE_ICON_DIR, { recursive: true });
-      fs.writeFileSync(storeIconFile(size), f.buffer);
-    } catch (e) { return res.status(500).json({ error: 'Could not store icon' }); }
-    res.status(201).json({ size, url: storeIconUrl(size) });
-  });
-});
-api.delete('/admin/store-logo/icons', requireAdmin, (req, res) => {
-  clearStoreIcons();
-  res.json({ ok: true });
-});
-// Drop derived icons automatically when the logo itself is cleared, so a
-// removed logo can never leave a stale favicon behind.
-api.delete('/admin/store-logo', requireAdmin, (req, res) => {
-  ensureSettingsTable();
-  try {
-    db.prepare("UPDATE settings SET value='', updated_at=datetime('now') WHERE key='store.logo'").run();
-  } catch (e) { return res.status(500).json({ error: 'Could not clear logo' }); }
-  clearStoreIcons();
-  res.json(readSettings());
-});
-
-// Dynamic manifest so the installed-app name and icons follow the same
-// store.* settings as the page. Served before express.static so the static
-// copy of manifest.webmanifest never shadows it.
-app.get('/manifest.webmanifest', (req, res) => {
-  let s = {};
-  try { s = readSettings(); } catch (_) {}
-  const name = String(s['store.name'] || '').trim();
-  const logo = String(s['store.logo'] || '').trim();
-  const base = {
-    id: './',
-    start_url: './',
-    scope: './',
-    display: 'standalone',
-    display_override: ['standalone'],
-    orientation: 'any',
-    background_color: '#ffffff',
-    theme_color: '#111111',
-    shortcuts: [
-      { name: 'فروشگاه', url: './shop.html' },
-      { name: 'سبد خرید', url: './account-cart.html' },
-      { name: 'دسته‌بندی‌ها', url: './categories.html' },
-    ],
-  };
-  if (name) { base.name = name + ' | فروشگاه تخصصی ابزارآلات'; base.short_name = name; }
-  const derived = logo && STORE_ICON_SIZES.every(storeIconExists);
-  base.icons = derived
-    ? [
-        { src: storeIconUrl(192), sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: storeIconUrl(512), sizes: '512x512', type: 'image/png', purpose: 'any' },
-        { src: storeIconUrl(192), sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-        { src: storeIconUrl(512), sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-      ]
-    : [
-        { src: 'assets/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: 'assets/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-        { src: 'assets/icons/maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-        { src: 'assets/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-      ];
-  res.set('Content-Type', 'application/manifest+json; charset=utf-8');
-  res.set('Cache-Control', 'no-cache');
-  res.send(JSON.stringify(base));
-});
-
 // ── Static storefront (unchanged UI) ──
 const ROOT = path.join(__dirname, '..');
-// Sends the shared custom 404 page with a real 404 status. Shared by the
-// unknown-route fallback and the clean product route so both render the page
-// the exact same way.
-function sendCustom404(res){
-  var fs = require('fs');
-  try {
-    var fp = path.join(ROOT, '404.html');
-    if (!fs.existsSync(fp)) return false;
-    var html = fs.readFileSync(fp, 'utf8');
-    // Match serveClean: pages use relative URLs, so anchor them at site root.
-    if (html.indexOf('<base') === -1) html = html.replace(/<head([^>]*)>/i, '<head$1><base href="/">');
-    res.status(404);
-    res.set('Content-Type', 'text/html; charset=utf-8');
-    res.set('Cache-Control', 'no-store');
-    res.send(html);
-    return true;
-  } catch (e) { return false; }
-}
 // ── Clean URLs (canonical, no .html) ──
 // Same HTML files served under clean paths; legacy .html URLs (with their
 // identifying query params) 301-redirect to the canonical clean form.
@@ -5079,7 +4807,6 @@ function sendCustom404(res){
     '/account-addresses.html': '/account/addresses',
     '/account-wishlist.html': '/account/wishlist',
     '/account-notifications.html': '/account/notifications',
-    '/account-contact.html': '/account/contact',
     '/checkout.html': '/checkout',
     '/checkout-step1.html': '/checkout/step1',
     '/checkout-step2.html': '/checkout/step2',
@@ -5125,15 +4852,9 @@ function sendCustom404(res){
     return next();
   });
   // 2) Clean routes -> underlying HTML files (browser URL stays clean).
-  // `resolve` is an optional guard: when it returns false the request falls
-  // through to the custom 404 page instead of serving the bare page shell.
-  function serveClean(file, resolve){
+  function serveClean(file){
     return function(req, res, next){
       try{
-        if (resolve && !resolve(req)) {
-          if (sendCustom404(res)) return;
-          return next();
-        }
         var fp = path.join(ROOT, file);
         if (!fsMod.existsSync(fp)) return next();
         var html = fsMod.readFileSync(fp, 'utf8');
@@ -5145,31 +4866,7 @@ function sendCustom404(res){
       }catch(e){ next(); }
     };
   }
-  // Resolve the product ref the same way the rest of the site does
-  // (GET /api/products/:idOrSlug and product.js): slug first, numeric id
-  // accepted, and ?slug=/?id= overrides honoured. The shell is only served
-  // when a real product matches, so bad refs get the custom 404 page.
-  // Query params are left untouched, so product.js still reads them as before.
-  function findProduct(key){
-    if (key === undefined || key === null || String(key) === '') return null;
-    var k = String(key);
-    return db.prepare('SELECT id FROM products WHERE slug = ? OR id = ? LIMIT 1')
-      .get(k, /^\d+$/.test(k) ? Number(k) : -1) || null;
-  }
-  function productExists(req){
-    var ref = req.params.ref != null ? String(req.params.ref) : '';
-    var q = req.query || {};
-    try {
-      // Same precedence as product.js resolveProduct().
-      var slug = q.slug != null && String(q.slug) !== '' ? String(q.slug) : ref;
-      var id = q.id != null && String(q.id) !== '' ? String(q.id)
-             : (/^\d+$/.test(ref) ? ref : '');
-      if (findProduct(slug)) return true;
-      if (id && findProduct(id)) return true;
-      return false;
-    } catch (e) { return true; }
-  }
-  app.get('/product/:ref', serveClean('product.html', productExists));
+  app.get('/product/:ref', serveClean('product.html'));
   app.get('/category/:ref', serveClean('category.html'));
   app.get('/brand/:ref', serveClean('brand-detail.html'));
   app.get('/article/:ref', serveClean('article-detail.html'));
@@ -5183,7 +4880,6 @@ function sendCustom404(res){
   app.get('/forgot-password', serveClean('forgot-password.html'));
   app.get('/offline', serveClean('offline.html'));
   app.get('/cart', serveClean('account-cart.html'));
-  app.get('/account-cart', serveClean('account-cart.html'));
   app.get('/account', serveClean('account.html'));
   app.get('/account/orders', serveClean('account-orders.html'));
   app.get('/account/orders/:ref', serveClean('account-order-detail.html'));
@@ -5191,7 +4887,6 @@ function sendCustom404(res){
   app.get('/account/addresses', serveClean('account-addresses.html'));
   app.get('/account/wishlist', serveClean('account-wishlist.html'));
   app.get('/account/notifications', serveClean('account-notifications.html'));
-  app.get('/account/contact', serveClean('account-contact.html'));
   app.get('/checkout', serveClean('checkout.html'));
   app.get('/checkout/step1', serveClean('checkout-step1.html'));
   app.get('/checkout/step2', serveClean('checkout-step2.html'));
@@ -5208,17 +4903,6 @@ function sendCustom404(res){
   app.get('/pricing', serveClean('pricing.html'));
 })();
 app.use(express.static(ROOT, { index: 'index.html' }));
-
-// ── Custom 404 ──
-// Unknown storefront routes fall through to the shared 404 page with a real
-// 404 status. API and asset requests keep the JSON/plain 404 they already get,
-// so client-side fetches are unaffected.
-app.use(function notFound(req, res, next){
-  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
-  if (req.path.startsWith('/api/') || req.path === '/api') return next();
-  if (sendCustom404(res)) return;
-  next();
-});
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {

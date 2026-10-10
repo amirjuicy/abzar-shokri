@@ -54,6 +54,23 @@
   var DEL_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
   var FOLDER_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
 
+  /* Category illustration assigned via the media gallery (image URL/path
+     stored in c.icon); plain icon names keep the default folder glyph. */
+  function catThumb(c) {
+    var ic = c && c.icon;
+    if (typeof ic === 'string' && /^(https?:|\/)/.test(ic)) {
+      return '<img src="' + esc(ic) + '" alt="" loading="lazy" style="width:24px;height:24px;object-fit:contain">';
+    }
+    return FOLDER_SVG;
+  }
+  function syncIconPreview() {
+    var inp = $('#adm-cm-icon'), prev = $('#adm-cm-icon-preview');
+    if (!inp || !prev) return;
+    var v = inp.value.trim();
+    if (v) { prev.src = v; prev.style.visibility = 'visible'; }
+    else { prev.removeAttribute('src'); prev.style.visibility = 'hidden'; }
+  }
+
   function openModal(m) { if (m) { m.classList.add('is-open'); m.setAttribute('aria-hidden', 'false'); } }
   function closeModal(m) { if (m) { m.classList.remove('is-open'); m.setAttribute('aria-hidden', 'true'); } }
 
@@ -104,7 +121,7 @@
       var pct = Math.max(4, Math.round(((Number(c.count) || 0) / max) * 100));
       var color = c.color || 'var(--color-primary)';
       return '<div class="adm-cat" data-id="' + c.id + '">' +
-        '<span class="adm-cat__icon" style="background:color-mix(in srgb,' + esc(color) + ' 14%,#fff);color:' + esc(color) + '">' + FOLDER_SVG + '</span>' +
+        '<span class="adm-cat__icon" style="background:color-mix(in srgb,' + esc(color) + ' 14%,#fff);color:' + esc(color) + '">' + catThumb(c) + '</span>' +
         '<div class="adm-cat__meta">' +
         '<span class="adm-cat__name">' + esc(c.name) + '</span>' +
         '<span class="adm-cat__count">' + fa(c.count || 0) + ' محصول</span>' +
@@ -138,6 +155,7 @@
     $('#adm-cm-color').value = '#1E88E5';
     editSubs = [];
     renderEditSubs();
+    syncIconPreview();
     openModal(modal);
   }
 
@@ -148,6 +166,8 @@
     $('#adm-cm-name').value = c.name || '';
     $('#adm-cm-slug').value = c.slug || '';
     $('#adm-cm-color').value = /^#[0-9a-fA-F]{6}$/.test(c.color || '') ? c.color : '#1E88E5';
+    $('#adm-cm-icon').value = c.icon || '';
+    syncIconPreview();
     $('#adm-cm-desc').value = c.description || '';
     editSubs = (c.subcategories || []).slice();
     renderEditSubs();
@@ -182,6 +202,8 @@
 
   var addBtn = $('#adm-add-category-btn');
   if (addBtn) addBtn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); openAdd(); });
+  var iconInput = $('#adm-cm-icon');
+  if (iconInput) iconInput.addEventListener('input', syncIconPreview);
 
   var subAdd = $('#adm-cm-sub-add');
   if (subAdd) subAdd.addEventListener('click', function () {
@@ -204,6 +226,7 @@
     var name = $('#adm-cm-name').value.trim();
     var slug = $('#adm-cm-slug').value.trim();
     var color = $('#adm-cm-color').value;
+    var icon = $('#adm-cm-icon').value.trim();
     var desc = $('#adm-cm-desc').value.trim();
     if (!name) { toast('نام دسته الزامی است', 'danger'); $('#adm-cm-name').focus(); return; }
     var dup = categories.filter(function (x) {
@@ -211,7 +234,7 @@
     })[0];
     if (slug && dup && String(dup.slug).toLowerCase() === slug.toLowerCase()) { toast('این نامک قبلاً ثبت شده است', 'danger'); return; }
     busy = true;
-    var payload = { name: name, slug: slug, color: color, description: desc, subcategories: editSubs };
+    var payload = { name: name, slug: slug, color: color, icon: icon, description: desc, subcategories: editSubs };
     var req = id
       ? api('/categories/' + encodeURIComponent(id), { method: 'PUT', body: JSON.stringify(payload) })
       : api('/categories', { method: 'POST', body: JSON.stringify(payload) });
