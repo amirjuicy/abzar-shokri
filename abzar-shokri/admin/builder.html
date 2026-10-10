@@ -106,6 +106,26 @@
         <div class="pb-field"><label for="pb-padding">حاشیه داخلی (px)</label><input class="input" type="number" id="pb-padding" min="0" max="200" dir="ltr"></div>
       </div>
       <div class="pb-field"><label for="pb-radius">گردی گوشه (px)</label><input class="input" type="number" id="pb-radius" min="0" max="100" dir="ltr"></div>
+      <div class="pb-sec">موقعیت و ابعاد</div>
+      <div class="pb-grid">
+        <div class="pb-field"><label for="pb-x">X (px / %)</label><input class="input" type="text" id="pb-x" dir="ltr" placeholder="0 یا 50%"></div>
+        <div class="pb-field"><label for="pb-y">Y (px / %)</label><input class="input" type="text" id="pb-y" dir="ltr" placeholder="0 یا 50%"></div>
+      </div>
+      <div class="pb-grid">
+        <div class="pb-field"><label for="pb-w">عرض (px / %)</label><input class="input" type="text" id="pb-w" dir="ltr" placeholder="auto یا 50%"></div>
+        <div class="pb-field"><label for="pb-h">ارتفاع (px / %)</label><input class="input" type="text" id="pb-h" dir="ltr" placeholder="auto یا 50%"></div>
+      </div>
+      <div class="pb-field"><label for="pb-rotate">چرخش (درجه)</label><input class="input" type="number" id="pb-rotate" min="-360" max="360" step="1" dir="ltr"></div>
+      <div class="pb-field"><label class="pb-check"><input type="checkbox" id="pb-aspect"> قفل نسبت ابعاد</label></div>
+      <div class="pb-sec">ترتیب لایه</div>
+      <div class="pb-grid">
+        <div class="pb-field"><button type="button" class="btn btn-secondary" id="pb-layer-front">به 앞으로</button></div>
+        <div class="pb-field"><button type="button" class="btn btn-secondary" id="pb-layer-back">به عقب</button></div>
+      </div>
+      <div class="pb-grid">
+        <div class="pb-field"><button type="button" class="btn btn-secondary" id="pb-layer-forward">یک مرحله جلو</button></div>
+        <div class="pb-field"><button type="button" class="btn btn-secondary" id="pb-layer-backward">یک مرحله عقب</button></div>
+      </div>
       <div class="pb-note" id="pb-style-note" style="display:none">استایل عنوان صفحه فقط در پیش‌نمایش اعمال می‌شود و ذخیره نمی‌شود.</div>
     </div>
     <div class="pb-status" id="pb-status"></div>
@@ -125,19 +145,28 @@
   var colorEl=document.getElementById('pb-color'), bgEl=document.getElementById('pb-bg'), bgNoneEl=document.getElementById('pb-bg-none');
   var fsEl=document.getElementById('pb-fs'), fwEl=document.getElementById('pb-fw'), alignEl=document.getElementById('pb-align');
   var marginEl=document.getElementById('pb-margin'), padEl=document.getElementById('pb-padding'), radiusEl=document.getElementById('pb-radius');
+  var xEl=document.getElementById('pb-x'), yEl=document.getElementById('pb-y'), wEl=document.getElementById('pb-w'), hEl=document.getElementById('pb-h');
+  var rotateEl=document.getElementById('pb-rotate'), aspectEl=document.getElementById('pb-aspect');
+  var layerFrontBtn=document.getElementById('pb-layer-front'), layerBackBtn=document.getElementById('pb-layer-back');
+  var layerForwardBtn=document.getElementById('pb-layer-forward'), layerBackwardBtn=document.getElementById('pb-layer-backward');
   var styleNote=document.getElementById('pb-style-note');
   var posEl=document.getElementById('pb-pos'), srcRow=document.getElementById('pb-row-src'), srcEl=document.getElementById('pb-src');
   var hrefRow=document.getElementById('pb-row-href'), hrefEl=document.getElementById('pb-href');
   var colsRow=document.getElementById('pb-row-cols'), colsEl=document.getElementById('pb-cols');
   var styleMode='desktop';
   var PB_T_MAX=900, PB_M_MAX=600;
-  // responsive props with per-device values: font-size, margin, padding, align, visibility
+  // responsive props with per-device values: font-size, margin, padding, align, visibility, position, size, rotation
   var RPROPS=[
     {key:'fs', attr:'data-pb-fs', css:'font-size', unit:'px'},
     {key:'margin', attr:'data-pb-mg', css:'margin', unit:'px'},
     {key:'pad', attr:'data-pb-pd', css:'padding', unit:'px'},
     {key:'align', attr:'data-pb-al', css:'text-align', unit:''},
-    {key:'hide', attr:'data-pb-hd', css:'display', unit:''}
+    {key:'hide', attr:'data-pb-hd', css:'display', unit:''},
+    {key:'x', attr:'data-pb-x', css:'left', unit:''},
+    {key:'y', attr:'data-pb-y', css:'top', unit:''},
+    {key:'w', attr:'data-pb-w', css:'width', unit:''},
+    {key:'h', attr:'data-pb-h', css:'height', unit:''},
+    {key:'rot', attr:'data-pb-rot', css:'transform', unit:''}
   ];
   function ridOf(d,n){
     var r=n.getAttribute('data-pb-rid');
@@ -590,6 +619,25 @@
       if(n.style.paddingTop) padEl.value=pxNum(n.style.paddingTop);
       if(styleMode!=='desktop'){ var _pv=rGet(n,RPROPS[2],styleMode); padEl.value=_pv===''?'':+_pv; padEl.placeholder='خالی = دسکتاپ'; } else padEl.placeholder='';
       radiusEl.value=n.style.borderRadius?pxNum(n.style.borderRadius):'';
+      // Position, Size, Rotation
+      xEl.value=n.style.left||'';
+      yEl.value=n.style.top||'';
+      wEl.value=n.style.width||'';
+      hEl.value=n.style.height||'';
+      var rot=0;
+      var tf=n.style.transform||'';
+      var rm=/rotate\(([-\d.]+)deg\)/i.exec(tf);
+      if(rm) rot=Math.round(+rm[1]);
+      rotateEl.value=rot||'';
+      aspectEl.checked=n.hasAttribute('data-pb-aspect')||false;
+      if(styleMode!=='desktop'){
+        xEl.value=rGet(n,{attr:'data-pb-x',css:'left',unit:''},styleMode)||'';
+        yEl.value=rGet(n,{attr:'data-pb-y',css:'top',unit:''},styleMode)||'';
+        wEl.value=rGet(n,{attr:'data-pb-w',css:'width',unit:''},styleMode)||'';
+        hEl.value=rGet(n,{attr:'data-pb-h',css:'height',unit:''},styleMode)||'';
+        var rv=rGet(n,{attr:'data-pb-rot',css:'transform',unit:''},styleMode);
+        if(rv){ var rrm=/rotate\(([-\d.]+)deg\)/i.exec(rv); if(rrm) rotateEl.value=Math.round(+rrm[1]); }
+      }
       var t=isTitle(n);
       styleNote.style.display=t?'':'none';
       [colorEl,bgEl,bgNoneEl,fsEl,fwEl,alignEl,marginEl,padEl,radiusEl].forEach(function(el){el.disabled=t;});
@@ -627,6 +675,96 @@
   bgNoneEl.addEventListener('change',live(function(n){ n.style.backgroundColor=bgNoneEl.checked?'transparent':bgEl.value; }));
   fwEl.addEventListener('change',live(function(n){ n.style.fontWeight=fwEl.value; }));
   radiusEl.addEventListener('input',live(function(n){ n.style.borderRadius=radiusEl.value!==''?Math.max(0,Math.min(100,+radiusEl.value))+'px':''; }));
+  // Position & Size handlers
+  function parseSize(v){ v=String(v||'').trim(); if(!v||v==='auto') return ''; return v; }
+  function getAspectRatio(n){
+    var ar=n.getAttribute('data-pb-ar');
+    if(ar) return +ar;
+    var cs=doc().defaultView.getComputedStyle(n);
+    var w=parseFloat(cs.width), h=parseFloat(cs.height);
+    if(w>0 && h>0) return w/h;
+    return null;
+  }
+  xEl.addEventListener('input',live(function(n){
+    var v=parseSize(xEl.value);
+    if(styleMode==='desktop'){ n.style.left=v; }
+    else rSet(n,{attr:'data-pb-x',css:'left',unit:''},styleMode,v);
+  }));
+  yEl.addEventListener('input',live(function(n){
+    var v=parseSize(yEl.value);
+    if(styleMode==='desktop'){ n.style.top=v; }
+    else rSet(n,{attr:'data-pb-y',css:'top',unit:''},styleMode,v);
+  }));
+  wEl.addEventListener('input',live(function(n){
+    var v=parseSize(wEl.value);
+    if(styleMode==='desktop'){
+      n.style.width=v;
+      if(aspectEl.checked && v && v.indexOf('%')===-1){
+        var ar=getAspectRatio(n);
+        if(ar){ n.style.height=(Math.round(parseFloat(v)/ar))+'px'; hEl.value=n.style.height; }
+      }
+    }else{
+      rSet(n,{attr:'data-pb-w',css:'width',unit:''},styleMode,v);
+      if(aspectEl.checked && v && v.indexOf('%')===-1){
+        var ar=getAspectRatio(n);
+        if(ar){ var nh=Math.round(parseFloat(v)/ar); rSet(n,{attr:'data-pb-h',css:'height',unit:''},styleMode,nh+'px'); hEl.value=nh+'px'; }
+      }
+    }
+    if(v){ var cs=doc().defaultView.getComputedStyle(n); var cw=parseFloat(cs.width), ch=parseFloat(cs.height); if(cw>0 && ch>0) n.setAttribute('data-pb-ar',(cw/ch).toFixed(4)); }
+  }));
+  hEl.addEventListener('input',live(function(n){
+    var v=parseSize(hEl.value);
+    if(styleMode==='desktop'){
+      n.style.height=v;
+      if(aspectEl.checked && v && v.indexOf('%')===-1){
+        var ar=getAspectRatio(n);
+        if(ar){ n.style.width=(Math.round(parseFloat(v)*ar))+'px'; wEl.value=n.style.width; }
+      }
+    }else{
+      rSet(n,{attr:'data-pb-h',css:'height',unit:''},styleMode,v);
+      if(aspectEl.checked && v && v.indexOf('%')===-1){
+        var ar=getAspectRatio(n);
+        if(ar){ var nw=Math.round(parseFloat(v)*ar); rSet(n,{attr:'data-pb-w',css:'width',unit:''},styleMode,nw+'px'); wEl.value=nw+'px'; }
+      }
+    }
+    if(v){ var cs=doc().defaultView.getComputedStyle(n); var cw=parseFloat(cs.width), ch=parseFloat(cs.height); if(cw>0 && ch>0) n.setAttribute('data-pb-ar',(cw/ch).toFixed(4)); }
+  }));
+  rotateEl.addEventListener('input',live(function(n){
+    var v=rotateEl.value!==''?Math.max(-360,Math.min(360,+rotateEl.value)):0;
+    n.style.transform='rotate('+v+'deg)';
+    if(styleMode!=='desktop') rSet(n,{attr:'data-pb-rot',css:'transform',unit:''},styleMode,'rotate('+v+'deg)');
+  }));
+  aspectEl.addEventListener('change',function(){
+    if(!sel||syncing) return;
+    if(aspectEl.checked){
+      var cs=doc().defaultView.getComputedStyle(sel);
+      var cw=parseFloat(cs.width), ch=parseFloat(cs.height);
+      if(cw>0 && ch>0) sel.setAttribute('data-pb-ar',(cw/ch).toFixed(4));
+    }else{
+      sel.removeAttribute('data-pb-ar');
+    }
+  });
+  // Layer order handlers
+  layerFrontBtn.addEventListener('click',function(){
+    if(!sel||syncing) return;
+    var parent=sel.parentNode; if(parent) parent.appendChild(sel);
+    histPush();
+  });
+  layerBackBtn.addEventListener('click',function(){
+    if(!sel||syncing) return;
+    var parent=sel.parentNode; if(parent) parent.insertBefore(sel,parent.firstChild);
+    histPush();
+  });
+  layerForwardBtn.addEventListener('click',function(){
+    if(!sel||syncing) return;
+    var next=sel.nextElementSibling; if(next) sel.parentNode.insertBefore(sel,next.nextSibling);
+    histPush();
+  });
+  layerBackwardBtn.addEventListener('click',function(){
+    if(!sel||syncing) return;
+    var prev=sel.previousElementSibling; if(prev) sel.parentNode.insertBefore(sel,prev);
+    histPush();
+  });
   visEl.addEventListener('change',function(){
     if(!sel) return;
     if(styleMode!=='desktop'){ rSet(sel,RPROPS[4],styleMode,visEl.checked?'':'1'); return; }
