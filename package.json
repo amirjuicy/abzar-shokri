@@ -15,7 +15,7 @@
     "sqlite3": "^6.0.1"
   },
   "devDependencies": {
-    "playwright": "^1.63.0",
+    "playwright": "^1.64.0",
     "puppeteer-core": "^25.12.0"
   }
 }
