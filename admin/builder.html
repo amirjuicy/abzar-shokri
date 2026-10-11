@@ -234,11 +234,47 @@ body.admin-body{display:flex;flex-direction:column;height:100%;min-height:0;over
   // ── Undo/Redo/Delete (snapshot history of builder zones) ──
   var undoBtn=document.getElementById('pb-undo'), redoBtn=document.getElementById('pb-redo'), delBtn=document.getElementById('pb-delete');
   var undoStack=[], redoStack=[], restoring=false, histTimer=null, histObs=null;
+  // Selection chrome (outline + data-pb-sel/data-pb-outline/contenteditable/draggable
+  // tweaks from mark()/clearHl()/select()) lives inside the zones' innerHTML, so a
+  // raw innerHTML snapshot would treat "selected vs unselected" as a content change:
+  // mere selection would push history + wipe redo, and the async observer delivery
+  // after histRestore would push the restored selection back and wipe redo again
+  // (Redo never staying enabled). Normalise snapshots so history is selection-agnostic.
+  function histCleanClone(zone){
+    var c=zone.cloneNode(true);
+    try{
+      Array.prototype.forEach.call(c.querySelectorAll('[data-pb-drop]'),function(n){ if(n.parentNode) n.parentNode.removeChild(n); });
+      var all=[c];
+      Array.prototype.forEach.call(c.querySelectorAll('*'),function(n){ all.push(n); });
+      all.forEach(function(n){
+        if(!n||!n.setAttribute) return;
+        try{
+          if(n.hasAttribute&&n.hasAttribute('data-pb-sel')){
+            var orig=n.getAttribute('data-pb-outline');
+            try{
+              n.style.outline=(orig==null)?'':orig;
+              n.style.outlineOffset='';
+              if(n.getAttribute('style')==='') n.removeAttribute('style');
+            }catch(_){}
+            n.removeAttribute('data-pb-sel');
+          }
+          if(n.hasAttribute&&n.hasAttribute('data-pb-outline')) n.removeAttribute('data-pb-outline');
+          if(n.hasAttribute&&n.hasAttribute('contenteditable')) n.removeAttribute('contenteditable');
+          if(n.hasAttribute&&n.hasAttribute('draggable')) n.removeAttribute('draggable');
+          if(n.classList){
+            n.classList.remove('pb-dragging'); n.classList.remove('pb-moving');
+            if(n.getAttribute('class')==='') n.removeAttribute('class');
+          }
+        }catch(_){}
+      });
+    }catch(_){}
+    return c.innerHTML;
+  }
   function snapZones(){
     try{
       var d=doc();
       var zones=pbZones(d);
-      return zones.map(function(z){ return z.innerHTML; });
+      return zones.map(function(z){ return histCleanClone(z); });
     }catch(_){ return null; }
   }
   function histUpdateUI(){
@@ -320,11 +356,15 @@ body.admin-body{display:flex;flex-direction:column;height:100%;min-height:0;over
       Array.prototype.forEach.call(d.querySelectorAll('[data-pb-coldrop]'),function(n){ n.removeAttribute('data-pb-coldrop'); });
       Array.prototype.forEach.call(d.querySelectorAll('[draggable]'),function(n){ n.removeAttribute('draggable'); });
       bind(d);
-      histObserve();
+      // Select while the observer is still disconnected: selection chrome
+      // (outline etc.) must never be observed as a content change, otherwise its
+      // async delivery after restoring=false would push + wipe the redo stack.
       var target=null;
       if(selId){ try{ target=d.querySelector('[data-pb-id="'+selId+'"]'); }catch(_){ target=null; } }
       select(target);
       refreshRespStyle(d);
+      clearTimeout(histTimer);
+      histObserve();
       histUpdateUI();
       return true;
     }finally{ restoring=false; }
@@ -1124,7 +1164,10 @@ body.admin-body{display:flex;flex-direction:column;height:100%;min-height:0;over
     // strip builder-only helpers from a clone — live iframe DOM is untouched
     // NOTE: data-pb-rid + data-pb-fs/mg/pd/al/hd-t/m are content (responsive styles) and are preserved
     var c=body.cloneNode(true);
-    Array.prototype.forEach.call(c.querySelectorAll('[data-pb-sel]'),function(n){n.removeAttribute('data-pb-sel');n.style.outline=n.hasAttribute('data-pb-outline')?n.getAttribute('data-pb-outline'):'';n.style.outlineOffset='';});
+    // restore selection outline on descendants AND on the zone root itself
+    // (a selected zone root also carries data-pb-sel/outline — it must not leak into saved HTML)
+    Array.prototype.forEach.call(c.querySelectorAll('[data-pb-sel]'),function(n){n.removeAttribute('data-pb-sel');n.style.outline=n.hasAttribute('data-pb-outline')?n.getAttribute('data-pb-outline'):'';n.style.outlineOffset='';if(n.getAttribute('style')==='')n.removeAttribute('style');});
+    if(c.hasAttribute&&c.hasAttribute('data-pb-sel')){c.removeAttribute('data-pb-sel');try{c.style.outline=c.hasAttribute('data-pb-outline')?c.getAttribute('data-pb-outline'):'';c.style.outlineOffset='';if(c.getAttribute('style')==='')c.removeAttribute('style');}catch(_){}}
     Array.prototype.forEach.call(c.querySelectorAll('[data-pb-drop]'),function(n){if(n.parentNode)n.parentNode.removeChild(n);});
     Array.prototype.forEach.call(c.querySelectorAll('.pb-dragging'),function(n){n.classList.remove('pb-dragging');});
     ['data-pb-id','data-pb-outline','data-pb-drag','data-pb-coldrop','data-pb-sel','data-pb-zbound','data-pb-pprom'].forEach(function(a){
