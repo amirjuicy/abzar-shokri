@@ -1302,6 +1302,7 @@
       + '<a href="/account/addresses" class="header-account-dropdown__item" role="menuitem"><span class="header-account-dropdown__label">آدرس‌ها</span><span class="header-account-dropdown__icon" aria-hidden="true">' + pinIcon + '</span></a>'
       + '<a href="/account/wishlist" class="header-account-dropdown__item" role="menuitem"><span class="header-account-dropdown__label">لیست‌ها</span><span class="header-account-dropdown__icon" aria-hidden="true">' + heartIcon + '</span></a>'
       + '<a href="/account/profile" class="header-account-dropdown__item" role="menuitem"><span class="header-account-dropdown__label">جزئیات حساب</span><span class="header-account-dropdown__icon" aria-hidden="true">' + userIcon + '</span></a>'
+      + pwaInstallDropdownItemHTML()
       + '<div class="header-account-dropdown__divider" aria-hidden="true"></div>'
       + '<button type="button" class="header-account-dropdown__item header-account-dropdown__logout" data-action="logout" role="menuitem"><span class="header-account-dropdown__label">خروج از حساب کاربری</span><span class="header-account-dropdown__icon" aria-hidden="true">' + logoutIcon + '</span></button>'
       + '</div></div>';
@@ -1329,7 +1330,7 @@
      (unless running in standalone mode) and opens the RTL install
      modal — native `beforeinstallprompt` when available, otherwise
      browser-specific manual steps. Kept in common.js so the option
-     appears on ALL pages (desktop header + mobile menu). */
+     appears on ALL pages (account dropdown + mobile menu). */
   var PWA_INSTALL_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
 
   function isStandalone() {
@@ -1339,9 +1340,9 @@
     } catch (e) { return false; }
   }
 
-  function pwaInstallHeaderHTML() {
+  function pwaInstallDropdownItemHTML() {
     if (isStandalone()) return '';
-    return '<button type="button" class="header-action header-action--pwa" data-pwa-install hidden title="نصب اپلیکیشن" data-tooltip="نصب اپلیکیشن" aria-label="نصب اپلیکیشن">' + PWA_INSTALL_SVG + '</button>';
+    return '<button type="button" class="header-account-dropdown__item" data-pwa-install hidden role="menuitem"><span class="header-account-dropdown__label">نصب اپلیکیشن</span><span class="header-account-dropdown__icon" aria-hidden="true">' + PWA_INSTALL_SVG + '</span></button>';
   }
 
   function pwaInstallMenuHTML() {
@@ -1379,7 +1380,6 @@
       var cartBadge = actions.querySelector('.header-action__badge');
       var cartCountText = cartBadge ? cartBadge.textContent : String(cartCount);
       actions.innerHTML = headerAuthHTML()
-        + pwaInstallHeaderHTML()
         + '<span class="header-divider" aria-hidden="true"></span>'
         + notifBellHTML()
         + '<button class="header-action header-action--cart" data-action="cart" data-tooltip="سبد خرید" aria-label="سبد خرید">' + Icons.cart.replace('width="22" height="22"', 'width="22" height="22"') + '<span class="header-action__badge" style="display:none">0</span></button>';
@@ -1537,7 +1537,6 @@ el.innerHTML = '\
     ' + searchHtml + '\
     <div class="header-actions">\
     ' + authHtml + '\
-    ' + pwaInstallHeaderHTML() + '\
     <span class="header-divider" aria-hidden="true"></span>\
     ' + notifBellHTML() + '\
     <button class="header-action header-action--cart" data-action="cart" data-tooltip="سبد خرید" aria-label="سبد خرید">' + Icons.cart.replace('width="22" height="22"', 'width="22" height="22"') + '<span class="header-action__badge" style="display:none">0</span></button>\

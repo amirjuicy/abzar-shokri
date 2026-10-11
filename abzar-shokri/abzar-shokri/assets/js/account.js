@@ -365,6 +365,41 @@
   }
 
   /* ── Order Detail ──────────────────────────────────────── */
+  /* Timeline events are stored as { status, date } (server timeline_json),
+     never with a Persian label. Map status codes to Persian labels and
+     fall back to the raw value for unknown statuses. Step completion is
+     derived from the order's current status along the fulfillment flow. */
+  var ORDER_STATUS_FA = {
+    pending: 'در انتظار پرداخت',
+    awaiting_payment_approval: 'در انتظار تأیید پرداخت',
+    awaiting_order_approval: 'در انتظار تأیید سفارش',
+    approved: 'تأیید شد / آماده ارسال',
+    processing: 'در حال پردازش',
+    shipped: 'ارسال‌شده',
+    delivered: 'تحویل‌شده',
+    cancelled: 'لغوشده'
+  };
+  var ORDER_STATUS_FLOW = ['pending', 'awaiting_payment_approval', 'awaiting_order_approval', 'approved', 'processing', 'shipped', 'delivered'];
+  var PAYMENT_METHOD_FA = { cod: 'پرداخت در محل', online: 'پرداخت آنلاین', card: 'کارت به کارت' };
+  function orderStatusLabel(s) {
+    var k = String(s || '');
+    return ORDER_STATUS_FA[k] || k || '—';
+  }
+  function paymentMethodLabel(m) {
+    var t = String(m || '');
+    return PAYMENT_METHOD_FA[t] || t || '—';
+  }
+  function orderTimelineDone(t, currentStatus) {
+    if (!t) return false;
+    if (t.done !== undefined) return !!t.done;
+    var s = String(t.status || '');
+    if (!s) return false;
+    var cur = String(currentStatus || '');
+    var i = ORDER_STATUS_FLOW.indexOf(s);
+    var c = ORDER_STATUS_FLOW.indexOf(cur);
+    if (i === -1 || c === -1) return s === cur;
+    return i <= c;
+  }
   function renderOrderDetail(el) {
     var path = window.location.pathname;
     var urlParams = new URLSearchParams(window.location.search);
@@ -398,12 +433,12 @@
       <div>\
         <h3 style="font-weight:var(--font-weight-bold);margin-bottom:var(--space-4)">جدول زمانی سفارش</h3>\
         <div class="order-timeline">' + order.timeline.map(function(t) {
-          return '<div class="order-timeline__step ' + (t.done ? 'is-done' : '') + '"><div class="order-timeline__dot"></div><div class="order-timeline__content"><div class="order-timeline__step-name">' + t.step + '</div><div class="order-timeline__step-date">' + t.date + '</div></div></div>';
+          return '<div class="order-timeline__step ' + (orderTimelineDone(t, order.status) ? 'is-done' : '') + '"><div class="order-timeline__dot"></div><div class="order-timeline__content"><div class="order-timeline__step-name">' + orderStatusLabel(t.status) + '</div><div class="order-timeline__step-date">' + t.date + '</div></div></div>';
         }).join('') + '</div>\
         <h3 style="font-weight:var(--font-weight-bold);margin:var(--space-6) 0 var(--space-3)">آدرس ارسال</h3>\
         <p style="font-size:var(--font-size-sm);color:var(--text-secondary)">' + order.address + '</p>\
         <h3 style="font-weight:var(--font-weight-bold);margin:var(--space-6) 0 var(--space-3)">روش پرداخت</h3>\
-        <p style="font-size:var(--font-size-sm);color:var(--text-secondary)">' + order.paymentMethod + '</p>\
+        <p style="font-size:var(--font-size-sm);color:var(--text-secondary)">' + paymentMethodLabel(order.paymentMethod) + '</p>\
       </div>\
       <div>\
         <h3 style="font-weight:var(--font-weight-bold);margin-bottom:var(--space-4)">اقلام سفارش</h3>\

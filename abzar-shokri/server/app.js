@@ -2336,6 +2336,17 @@ api.post('/orders', orderLimiter, (req, res) => {
   }
   // Link each order to the authenticated user when a token is provided.
   const auth = getAuthUser(req);
+  // An admin_sessions token is a valid /admin login but not a customer
+  // identity: getAuthUser() cannot resolve it, so the order would silently
+  // degrade to a guest order (user_id NULL) and never appear in any account
+  // order list. Refuse loudly instead of hiding the purchase.
+  if (!auth) {
+    let adminAuth = null;
+    try { adminAuth = getAdminAuth(req); } catch (_) {}
+    if (adminAuth) {
+      return res.status(401).json({ error: 'ثبت سفارش با حساب مدیریتی ممکن نیست. لطفاً با حساب کاربری مشتری وارد شوید و دوباره تلاش کنید.' });
+    }
+  }
   let userId = (auth && auth.row.id) || b.userId || null;
   // A stale client session (user deleted, DB restored, expired token) can send
   // a userId that no longer exists. Verify it against users; otherwise fall

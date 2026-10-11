@@ -11,6 +11,9 @@
      send them back to that EXACT page (path + query + hash) after login.
      Falls back to the default ('/account') when no valid return URL exists. */
   var DEFAULT_POST_LOGIN_URL = '/account';
+  /* After a successful registration, send the customer to the storefront
+     homepage (automatic login is already handled by App.register). */
+  var DEFAULT_POST_REGISTER_URL = '/';
   function isAuthPageUrl(u) {
     var s = String(u || '').toLowerCase();
     return s.indexOf('login.html') !== -1 || s.indexOf('register.html') !== -1 ||
@@ -59,6 +62,7 @@
     return DEFAULT_POST_LOGIN_URL;
   }
   function goPostLogin() { window.location.href = getPostLoginUrl(); }
+  function goPostRegister() { window.location.href = DEFAULT_POST_REGISTER_URL; }
 
   function init() {
     /* ── Login form ───────────────────────────────────────── */
@@ -149,7 +153,7 @@
         })).then(function(result) {
           if (result.success) {
             App.showToast('ثبت‌نام موفقیت‌آمیز بود! خوش آمدید، ' + result.user.firstName, 'success');
-            setTimeout(goPostLogin, 800);
+            setTimeout(goPostRegister, 800);
           } else {
             App.showToast(result.error, 'danger');
           }
