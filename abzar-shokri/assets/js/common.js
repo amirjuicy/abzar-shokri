@@ -2541,7 +2541,10 @@ el.innerHTML = '\
       if(location.protocol!=='file:' && typeof fetch==='function'){
         fetch('/api/content').then(function(r){ return r.ok?r.json():null; }).then(function(c){
           if(!c) return;
-          var promos=document.querySelectorAll('.promo-topbar__msg');
+          // Skip viewports inside a Visual-Builder-saved page header: per-page
+          // header edits (site_pages.header_html) own those spans; the global
+          // CMS values must not stomp them after site-page.js applies them.
+          var promos=[]; try{ Array.prototype.forEach.call(document.querySelectorAll('.promo-topbar__msg'),function(el){ if(!(el.closest&&el.closest('[data-pb-page-header]'))) promos.push(el); }); }catch(e){ promos=document.querySelectorAll('.promo-topbar__msg'); }
           for(var j=0;j<3;j++){ if(promos[j] && c['promo.topbar.'+(j+1)]!=null) promos[j].textContent=c['promo.topbar.'+(j+1)]; }
           if(c['footer.brand.desc']!=null){ var fd=document.querySelector('.footer-brand__desc'); if(fd) fd.textContent=c['footer.brand.desc']; }
           if(c['footer.address']!=null){
@@ -3026,6 +3029,12 @@ el.innerHTML = '\
   /* ── User notifications (DB-backed via /api/notifications; read state persists in SQLite) ── */
   function listNotifications() {
     if (!isLoggedIn() || !apiAvailable()) return Promise.resolve({ unreadCount: 0, items: [] });
+    /* Admin sessions are logged in but carry an admin_sessions token, which the
+       customer-scoped /api/notifications endpoint (customer_sessions only)
+       always rejects with 401. Skip the request so admin storefront sessions
+       see an empty state instead of a false "session expired" error — the
+       session itself stays valid and no auth check is weakened. */
+    if (isAdminSession()) return Promise.resolve({ unreadCount: 0, items: [] });
     return apiRequest('GET', '/notifications')
       .then(function (data) {
         return { unreadCount: Number(data.unreadCount) || 0, items: Array.isArray(data.items) ? data.items : [] };
@@ -3041,6 +3050,9 @@ el.innerHTML = '\
 
   function markNotificationRead(id) {
     if (!isLoggedIn() || !apiAvailable()) return Promise.resolve({ ok: false });
+    /* Same admin-session guard as listNotifications: no customer row exists for
+       admins, so the read endpoint would only answer 401. */
+    if (isAdminSession()) return Promise.resolve({ ok: false });
     return apiRequest('POST', '/notifications/' + encodeURIComponent(id) + '/read', {}).catch(function () { return { ok: false }; });
   }
 

@@ -10,6 +10,9 @@
     document.title = p.title + ' | ابزار شکری';
     if(titleEl) titleEl.textContent = p.title;
     if(crumb) crumb.textContent = p.title;
+    // Saved header chrome (Visual Builder) overrides the global template. Applied
+    // before the body so the builder binds after both have settled.
+    if(p.headerHtml){ var hEl=document.getElementById('site-header'); if(hEl){ hEl.innerHTML=p.headerHtml; hEl.setAttribute('data-pb-page-header','1'); } }
     if(bodyEl) bodyEl.innerHTML = p.body || '';
   }).catch(function(){ if(bodyEl) bodyEl.textContent='صفحه یافت نشد.'; });
 })();

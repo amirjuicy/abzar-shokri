@@ -175,8 +175,8 @@
   }
   function applyContent(c){
     if(!c) return;
-    // Promo top bar — three rotating msgs
-    var promos=document.querySelectorAll('.promo-topbar__msg');
+    // Promo top bar — three rotating msgs (skip Visual-Builder-saved page headers)
+    var promos=[]; try{ Array.prototype.forEach.call(document.querySelectorAll('.promo-topbar__msg'),function(el){ if(!(el.closest&&el.closest('[data-pb-page-header]'))) promos.push(el); }); }catch(e){ promos=document.querySelectorAll('.promo-topbar__msg'); }
     for(var j=0;j<3;j++){
       if(promos[j] && c['promo.topbar.'+(j+1)]!=null) promos[j].textContent=c['promo.topbar.'+(j+1)];
     }

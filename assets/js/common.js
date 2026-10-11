@@ -2534,7 +2534,10 @@ el.innerHTML = '\
       if(location.protocol!=='file:' && typeof fetch==='function'){
         fetch('/api/content').then(function(r){ return r.ok?r.json():null; }).then(function(c){
           if(!c) return;
-          var promos=document.querySelectorAll('.promo-topbar__msg');
+          // Skip viewports inside a Visual-Builder-saved page header: per-page
+          // header edits (site_pages.header_html) own those spans; the global
+          // CMS values must not stomp them after site-page.js applies them.
+          var promos=[]; try{ Array.prototype.forEach.call(document.querySelectorAll('.promo-topbar__msg'),function(el){ if(!(el.closest&&el.closest('[data-pb-page-header]'))) promos.push(el); }); }catch(e){ promos=document.querySelectorAll('.promo-topbar__msg'); }
           for(var j=0;j<3;j++){ if(promos[j] && c['promo.topbar.'+(j+1)]!=null) promos[j].textContent=c['promo.topbar.'+(j+1)]; }
           if(c['footer.brand.desc']!=null){ var fd=document.querySelector('.footer-brand__desc'); if(fd) fd.textContent=c['footer.brand.desc']; }
           if(c['footer.address']!=null){

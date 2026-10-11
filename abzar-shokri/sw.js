@@ -84,7 +84,12 @@
 // pages that load header.css but not desktop.css (e.g. /page/:ref), without
 // affecting the hover background (kept below the bell's hover specificity).
 // Bump so cache-first clients pick the CSS up.
-var CACHE_NAME = 'abzar-shokri-v37';
+// v38: admin storefront sessions no longer query the customer-only
+// /api/notifications endpoint (App.listNotifications/markNotificationRead
+// short-circuit in common.js), so /account/notifications shows an empty state
+// instead of a false "session expired" error. Bump so cache-first clients
+// holding the old common.js under the same ?v= URL drop the stale shell.
+var CACHE_NAME = 'abzar-shokri-v38';
 var OFFLINE_URL = 'offline.html';
 
 var APP_SHELL = [

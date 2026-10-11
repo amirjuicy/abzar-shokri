@@ -30,9 +30,10 @@
     if (!App.isLoggedIn()) {
       var content = $('#account-content');
       if (content) {
+        var _pbSnapLogin = pbCartSnap(content);
         content.innerHTML = '\
-          <div class="empty-state">\
-            <span class="empty-state__icon">' + Icons.user + '</span>\
+          <div class="empty-state" style="padding:var(--space-16) 0">\
+            <span class="empty-state__icon" style="width:80px;height:80px">' + Icons.user + '</span>\
             <h3 class="empty-state__title">برای مشاهده پنل کاربری وارد شوید</h3>\
             <p class="empty-state__text">ابتدا باید به حساب کاربری خود وارد شوید یا ثبت‌نام کنید.</p>\
             <div style="display:flex;gap:var(--space-3);justify-content:center">\
@@ -40,6 +41,7 @@
               <a href="/register" class="btn btn-secondary btn-lg">ثبت‌نام</a>\
             </div>\
           </div>';
+        pbCartRestore(content, _pbSnapLogin, '');
       }
       highlightNav();
       setupCollapsibleNav();
@@ -836,6 +838,56 @@
     });
   }
   function shipForAcct(total) { return total >= AcctShip.freeFrom ? 0 : AcctShip.cost; }
+  /* ── Visual Builder round-trip for #account-content ────────────
+     renderCart() (and the logged-out prompt in render()) rebuild this box
+     from fixed templates on every load — including an async second pass
+     once /api/settings arrives (refreshAcctShip). That wiped builder text
+     and position edits saved in the static file right after saving.
+     Snapshot the stable slots' inline styles (minus selection outline),
+     builder responsive attrs and static texts first, then re-apply them to
+     the rebuilt DOM. Dynamic values (cart count/totals/prices, user data)
+     are never carried over. */
+  var PB_CART_TEXT_SLOTS = ['.account-content__title', '.empty-state__title', '.empty-state__text', '.empty-state__btn', '.empty-state .btn'];
+  var PB_CART_STYLE_SLOTS = PB_CART_TEXT_SLOTS.concat(['.empty-state__icon']);
+  function pbCartVariant(root){ try{ return (root && root.querySelector && root.querySelector('.account-content__title')) ? 'cart' : 'prompt'; }catch(e){ return ''; } }
+  function pbCartSnap(root){
+    var out = { variant: pbCartVariant(root), slots: {} };
+    if(!root || !root.querySelector) return out;
+    PB_CART_STYLE_SLOTS.forEach(function(sel){
+      var n = null;
+      try{ n = root.querySelector(sel); }catch(e){ n = null; }
+      if(!n) return;
+      var attrs = {}, i, a;
+      for(i=0;i<n.attributes.length;i++){
+        a = n.attributes[i];
+        // only attrs the builder persists (cleanClone keeps rid + -t/-m
+        // responsive values + aspect lock); runtime chrome (pb-id/sel/
+        // outline/drag/…) must never leak onto rebuilt nodes.
+        if(a.name==='data-pb-rid' || a.name==='data-pb-ar' || /-t$/.test(a.name) || /-m$/.test(a.name)) attrs[a.name]=a.value;
+      }
+      var style = n.getAttribute('style')||'';
+      style = String(style).split(';').filter(function(p){ return !/^\s*outline/i.test(p); }).join(';');
+      var text = '';
+      if(PB_CART_TEXT_SLOTS.indexOf(sel)>-1) text = (n.textContent||'');
+      if(sel==='.account-content__title') text = text.replace(/\s*[\(（]\s*[0-9۰-۹]+\s*[\)）]\s*$/,'');
+      out.slots[sel] = { text: text, style: style, attrs: attrs };
+    });
+    return out;
+  }
+  function pbCartRestore(root, snap, countSuffix){
+    if(!root || !root.querySelector || !snap) return;
+    if(!snap.variant || snap.variant!==pbCartVariant(root)) return; // other box variant — keep canonical template
+    Object.keys(snap.slots).forEach(function(sel){
+      var n = null;
+      try{ n = root.querySelector(sel); }catch(e){ n = null; }
+      var s = snap.slots[sel];
+      if(!n || !s) return;
+      if(s.style) n.setAttribute('style', s.style);
+      Object.keys(s.attrs).forEach(function(a){ try{ n.setAttribute(a, s.attrs[a]); }catch(_){} });
+      if(sel==='.account-content__title'){ if(s.text) n.textContent = s.text + (countSuffix||''); }
+      else if(PB_CART_TEXT_SLOTS.indexOf(sel)>-1 && s.text) n.textContent = s.text;
+    });
+  }
   function renderCart(el) {
     if (el) { AccountPage._cartEl = el; AccountPage._cartVisible = true; }
     else if (AccountPage._cartEl) { el = AccountPage._cartEl; }
@@ -843,6 +895,8 @@
     var count = App.getCartCount();
     var total = App.getCartTotal();
     var shipping = shipForAcct(total);
+    var _pbSnap = pbCartSnap(el);
+    var _pbCountSuffix = (count > 0) ? ' (' + Format.toPersianNumber(count) + ')' : '';
 
     el.innerHTML = '<h2 class="account-content__title">سبد خرید' + (count > 0 ? ' (' + Format.toPersianNumber(count) + ')' : '') + '</h2>';
 
@@ -854,6 +908,7 @@
         <p class="empty-state__text">محصولات مورد نظر خود را از فروشگاه انتخاب کنید.</p>\
         <a href="/shop" class="empty-state__btn">مشاهده فروشگاه</a>\
       </div>';
+      pbCartRestore(el, _pbSnap, _pbCountSuffix);
       return;
     }
 
@@ -894,6 +949,7 @@
         <a href="/shop" class="btn btn-secondary btn-lg">ادامه خرید</a>\
       </div>\
     </div>';
+    pbCartRestore(el, _pbSnap, _pbCountSuffix);
   }
 
   /* ── Navigation Highlight ──────────────────────────────── */

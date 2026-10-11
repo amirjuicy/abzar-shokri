@@ -4653,6 +4653,9 @@ function ensurePagesTable(){
     is_system INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
+  // Visual Builder round-trip: header chrome edited in slug mode must persist.
+  // (Footer is removed on DB pages by common.js, so only the header is stored.)
+  try { var _pc=db.prepare('PRAGMA table_info(site_pages)').all().map(function(c){return c.name;}); if(_pc.indexOf('header_html')===-1) db.exec("ALTER TABLE site_pages ADD COLUMN header_html TEXT NOT NULL DEFAULT ''"); } catch(_){}
   const seeds = [
     ['about','درباره ما','<p>فروشگاه تخصصی ابزار شکری با بیش از ۱۰ سال تجربه در عرضه ابزارآلات صنعتی و ساختمانی.</p>','درباره فروشگاه ابزار شکری',1],
     ['contact','تماس با ما','<p>تهران، خیابان ولیعصر، پلاک ۱۲۳۴ — تلفن ۰۲۱-۴۴۵۵۶۶۷۷</p>','اطلاعات تماس',1],
@@ -4668,7 +4671,7 @@ function ensurePagesTable(){
   for(const s of seeds) ins.run(s[0],s[1],s[2],s[3],s[4]);
 }
 ensurePagesTable();
-function pageRow(r){ return r ? { slug:r.slug, title:r.title, body:r.body, excerpt:r.excerpt, status:r.status, is_system:!!r.is_system, updated_at:r.updated_at, url:'/page.html?slug='+encodeURIComponent(r.slug), file:r.slug+'.html', seo:seoFor('page', r.slug) } : null; }
+function pageRow(r){ return r ? { slug:r.slug, title:r.title, body:r.body, headerHtml:r.header_html||'', excerpt:r.excerpt, status:r.status, is_system:!!r.is_system, updated_at:r.updated_at, url:'/page.html?slug='+encodeURIComponent(r.slug), file:r.slug+'.html', seo:seoFor('page', r.slug) } : null; }
 function validSlug(s){ return typeof s==='string' && /^[a-z0-9-]{1,80}$/.test(s); }
 api.get('/pages', (req,res)=>{
   try{ ensurePagesTable(); }catch(_){}
@@ -4716,9 +4719,14 @@ api.put('/admin/pages/:slug', requireAdmin, (req,res)=>{
   const cur = db.prepare('SELECT * FROM site_pages WHERE slug=?').get(s);
   if(!cur) return res.status(404).json({ error:'Page not found' });
   const b = req.body||{};
-  db.prepare("UPDATE site_pages SET title=COALESCE(?,title), body=COALESCE(?,body), excerpt=COALESCE(?,excerpt), status=COALESCE(?,status), updated_at=datetime('now') WHERE slug=?").run(
+  // headerHtml arrives from the Visual Builder (cleanClone of #site-header); it was
+  // previously discarded, so header edits showed "saved" yet reverted on reload.
+  // Empty payloads keep the stored value (mirrors the static-pages handler).
+  var newHeader=(b.headerHtml!==undefined&&String(b.headerHtml).trim())?String(b.headerHtml).slice(0,100000):(cur.header_html||'');
+  db.prepare("UPDATE site_pages SET title=COALESCE(?,title), body=COALESCE(?,body), header_html=COALESCE(?,header_html), excerpt=COALESCE(?,excerpt), status=COALESCE(?,status), updated_at=datetime('now') WHERE slug=?").run(
     b.title!==undefined?String(b.title).slice(0,200):cur.title,
     b.body!==undefined?String(b.body).slice(0,50000):cur.body,
+    newHeader,
     b.excerpt!==undefined?String(b.excerpt||'').slice(0,500):cur.excerpt,
     b.status!==undefined?(b.status==='draft'?'draft':'published'):cur.status, s);
   res.json(pageRow(db.prepare('SELECT * FROM site_pages WHERE slug=?').get(s)));

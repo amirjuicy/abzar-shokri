@@ -1,0 +1,135 @@
+
+── Section 1: independent scrolling (desktop 1440×900) ──
+PASS  select object opens settings panel
+PASS  sidebar content exceeds its box (scrollable)   [1562 vs 844]
+PASS  page cannot scroll (html overflow hidden)   [hidden 900/900]
+PASS  overscroll-behavior contained on sidebar   [contain]
+PASS  overscroll-behavior contained on stage   [contain]
+PASS  toolbar pinned at viewport top   [top=0]
+PASS  preview iframe fills the stage window   [iframeH=804]
+PASS  scrolling sidebar reaches its bottom   [718/718]
+PASS  canvas stationary while sidebar scrolls   [{"a":{"win":0,"stage":0,"side":0,"frame":0},"b":{"win":0,"stage":0,"side":718,"frame":0}}]
+PASS  page stationary while sidebar scrolls   [0->0]
+PASS  no scroll chaining past sidebar end   [{"a":{"win":0,"stage":0,"side":718,"frame":0},"b":{"win":0,"stage":0,"side":718,"frame":0}}]
+PASS  canvas wheel exercised (preview content fits its window — no inner overflow)   [inner overflow 0px]
+PASS  sidebar stationary while canvas scrolls   [718->718]
+PASS  page stationary while canvas scrolls   [0->0]
+PASS  no scroll chaining past canvas end   [{"a":{"win":0,"stage":0,"side":718,"frame":0},"b":{"win":0,"stage":0,"side":718,"frame":0}}]
+PASS  stage-area wheel does not chain to sidebar/page   [{"a":{"win":0,"stage":0,"side":718,"frame":0},"b":{"win":0,"stage":0,"side":718,"frame":0}}]
+
+── Section 2: selection & geometry controls ──
+PASS  controls populated with actual values (not zeros/stale)   [{"x":"100px","y":"50px","w":"300px","h":"200px","rot":"45"}]
+PASS  controls match rendered state   [{"l":"100px","t":"50px","w":"300px","h":"200px"}]
+PASS  X edit applies immediately to object   [computed left=180px]
+PASS  X edit moves object visually (+80px)   [737->817]
+PASS  Y edit applies immediately to object   [computed top=120px]
+PASS  Y edit moves object visually (+70px)   [254->324]
+PASS  width edit renders (bare number → px)   [computed width=350px]
+PASS  height edit renders (bare number → px)   [computed height=250px]
+PASS  invalid X ignored (no corruption)   [180px]
+PASS  invalid width (0) rejected   [350px]
+PASS  invalid width (-10) rejected   [350px]
+PASS  decimal Y accepted   [12.5px]
+PASS  percentage width applies   [414px vs 414]
+PASS  rotation visibly applies (90°)   [matrix(0, 1, -1, 0, 0, 0)]
+PASS  rotation changes rendered bounding box   [{"x":844,"y":351,"w":250,"h":350}]
+PASS  negative rotation applies (-45°)   [matrix(0.707107, -0.707107, 0.707107, 0.707107, 0, 0)]
+PASS  aspect lock captures actual ratio (1.5)   [ar=1.5000]
+PASS  aspect lock: width 600 → height 400   [400px/400px]
+PASS  aspect lock: height 300 → width 450   [450px/450px]
+PASS  aspect lock holds with % width (ratio ≈ 1.5)   [ratio=1.500]
+PASS  aspect lock disabled → height untouched   [350px/276px (was 276px)]
+PASS  aspect checkbox state readable from object   [ar=null]
+PASS  new (static) object: controls show real values, not zeros   [{"x":"","w":"828px","pos":"static"}]
+PASS  X on static object promotes it to relative   [relative]
+PASS  X on static object moves it (+100px)   [136->236]
+PASS  clearing X/Y restores original positioning   [/static]
+
+── Section 3: canvas drag ──
+PASS  drag moves the object (+60/+40)   [240px/160px]
+PASS  drag updates X/Y fields from stored position   [240px/160px]
+
+── Section 4: switching objects ──
+PASS  header zone rendered (switch target exists)
+PASS  selecting another object refreshes controls   [<span> ارسال رایگان برای سفارش‌های بالای ۵۰۰ هزار تومان]
+PASS  other object shows its real width   [1100px vs rendered 1100]
+PASS  other object shows a valid position value   [x=0px]
+PASS  reselecting original object restores its exact values (no stale)   [{"x":"240px","y":"160px","w":"350px","h":"276px","rot":"45"}]
+
+── Section 5: layer order controls ──
+PASS  three test siblings added (plus original)   [["Test posit","متن جدید","دکمه جدید","HR"]]
+PASS  backward: moves one step back   [idx=0]
+PASS  forward: moves one step forward   [idx=1]
+PASS  front: moves to top of layer stack   [idx=3]
+PASS  front: visibly changes stacking (renders last)   [y=598 vs hr y=357]
+PASS  back: moves to bottom of layer stack   [idx=0]
+PASS  back: visibly changes stacking (renders first)   [y=281 vs p0 y=385]
+
+── Section 6: desktop / tablet / mobile independence ──
+PASS  desktop baseline set (inline)   [150px/320px]
+PASS  switching to tablet refreshes controls from tablet values   [{"x":"","w":"","rot":""}]
+PASS  tablet edit writes responsive attributes (not inline)   [{"attrs":{"xT":"60px","xM":null,"yT":null,"wT":"260px","wM":null,"rotT":"rotate(60deg)","rotM":null,"ar":null,"pprom":false},"inline":"position: relative; left: 150px; top: 99px; width: 320px; height: 200px; transform: rotate(30deg); font-size: 18px; color: rgb(51, 51, 51); outline: rgb(245, 158, 11) solid 2px; outline-offset: 2px;"}]
+PASS  tablet override actually renders at tablet width   [60px/260px/matrix(0.5, 0.866025, -0.866025, 0.5, 0, 0)]
+PASS  desktop values untouched by tablet edits   [inline kept]
+PASS  drag in tablet mode updates tablet attrs only   [{"xT":"90px","yT":"109px","inline":"position: relative; left: 150px; top: 99px; width: 320px; height: 200px; transfo"}]
+PASS  drag in tablet mode updates X/Y fields   [90px/109px]
+PASS  mobile edit writes its own attributes   [{"xM":"20px","wM":"200px","rotM":"rotate(10deg)"}]
+PASS  mobile edit does not overwrite desktop/tablet values   [{"xT":"90px","wT":"260px"}]
+PASS  mobile renders its own values (and inherits desktop top)   [20px/200px/99px/matrix(0.984808, 0.173648, -0.173648, 0.984808, 0, 0)]
+PASS  return to desktop restores desktop values   [{"x":"150px","y":"99px","w":"320px","rot":"30","cLeft":"150px","cW":"320px"}]
+PASS  return to tablet restores tablet values   [{"x":"90px","y":"","w":"260px","rot":"60","cW":"260px","cTop":"99px"}]
+PASS  return to mobile restores mobile values   [{"x":"20px","w":"200px","rot":"10","cW":"200px"}]
+
+── Section 7: persistence ──
+PASS  unsaved changes survive object switch   [{"before":{"x":"150px","y":"99px","w":"320px"},"after":{"x":"150px","y":"99px","w":"320px"}}]
+PASS  unsaved changes survive mode round-trip   [150px/99px/320px]
+PASS  save API responded OK   [HTTP 200]
+PASS  save status reported in UI   [ذخیره شد.]
+PASS  persisted body contains desktop styles   [<style data-pb-responsive="1">@media (max-width:900px){[data-pb-rid="pbr4mv2s7u49"]{left:90px !important;width:260px !important;transform:rotate(60deg) !important}}@media (max-width:600px){[data-pb-ri]
+PASS  persisted body contains tablet attrs
+PASS  persisted body contains mobile attrs
+PASS  persisted body embeds responsive CSS
+PASS  builder artifacts stripped from saved body
+PASS  after reload: desktop values restored into controls   [{"x":"150px","y":"99px","w":"320px","h":"200px","rot":"30"}]
+PASS  after reload: canvas shows restored values   [150px/99px/320px/200px/matrix(0.866025, 0.5, -0.5, 0.866025, 0, 0)]
+PASS  after reload: tablet values restored   [{"x":"90px","y":"","w":"260px","rot":"60","cW":"260px"}]
+PASS  after reload: mobile values restored   [{"x":"20px","w":"200px","rot":"10","cW":"200px"}]
+PASS  after reload: layer order persisted   [["متن جدید","Test posit","دکمه جدید","HR"]]
+
+── Section 8: cleanup + final save ──
+PASS  test siblings removed   [["Test posit"]]
+PASS  cleanup save OK   [HTTP 200]
+PASS  about page restored to original geometry   [<p style="position: relative; left: 100px; top: 50px; width: 300px; height: 200px; transform: rotate(45deg); font-size: 18px; color: rgb(51, 51, 51);" data-pb-rid="pbr4mv2s7u49">Test positioning</p>]
+PASS  no leftover responsive overrides on about page   [<p style="position: relative; left: 100px; top: 50px; width: 300px; height: 200px; transform: rotate(45deg); font-size: ]
+
+── Section 9: narrow mobile viewport 390×844 ──
+PASS  mobile: toolbar visible at top   [top=0]
+PASS  mobile: both panels have usable height   [stage=355 side=291]
+PASS  mobile: preview iframe fits stage (no clipping)   [iframe=331 stage=355]
+PASS  mobile: page cannot scroll   [hidden]
+PASS  mobile: overscroll contained   [contain/contain]
+PASS  mobile: select object works
+PASS  mobile: controls populated   [{"x":"100px","w":"300px","tag":"<p> Test positioning"}]
+PASS  mobile: X edit applies   [{"left":"170px","field":"170"}]
+PASS  mobile: sidebar scrolls   [1120->1720]
+PASS  mobile: canvas/page stationary while sidebar scrolls   [{"ms":{"win":0,"stage":0,"side":1120,"frame":0},"ms2":{"win":0,"stage":0,"side":1720,"frame":0}}]
+PASS  mobile: canvas (preview) scrolls   [0->227 (inner overflow 227px)]
+PASS  mobile: sidebar/page stationary while canvas scrolls   [{"ms":{"win":0,"stage":0,"side":1720,"frame":0},"ms2":{"win":0,"stage":0,"side":1720,"frame":227}}]
+PASS  mobile: zero console errors   [[]]
+PASS  mobile: zero failed requests   [[]]
+
+── Section 10: tablet viewport 768×1024 ──
+PASS  tablet: no page scroll, topbar pinned, both panels usable   [{"win":0,"htmlOverflow":"hidden","sideH":415,"stageH":508,"iframeH":484,"topbarY":0}]
+PASS  tablet: object selectable, settings panel opens   [sel=true panel=]
+PASS  tablet: sidebar scrolls independently   [{"t0":0,"t1":{"side":400,"win":0,"stage":0}}]
+PASS  tablet: canvas scrolls, sidebar/page stay   [{"t2":{"side":400,"win":0,"frame":74},"tOv":74}]
+PASS  tablet: zero console errors   [[]]
+PASS  tablet: zero failed requests   [[]]
+
+── Section 11: desktop console & network ──
+PASS  desktop: zero console errors   [[]]
+PASS  desktop: zero page errors   [[]]
+PASS  desktop: zero failed/4xx requests   [[]]
+
+══════════════════════════════════
+TOTAL: 110   PASS: 110   FAIL: 0
