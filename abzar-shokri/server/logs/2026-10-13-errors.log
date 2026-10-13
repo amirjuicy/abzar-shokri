@@ -1,0 +1,2 @@
+{"timestamp":"2026-10-13T09:58:52.832Z","level":"error","message":"server listen error","meta":{"error":"listen EADDRINUSE: address already in use :::3000","port":3000}}
+{"timestamp":"2026-10-13T10:14:43.008Z","level":"error","message":"server listen error","meta":{"error":"listen EADDRINUSE: address already in use :::3000","port":3000}}

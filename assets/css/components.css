@@ -47,6 +47,11 @@
   background-color: var(--color-primary-light);
   border-color: var(--color-primary-light);
 }
+.btn-primary.added {
+  background-color: var(--color-success);
+  color: var(--color-dark);
+  transform: scale(0.95);
+}
 
 /* Secondary */
 .btn-secondary {
@@ -2885,13 +2890,19 @@ body.is-site-loading {
   .dk-buybox__price { margin-bottom: 4px; }
 }
 
-/* Position mobile purchase bar above bottom nav, accounting for safe-area insets */
+/* Product page: hide the global bottom nav and pin the purchase bar to the bottom */
 @media (max-width: 768px) {
+  body.has-mobile-purchase-bar .mobile-bottom-nav {
+    display: none !important;
+  }
+  body.has-mobile-purchase-bar .chat-fab {
+    display: none !important;
+  }
   body.has-mobile-purchase-bar {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0));
+    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0));
   }
   .mobile-purchase-bar {
-    bottom: calc(56px + env(safe-area-inset-bottom, 0));
+    bottom: 0;
   }
 }
 

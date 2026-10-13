@@ -678,11 +678,18 @@
        without duplicate-id collisions. */
     function cartControlHTML(item, isBar) {
       if (item && item.quantity > 0) {
-        /* Quantity control (already in cart) */
-        return '<div class="qty-selector qty-selector--buybox" role="group" aria-label="تعداد محصول در سبد خرید">' +
-          '<button type="button" class="qty-selector__btn qty-selector__btn--minus" onclick="ProductDetail.updateCartQty(-1)" aria-label="کاهش تعداد">' + Icons.minus + '</button>' +
-          '<span class="qty-selector__value"' + (isBar ? ' id="pdp-buy-bar-qty"' : ' id="product-qty"') + '>' + Format.toPersianNumber(item.quantity) + '</span>' +
-          '<button type="button" class="qty-selector__btn qty-selector__btn--plus" onclick="ProductDetail.updateCartQty(1)" aria-label="افزایش تعداد">' + Icons.plus + '</button>' +
+        var countId = isBar ? 'pdp-buy-bar-qty' : 'product-qty';
+        /* Digikala-style in-cart control requested by the user. */
+        return '<div class="flex items-center">' +
+          '<div class="qty-selector qty-selector--buybox" role="group" aria-label="تعداد محصول در سبد خرید">' +
+            '<button type="button" class="qty-selector__btn qty-selector__btn--minus" onclick="ProductDetail.updateCartQty(-1)" aria-label="کاهش تعداد">' + Icons.minus + '</button>' +
+            '<span class="qty-selector__value" id="' + countId + '">' + Format.toPersianNumber(item.quantity) + '</span>' +
+            '<button type="button" class="qty-selector__btn qty-selector__btn--plus" onclick="ProductDetail.updateCartQty(1)" aria-label="افزایش تعداد">' + Icons.plus + '</button>' +
+          '</div>' +
+          '<div class="mr-2 lg:mr-4 hidden lg:block shrink-0">' +
+            '<p class="text-neutral-700 text-body-1">در سبد شما</p>' +
+            '<div class="flex items-center">مشاهده<a data-cro-id="pdp-see-cart-main" class="text-secondary-500" href="/checkout/cart/"><p class="mr-1 text-body-2">سبد خرید</p></a></div>' +
+          '</div>' +
         '</div>';
       }
       /* Add to cart button */

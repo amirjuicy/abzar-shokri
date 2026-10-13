@@ -95,7 +95,6 @@
     saveRecentlyViewed(product.id);
     loadPersistedReviews();
     render();
-    document.body.classList.add('has-mobile-purchase-bar');
     bindTabs();
     bindGallery();
   }
@@ -315,12 +314,12 @@
             '</div>' +
           '</div>' +
           (p.inStock ?
-          '<div class="dk-buybox__cart">' +
-            '<button class="dk-buybox__add-btn" id="product-add-to-cart" onclick="App.addToCart(' + p.id + ', ProductDetail.getPricingMode())">' +
+          '<div class="dk-buybox__cart" id="product-cart-control">' +
+            '<button class="dk-buybox__add-btn" id="product-add-to-cart" onclick="ProductDetail.addDesktopToCart()">' +
               '<span>افزودن به سبد خرید</span>' +
             '</button>' +
           '</div>' :
-          '<div class="dk-buybox__cart">' +
+          '<div class="dk-buybox__cart" id="product-cart-control">' +
             '<button class="dk-buybox__add-btn dk-buybox__add-btn--disabled" disabled>ناموجود</button>' +
           '</div>') +
         '</div>' +
@@ -361,9 +360,6 @@
 
       '</div>' +
       '</div>' +
-
-      /* ── Mobile Purchase Bar (Digikala-style, mobile only via CSS) ── */
-      '<div class="mobile-purchase-bar" id="mobile-purchase-bar">' + buyBarHTML(p, 'retail') + '</div>' +
 
       /* ── Features ── */
       '<div class="pdp-features">' +
@@ -407,6 +403,18 @@
     renderRelated();
     bindReviewForm();
     startPdpCountdown();
+    /* Sync desktop buybox with cart (if already in cart) */
+    setTimeout(function () {
+      var mode = selectedPricingMode || 'retail';
+      var key = p.id + '_' + mode;
+      var items = App.getCart ? App.getCart() : [];
+      var item = (items.find ? items.find(function (x) { return x.key === key; }) : null);
+      if (item) {
+        desktopCartKey = key;
+        var control = document.getElementById('product-cart-control');
+        if (control) control.innerHTML = desktopInCartHTML(item.quantity);
+      }
+    }, 0);
     /* Mouse drag-to-scroll for horizontal strips (shared helper in common.js).
        Touch behavior untouched; arrow buttons unchanged. */
     try {
@@ -424,6 +432,23 @@
     var qty = 1;
     var selectedPricingMode = 'retail';
     var mobileCartKey = null;
+    var desktopCartKey = null;
+
+    function desktopInCartHTML(qtyCount) {
+      qtyCount = qtyCount || 1;
+      return '<div class="flex items-center">' +
+        '<div class="qty-selector qty-selector--buybox" role="group" aria-label="تعداد محصول در سبد خرید">' +
+          '<button type="button" class="qty-selector__btn qty-selector__btn--minus" onclick="ProductDetail.updateCartQty(-1)" aria-label="کاهش تعداد">' + Icons.minus + '</button>' +
+          '<span class="qty-selector__value" id="product-qty">' + Format.toPersianNumber(qtyCount) + '</span>' +
+          '<button type="button" class="qty-selector__btn qty-selector__btn--plus" onclick="ProductDetail.updateCartQty(1)" aria-label="افزایش تعداد">' + Icons.plus + '</button>' +
+        '</div>' +
+        '<div class="mr-2 lg:mr-4 hidden lg:block shrink-0">' +
+          '<p class="text-neutral-700 text-body-1">در سبد شما</p>' +
+          '<div class="flex items-center">مشاهده<a data-cro-id="pdp-see-cart-main" class="text-secondary-500" href="/checkout/cart/"><p class="mr-1 text-body-2">سبد خرید</p></a></div>' +
+        '</div>' +
+      '</div>';
+    }
+
     function syncMobileBar() {
       var addBtn = document.getElementById('mobile-add-to-cart');
       var qtyWrap = document.getElementById('mobile-qty-wrap');
@@ -477,6 +502,29 @@
         setTimeout(syncMobileBar, 30);
       },
       syncMobileBar: syncMobileBar,
+      addDesktopToCart: function () {
+        var mode = selectedPricingMode || 'retail';
+        var key = App.addToCart(p.id, mode);
+        if (key) {
+          desktopCartKey = key;
+          var item = (App.getCart ? App.getCart() : []).find(function (x) { return x.key === key; });
+          var count = item ? item.quantity : 1;
+          var control = document.getElementById('product-cart-control');
+          if (control) control.innerHTML = desktopInCartHTML(count);
+        }
+        return key;
+      },
+      desktopRemoveFromCart: function () {
+        if (desktopCartKey) {
+          try { App.removeFromCart(desktopCartKey); } catch (e) {}
+        }
+        desktopCartKey = null;
+        var control = document.getElementById('product-cart-control');
+        if (control) {
+          control.innerHTML = '<button class="dk-buybox__add-btn" id="product-add-to-cart" onclick="ProductDetail.addDesktopToCart()"><span>افزودن به سبد خرید</span></button>';
+        }
+        return true;
+      },
       selectPricing: function (mode) {
         selectedPricingMode = mode;
         var changer = document.getElementById('product-detail-pricing');
@@ -687,7 +735,7 @@
       '<div class="mobile-purchase-bar__inner">' +
         '<div class="mobile-purchase-bar__cart-wrap">' +
           '<button id="mobile-add-to-cart" class="mobile-purchase-bar__add-btn ' + addBtnClass + '" ' + addBtnDisabled +
-            ' data-cro-id="pdp-add-to-cart" data-testid="add-to-cart" onclick="ProductDetail.addToCartWithOptions(' + p.id + ', \'' + pricingMode + '\')">' +
+            ' data-cro-id="pdp-add-to-cart" data-testid="add-to-cart" onclick="this.classList.toggle(\"added\"); ProductDetail.addToCartWithOptions(' + p.id + ', \'' + pricingMode + '\')">' +
             '<span class="mobile-purchase-bar__add-btn-text">' + addBtnText + '</span>' +
           '</button>' +
           '<div class="mobile-purchase-bar__qty" id="mobile-qty-wrap" hidden>' +
