@@ -1866,7 +1866,7 @@ el.innerHTML = '\
      The support/chat widget is intended for public shopping pages.
      Hide it on focused flows (auth, checkout), offline fallback,
      and internal/dev pages. Design and behavior unchanged. */
-  var CHAT_HIDDEN_PAGES = ['login.html', 'register.html', 'forgot-password.html', 'checkout.html', 'checkout-step4.html', 'offline.html'];
+  var CHAT_HIDDEN_PAGES = ['login.html', 'register.html', 'forgot-password.html', 'checkout.html', 'checkout-step4.html', 'offline.html', 'product.html'];
 
   function isChatAllowedPage() {
     var page = storeFile().toLowerCase();

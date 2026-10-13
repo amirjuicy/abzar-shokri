@@ -1,5 +1,5 @@
 /* ================================================================
-   Abzar Shokri — Product Detail Page (Digikala-style)
+   Abzar Shokri â€” Product Detail Page (Digikala-style)
    Uses product.image and product.images from data.js
    ================================================================ */
 (function () {
@@ -9,7 +9,7 @@
   var product = null;
   var activeGalleryIndex = 0;
 
-  /* ── Review persistence (localStorage) ─────────────────── */
+  /* â”€â”€ Review persistence (localStorage) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   var SEED_REVIEW_COUNT = 8; /* number of hardcoded reviews in data.js */
 
   function getReviewStorageKey() {
@@ -43,13 +43,13 @@
     } catch (e) {}
   }
 
-  /* ── Image fallback ───────────────────────────────────────── */
+  /* â”€â”€ Image fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function fallbackSrc(brandName) {
     return 'data:image/svg+xml,' + encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">' +
       '<rect width="400" height="400" fill="#f3f4f6"/>' +
       '<text x="200" y="210" text-anchor="middle" fill="#9ca3af" font-size="24" font-family="sans-serif">' +
-      (brandName || 'ابزار شکری') + '</text></svg>'
+      (brandName || 'Ø§Ø¨Ø²Ø§Ø± Ø´Ú©Ø±ÛŒ') + '</text></svg>'
     );
   }
 
@@ -61,7 +61,7 @@
     return '<img src="' + src + '" alt="' + (alt || '') + '" loading="lazy" class="product-gallery__thumb-img" onerror="this.onerror=null;this.src=\'' + fallbackSrc(product ? product.brandName : '') + '\'">';
   }
 
-  /* ── Recently viewed (localStorage, persistent) ─────────── */
+  /* â”€â”€ Recently viewed (localStorage, persistent) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   var RECENT_KEY = 'as_recently_viewed';
   var RECENT_MAX = 8;
 
@@ -80,7 +80,7 @@
     } catch (e) {}
   }
 
-  /* ── Init ─────────────────────────────────────────────────── */
+  /* â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function init() {
     var params = new URLSearchParams(window.location.search);
     // Clean URL (/product/:ref) carries slug-or-id in the pathname.
@@ -90,7 +90,7 @@
     if (slug) product = AppData.products.find(function (p) { return p.slug === slug; });
     if (!product && id) product = AppData.products.find(function (p) { return p.id === parseInt(id); });
     if (!product) product = AppData.products[0];
-    document.title = product.name + ' | ابزار شکری';
+    document.title = product.name + ' | Ø§Ø¨Ø²Ø§Ø± Ø´Ú©Ø±ÛŒ';
     activeGalleryIndex = 0;
     saveRecentlyViewed(product.id);
     loadPersistedReviews();
@@ -99,7 +99,7 @@
     bindGallery();
   }
 
-  /* ── Render ───────────────────────────────────────────────── */
+  /* â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function render() {
     var p = product;
     var r = Format.rating(p.rating);
@@ -118,26 +118,26 @@
     var specKeys = Object.keys(p.specs);
 
     el.innerHTML =
-    /* ── Breadcrumb ── */
+    /* â”€â”€ Breadcrumb â”€â”€ */
     '<div class="breadcrumb"><div class="container"><div class="breadcrumb-list">' +
-      '<span class="breadcrumb-item"><a href="/">خانه</a></span>' +
+      '<span class="breadcrumb-item"><a href="/">Ø®Ø§Ù†Ù‡</a></span>' +
       '<span class="breadcrumb-sep">/</span>' +
       '<span class="breadcrumb-item"><a href="/shop?category=' + p.categorySlug + '">' + p.category + '</a></span>' +
       '<span class="breadcrumb-sep">/</span>' +
       '<span class="breadcrumb-item breadcrumb-item--active">' + p.name + '</span>' +
     '</div></div></div>' +
 
-    /* ── Two-column layout ── */
+    /* â”€â”€ Two-column layout â”€â”€ */
     '<div class="container"><div class="pdp-layout">' +
 
-    /* ═══ RIGHT COLUMN: Gallery ═══ */
+    /* â•â•â• RIGHT COLUMN: Gallery â•â•â• */
     '<div class="pdp-layout__gallery">' +
 
       /* Promo badge */
       '<div class="pdp-promo-badge">' +
-        '<span class="pdp-promo-badge__text">پیشنهاد شگفت‌انگیز</span>' +
+        '<span class="pdp-promo-badge__text">Ù¾ÛŒØ´Ù†Ù‡Ø§Ø¯ Ø´Ú¯ÙØªâ€ŒØ§Ù†Ú¯ÛŒØ²</span>' +
         '<div class="pdp-promo-badge__timer">' +
-          '<span id="pdp-countdown">۵۸ : ۳۲ : ۰۹</span>' +
+          '<span id="pdp-countdown">ÛµÛ¸ : Û³Û² : Û°Û¹</span>' +
         '</div>' +
       '</div>' +
 
@@ -146,21 +146,21 @@
 
         /* Action icons (vertical sidebar) */
         '<div class="pdp-action-icons">' +
-          '<button class="pdp-action-icon pdp-action-icon--wishlist" onclick="ProductDetail.toggleWishlist()" data-wishlist="' + p.id + '" aria-label="علاقه‌مندی">' +
+          '<button class="pdp-action-icon pdp-action-icon--wishlist" onclick="ProductDetail.toggleWishlist()" data-wishlist="' + p.id + '" aria-label="Ø¹Ù„Ø§Ù‚Ù‡â€ŒÙ…Ù†Ø¯ÛŒ">' +
             (App.getWishlist().indexOf(p.id) !== -1 ? Icons.heartFill : Icons.heart) +
-            '<span class="pdp-action-icon__tooltip">اضافه به علاقه‌مندی</span>' +
+            '<span class="pdp-action-icon__tooltip">Ø§Ø¶Ø§ÙÙ‡ Ø¨Ù‡ Ø¹Ù„Ø§Ù‚Ù‡â€ŒÙ…Ù†Ø¯ÛŒ</span>' +
           '</button>' +
-          '<button class="pdp-action-icon" onclick="ProductDetail.share()" aria-label="اشتراک‌گذاری">' +
+          '<button class="pdp-action-icon" onclick="ProductDetail.share()" aria-label="Ø§Ø´ØªØ±Ø§Ú©â€ŒÚ¯Ø°Ø§Ø±ÛŒ">' +
             Icons.share +
-            '<span class="pdp-action-icon__tooltip">اشتراک‌گذاری</span>' +
+            '<span class="pdp-action-icon__tooltip">Ø§Ø´ØªØ±Ø§Ú©â€ŒÚ¯Ø°Ø§Ø±ÛŒ</span>' +
           '</button>' +
-          '<button class="pdp-action-icon pdp-action-icon--compare" onclick="ProductDetail.toggleCompare()" aria-label="مقایسه">' +
+          '<button class="pdp-action-icon pdp-action-icon--compare" onclick="ProductDetail.toggleCompare()" aria-label="Ù…Ù‚Ø§ÛŒØ³Ù‡">' +
             Icons.scale +
-            '<span class="pdp-action-icon__tooltip">مقایسه کالا</span>' +
+            '<span class="pdp-action-icon__tooltip">Ù…Ù‚Ø§ÛŒØ³Ù‡ Ú©Ø§Ù„Ø§</span>' +
           '</button>' +
-          '<button class="pdp-action-icon" onclick="ProductDetail.toggleWishlist()" aria-label="افزودن به لیست">' +
+          '<button class="pdp-action-icon" onclick="ProductDetail.toggleWishlist()" aria-label="Ø§ÙØ²ÙˆØ¯Ù† Ø¨Ù‡ Ù„ÛŒØ³Øª">' +
             Icons.list +
-            '<span class="pdp-action-icon__tooltip">افزودن به لیست</span>' +
+            '<span class="pdp-action-icon__tooltip">Ø§ÙØ²ÙˆØ¯Ù† Ø¨Ù‡ Ù„ÛŒØ³Øª</span>' +
           '</button>' +
         '</div>' +
 
@@ -185,10 +185,10 @@
 
     '</div>' +
 
-    /* ═══ LEFT COLUMN: Info + Buy Box ═══ */
+    /* â•â•â• LEFT COLUMN: Info + Buy Box â•â•â• */
     '<div class="pdp-layout__info">' +
 
-      /* ── Product Title ── */
+      /* â”€â”€ Product Title â”€â”€ */
       '<div class="pdp-title-section">' +
         '<nav class="pdp-breadcrumb">' +
           '<a href="/brand/' + p.brand + '" class="pdp-breadcrumb__brand">' + p.brandName + '</a>' +
@@ -199,30 +199,30 @@
         '<div class="pdp-english-name">' + p.shortDescription.substring(0, 60) + '...</div>' +
       '</div>' +
 
-      /* ── Rating + Reviews ── */
+      /* â”€â”€ Rating + Reviews â”€â”€ */
       '<div class="pdp-rating-row">' +
         '<div class="pdp-rating">' +
           '<span class="pdp-rating__stars">' + stars + '</span>' +
           '<span class="pdp-rating__value">' + p.rating + '</span>' +
-          '<span class="pdp-rating__count">(' + Format.toPersianNumber(actualReviewCount) + ' خریدار)</span>' +
+          '<span class="pdp-rating__count">(' + Format.toPersianNumber(actualReviewCount) + ' Ø®Ø±ÛŒØ¯Ø§Ø±)</span>' +
         '</div>' +
         '<div class="pdp-rating__badges">' +
           '<a class="pdp-badge-link" href="#tab-reviews" data-tab="reviews">' +
             '<span class="pdp-badge-link__icon">' + Icons.star + '</span>' +
-            Format.toPersianNumber(actualReviewCount) + ' دیدگاه' +
+            Format.toPersianNumber(actualReviewCount) + ' Ø¯ÛŒØ¯Ú¯Ø§Ù‡' +
             '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>' +
           '</a>' +
           '<a class="pdp-badge-link" href="#tab-qa" data-tab="qa">' +
-            Format.toPersianNumber(0) + ' پرسش' +
+            Format.toPersianNumber(0) + ' Ù¾Ø±Ø³Ø´' +
             '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>' +
           '</a>' +
         '</div>' +
       '</div>' +
 
-      /* ── Specs Grid ── */
+      /* â”€â”€ Specs Grid â”€â”€ */
       (specKeys.length > 0 ?
       '<div class="pdp-specs">' +
-        '<h3 class="pdp-specs__title">ویژگی‌ها</h3>' +
+        '<h3 class="pdp-specs__title">ÙˆÛŒÚ˜Ú¯ÛŒâ€ŒÙ‡Ø§</h3>' +
         '<div class="pdp-specs__grid">' +
           specKeys.slice(0, 6).map(function (k) {
             return '<div class="pdp-spec-item">' +
@@ -232,56 +232,56 @@
           }).join('') +
         '</div>' +
         (specKeys.length > 6 ?
-        '<button class="pdp-specs__more" onclick="document.querySelector(\'[data-tab=specs]\').click()">مشاهده همه ویژگی‌ها ' +
+        '<button class="pdp-specs__more" onclick="document.querySelector(\'[data-tab=specs]\').click()">Ù…Ø´Ø§Ù‡Ø¯Ù‡ Ù‡Ù…Ù‡ ÙˆÛŒÚ˜Ú¯ÛŒâ€ŒÙ‡Ø§ ' +
           '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>' +
         '</button>' : '') +
       '</div>' : '') +
 
-      /* ── Delivery Info ── */
+      /* â”€â”€ Delivery Info â”€â”€ */
       '<div class="pdp-delivery-info">' +
         '<div class="pdp-delivery-info__row">' +
           '<div class="pdp-delivery-info__badge">' +
             '<span class="pdp-delivery-info__badge-icon">' + Icons.truck + '</span>' +
-            '<span>سریع امروز</span>' +
+            '<span>Ø³Ø±ÛŒØ¹ Ø§Ù…Ø±ÙˆØ²</span>' +
           '</div>' +
           '<div class="pdp-delivery-info__text">' +
-            '<span>تحویل توسط فروشگاه</span>' +
+            '<span>ØªØ­ÙˆÛŒÙ„ ØªÙˆØ³Ø· ÙØ±ÙˆØ´Ú¯Ø§Ù‡</span>' +
           '</div>' +
         '</div>' +
       '</div>' +
 
-      /* ── Insurance ── */
+      /* â”€â”€ Insurance â”€â”€ */
       '<div class="pdp-insurance">' +
-        '<h3 class="pdp-insurance__title">بیمه</h3>' +
+        '<h3 class="pdp-insurance__title">Ø¨ÛŒÙ…Ù‡</h3>' +
         '<div class="pdp-insurance__card">' +
           '<label class="pdp-insurance__label">' +
             '<input type="checkbox" class="pdp-insurance__checkbox">' +
             '<span class="pdp-insurance__check"></span>' +
             '<div class="pdp-insurance__details">' +
-              '<p class="pdp-insurance__name">بیمه تجهیزات دیجیتال</p>' +
+              '<p class="pdp-insurance__name">Ø¨ÛŒÙ…Ù‡ ØªØ¬Ù‡ÛŒØ²Ø§Øª Ø¯ÛŒØ¬ÛŒØªØ§Ù„</p>' +
               '<div class="pdp-insurance__price">' +
-                '<span class="pdp-insurance__discount-badge">٪۵۰</span>' +
-                '<span class="pdp-insurance__old-price">۲,۳۱۰,۰۰۰</span>' +
-                '<span class="pdp-insurance__final-price">۱,۱۵۵,۰۰۰ تومان</span>' +
+                '<span class="pdp-insurance__discount-badge">ÙªÛµÛ°</span>' +
+                '<span class="pdp-insurance__old-price">Û²,Û³Û±Û°,Û°Û°Û°</span>' +
+                '<span class="pdp-insurance__final-price">Û±,Û±ÛµÛµ,Û°Û°Û° ØªÙˆÙ…Ø§Ù†</span>' +
               '</div>' +
             '</div>' +
           '</label>' +
         '</div>' +
       '</div>' +
 
-      /* ── Return Policy Notice ── */
+      /* â”€â”€ Return Policy Notice â”€â”€ */
       '<div class="pdp-return-notice">' +
         '<div class="pdp-return-notice__icon">' + Icons.infoCircle + '</div>' +
-        '<p class="pdp-return-notice__text">امکان برگشت کالا در گروه ابزارآلات با دلیل "انصراف از خرید" تنها در صورتی مورد قبول است که پلمب کالا باز نشده باشد.</p>' +
+        '<p class="pdp-return-notice__text">Ø§Ù…Ú©Ø§Ù† Ø¨Ø±Ú¯Ø´Øª Ú©Ø§Ù„Ø§ Ø¯Ø± Ú¯Ø±ÙˆÙ‡ Ø§Ø¨Ø²Ø§Ø±Ø¢Ù„Ø§Øª Ø¨Ø§ Ø¯Ù„ÛŒÙ„ "Ø§Ù†ØµØ±Ø§Ù Ø§Ø² Ø®Ø±ÛŒØ¯" ØªÙ†Ù‡Ø§ Ø¯Ø± ØµÙˆØ±ØªÛŒ Ù…ÙˆØ±Ø¯ Ù‚Ø¨ÙˆÙ„ Ø§Ø³Øª Ú©Ù‡ Ù¾Ù„Ù…Ø¨ Ú©Ø§Ù„Ø§ Ø¨Ø§Ø² Ù†Ø´Ø¯Ù‡ Ø¨Ø§Ø´Ø¯.</p>' +
       '</div>' +
 
-      /* ── Buy Box (Digikala-style) ── */
+      /* â”€â”€ Buy Box (Digikala-style) â”€â”€ */
       '<div class="dk-buybox-wrap">' +
       '<div class="dk-buybox" data-testid="buy-box">' +
 
         /* Seller Header */
         '<div class="dk-buybox__seller-header">' +
-          '<h3 class="dk-buybox__seller-title">فروشنده</h3>' +
+          '<h3 class="dk-buybox__seller-title">ÙØ±ÙˆØ´Ù†Ø¯Ù‡</h3>' +
         '</div>' +
 
         /* Seller Store */
@@ -289,11 +289,11 @@
           '<div class="dk-buybox__store-inner">' +
             '<div class="dk-buybox__store-badge">' + Icons.store + '</div>' +
             '<div class="dk-buybox__store-info">' +
-              '<div class="dk-buybox__store-name">ابزار شکری</div>' +
+              '<div class="dk-buybox__store-name">Ø§Ø¨Ø²Ø§Ø± Ø´Ú©Ø±ÛŒ</div>' +
               '<div class="dk-buybox__store-stats">' +
-                '<span class="dk-buybox__store-stat"><span style="color:var(--color-success)">۱۰۰٪</span> رضایت از کالا</span>' +
+                '<span class="dk-buybox__store-stat"><span style="color:var(--color-success)">Û±Û°Û°Ùª</span> Ø±Ø¶Ø§ÛŒØª Ø§Ø² Ú©Ø§Ù„Ø§</span>' +
                 '<span class="dk-buybox__store-divider"></span>' +
-                '<span class="dk-buybox__store-stat">عملکرد <span style="color:var(--color-success)">عالی</span></span>' +
+                '<span class="dk-buybox__store-stat">Ø¹Ù…Ù„Ú©Ø±Ø¯ <span style="color:var(--color-success)">Ø¹Ø§Ù„ÛŒ</span></span>' +
               '</div>' +
             '</div>' +
           '</div>' +
@@ -305,7 +305,7 @@
             '<div class="dk-buybox__price-top">' +
               (p.oldPrice ?
                 '<span class="dk-buybox__old-price">' + Format.priceWithCurrency(p.oldPrice) + '</span>' +
-                '<span class="dk-buybox__discount-badge">٪' + p.discount + '</span>'
+                '<span class="dk-buybox__discount-badge">Ùª' + p.discount + '</span>'
               : '') +
             '</div>' +
             '<div class="dk-buybox__final-price" id="product-detail-price">' +
@@ -316,36 +316,36 @@
           (p.inStock ?
           '<div class="dk-buybox__cart" id="product-cart-control">' +
             '<button class="dk-buybox__add-btn" id="product-add-to-cart" onclick="ProductDetail.addDesktopToCart()">' +
-              '<span>افزودن به سبد خرید</span>' +
+              '<span>Ø§ÙØ²ÙˆØ¯Ù† Ø¨Ù‡ Ø³Ø¨Ø¯ Ø®Ø±ÛŒØ¯</span>' +
             '</button>' +
           '</div>' :
           '<div class="dk-buybox__cart" id="product-cart-control">' +
-            '<button class="dk-buybox__add-btn dk-buybox__add-btn--disabled" disabled>ناموجود</button>' +
+            '<button class="dk-buybox__add-btn dk-buybox__add-btn--disabled" disabled>Ù†Ø§Ù…ÙˆØ¬ÙˆØ¯</button>' +
           '</div>') +
         '</div>' +
 
         /* Guarantee */
         '<div class="dk-buybox__guarantee">' +
           '<div class="dk-buybox__guarantee-icon">' + Icons.shieldCheck + '</div>' +
-          '<span class="dk-buybox__guarantee-text">گارانتی اصالت کالا</span>' +
+          '<span class="dk-buybox__guarantee-text">Ú¯Ø§Ø±Ø§Ù†ØªÛŒ Ø§ØµØ§Ù„Øª Ú©Ø§Ù„Ø§</span>' +
         '</div>' +
 
         /* Delivery Methods (current design: summary text, no per-method list) */
         '<div class="dk-buybox__delivery">' +
           '<div class="dk-buybox__delivery-header">' +
             '<div class="dk-buybox__delivery-icon">' + Icons.truck + '</div>' +
-            '<span class="dk-buybox__delivery-title">روش‌ها و هزینه‌های تحویل</span>' +
+            '<span class="dk-buybox__delivery-title">Ø±ÙˆØ´â€ŒÙ‡Ø§ Ùˆ Ù‡Ø²ÛŒÙ†Ù‡â€ŒÙ‡Ø§ÛŒ ØªØ­ÙˆÛŒÙ„</span>' +
             '<div class="dk-buybox__delivery-chevron">' + Icons.chevronLeft + '</div>' +
           '</div>' +
           '<div class="dk-buybox__delivery-info">' +
-            '<p>هزینه ارسال بر اساس آدرس و مبلغ سفارش در مرحله تسویه‌حساب محاسبه می‌شود.</p>' +
-            '<p>برای سفارش‌های بالاتر از حد مشخص، ارسال رایگان است.</p>' +
+            '<p>Ù‡Ø²ÛŒÙ†Ù‡ Ø§Ø±Ø³Ø§Ù„ Ø¨Ø± Ø§Ø³Ø§Ø³ Ø¢Ø¯Ø±Ø³ Ùˆ Ù…Ø¨Ù„Øº Ø³ÙØ§Ø±Ø´ Ø¯Ø± Ù…Ø±Ø­Ù„Ù‡ ØªØ³ÙˆÛŒÙ‡â€ŒØ­Ø³Ø§Ø¨ Ù…Ø­Ø§Ø³Ø¨Ù‡ Ù…ÛŒâ€ŒØ´ÙˆØ¯.</p>' +
+            '<p>Ø¨Ø±Ø§ÛŒ Ø³ÙØ§Ø±Ø´â€ŒÙ‡Ø§ÛŒ Ø¨Ø§Ù„Ø§ØªØ± Ø§Ø² Ø­Ø¯ Ù…Ø´Ø®ØµØŒ Ø§Ø±Ø³Ø§Ù„ Ø±Ø§ÛŒÚ¯Ø§Ù† Ø§Ø³Øª.</p>' +
           '</div>' +
         '</div>' +
 
         /* Better Price */
         '<div class="dk-buybox__better-price">' +
-          '<span class="dk-buybox__better-price-text">قیمت بهتری سراغ دارید؟</span>' +
+          '<span class="dk-buybox__better-price-text">Ù‚ÛŒÙ…Øª Ø¨Ù‡ØªØ±ÛŒ Ø³Ø±Ø§Øº Ø¯Ø§Ø±ÛŒØ¯ØŸ</span>' +
           '<div class="dk-buybox__better-price-icon">' + Icons.infoCircle + '</div>' +
         '</div>' +
 
@@ -353,7 +353,7 @@
         '<a class="dk-buybox__pricing-link" href="/pricing">' +
           '<div class="dk-buybox__pricing-info">' +
             '<div class="dk-buybox__pricing-icon">' + Icons.infoCircle + '</div>' +
-            '<span class="dk-buybox__pricing-text">فرآیند قیمت‌گذاری و نظارت بر قیمت</span>' +
+            '<span class="dk-buybox__pricing-text">ÙØ±Ø¢ÛŒÙ†Ø¯ Ù‚ÛŒÙ…Øªâ€ŒÚ¯Ø°Ø§Ø±ÛŒ Ùˆ Ù†Ø¸Ø§Ø±Øª Ø¨Ø± Ù‚ÛŒÙ…Øª</span>' +
           '</div>' +
           '<div class="dk-buybox__pricing-chevron">' + Icons.chevronLeft + '</div>' +
         '</a>' +
@@ -361,19 +361,19 @@
       '</div>' +
       '</div>' +
 
-      /* ── Features ── */
+      /* â”€â”€ Features â”€â”€ */
       '<div class="pdp-features">' +
         '<div class="pdp-feature">' +
           '<div class="pdp-feature__icon">' + Icons.truck + '</div>' +
-          '<span>ارسال رایگان برای سفارش‌های بالای ۵۰۰ هزار تومان</span>' +
+          '<span>Ø§Ø±Ø³Ø§Ù„ Ø±Ø§ÛŒÚ¯Ø§Ù† Ø¨Ø±Ø§ÛŒ Ø³ÙØ§Ø±Ø´â€ŒÙ‡Ø§ÛŒ Ø¨Ø§Ù„Ø§ÛŒ ÛµÛ°Û° Ù‡Ø²Ø§Ø± ØªÙˆÙ…Ø§Ù†</span>' +
         '</div>' +
         '<div class="pdp-feature">' +
           '<div class="pdp-feature__icon">' + Icons.shieldCheck + '</div>' +
-          '<span>ضمانت اصالت کالا</span>' +
+          '<span>Ø¶Ù…Ø§Ù†Øª Ø§ØµØ§Ù„Øª Ú©Ø§Ù„Ø§</span>' +
         '</div>' +
         '<div class="pdp-feature">' +
           '<div class="pdp-feature__icon">' + Icons.refreshCw + '</div>' +
-          '<span>۷ روز ضمانت بازگشت</span>' +
+          '<span>Û· Ø±ÙˆØ² Ø¶Ù…Ø§Ù†Øª Ø¨Ø§Ø²Ú¯Ø´Øª</span>' +
         '</div>' +
       '</div>' +
 
@@ -381,14 +381,14 @@
 
     '</div></div>' +
 
-    /* ── Tabs ── */
+    /* â”€â”€ Tabs â”€â”€ */
     '<div class="container"><div class="product-tabs">' +
       '<div class="product-tabs__nav">' +
-        '<button class="product-tabs__tab is-active" data-tab="desc">معرفی</button>' +
-        '<button class="product-tabs__tab" data-tab="expert">بررسی تخصصی</button>' +
-        '<button class="product-tabs__tab" data-tab="specs">مشخصات</button>' +
-        '<button class="product-tabs__tab" data-tab="reviews">دیدگاه‌ها' + (actualReviewCount > 0 ? ' (' + Format.toPersianNumber(actualReviewCount) + ')' : '') + '</button>' +
-        '<button class="product-tabs__tab" data-tab="qa">پرسش‌ها</button>' +
+        '<button class="product-tabs__tab is-active" data-tab="desc">Ù…Ø¹Ø±ÙÛŒ</button>' +
+        '<button class="product-tabs__tab" data-tab="expert">Ø¨Ø±Ø±Ø³ÛŒ ØªØ®ØµØµÛŒ</button>' +
+        '<button class="product-tabs__tab" data-tab="specs">Ù…Ø´Ø®ØµØ§Øª</button>' +
+        '<button class="product-tabs__tab" data-tab="reviews">Ø¯ÛŒØ¯Ú¯Ø§Ù‡â€ŒÙ‡Ø§' + (actualReviewCount > 0 ? ' (' + Format.toPersianNumber(actualReviewCount) + ')' : '') + '</button>' +
+        '<button class="product-tabs__tab" data-tab="qa">Ù¾Ø±Ø³Ø´â€ŒÙ‡Ø§</button>' +
       '</div>' +
       '<div class="product-tabs__panel is-active" id="tab-desc"><div class="static-page__content"><p>' + p.description + '</p></div></div>' +
       '<div class="product-tabs__panel" id="tab-expert">' + renderExpert() + '</div>' +
@@ -397,8 +397,8 @@
       '<div class="product-tabs__panel" id="tab-qa">' + renderQA() + '</div>' +
     '</div></div>' +
 
-    /* ── Related Products ── */
-    '<div class="related-products"><div class="container"><div class="section-header"><h2 class="section-title">محصولات مرتبط</h2></div><div class="product-listing-grid" id="related-grid"></div></div></div>';
+    /* â”€â”€ Related Products â”€â”€ */
+    '<div class="related-products"><div class="container"><div class="section-header"><h2 class="section-title">Ù…Ø­ØµÙˆÙ„Ø§Øª Ù…Ø±ØªØ¨Ø·</h2></div><div class="product-listing-grid" id="related-grid"></div></div></div>';
 
     renderRelated();
     bindReviewForm();
@@ -436,15 +436,11 @@
 
     function desktopInCartHTML(qtyCount) {
       qtyCount = qtyCount || 1;
-      return '<div class="flex items-center">' +
-        '<div class="qty-selector qty-selector--buybox" role="group" aria-label="تعداد محصول در سبد خرید">' +
-          '<button type="button" class="qty-selector__btn qty-selector__btn--minus" onclick="ProductDetail.updateCartQty(-1)" aria-label="کاهش تعداد">' + Icons.minus + '</button>' +
+      return '<div class="flex items-center w-full justify-center">' +
+        '<div class="qty-selector qty-selector--buybox" style="width:240px;max-width:240px;height:54px;"  role="group" aria-label="ØªØ¹Ø¯Ø§Ø¯ Ù…Ø­ØµÙˆÙ„ Ø¯Ø± Ø³Ø¨Ø¯ Ø®Ø±ÛŒØ¯">' +
+          '<button type="button" class="qty-selector__btn qty-selector__btn--minus" onclick="ProductDetail.updateCartQty(-1)" aria-label="Ú©Ø§Ù‡Ø´ ØªØ¹Ø¯Ø§Ø¯">' + Icons.minus + '</button>' +
           '<span class="qty-selector__value" id="product-qty">' + Format.toPersianNumber(qtyCount) + '</span>' +
-          '<button type="button" class="qty-selector__btn qty-selector__btn--plus" onclick="ProductDetail.updateCartQty(1)" aria-label="افزایش تعداد">' + Icons.plus + '</button>' +
-        '</div>' +
-        '<div class="mr-2 lg:mr-4 hidden lg:block shrink-0">' +
-          '<p class="text-neutral-700 text-body-1">در سبد شما</p>' +
-          '<div class="flex items-center">مشاهده<a data-cro-id="pdp-see-cart-main" class="text-secondary-500" href="/checkout/cart/"><p class="mr-1 text-body-2">سبد خرید</p></a></div>' +
+          '<button type="button" class="qty-selector__btn qty-selector__btn--plus" onclick="ProductDetail.updateCartQty(1)" aria-label="Ø§ÙØ²Ø§ÛŒØ´ ØªØ¹Ø¯Ø§Ø¯">' + Icons.plus + '</button>' +
         '</div>' +
       '</div>';
     }
@@ -484,7 +480,7 @@
       },
       getQty: function () { return qty; },
       getPricingMode: function () { return selectedPricingMode; },
-      /* Mobile purchase bar (Digikala-style): add → swap button to stepper */
+      /* Mobile purchase bar (Digikala-style): add â†’ swap button to stepper */
       addToCartWithOptions: function (id, mode) {
         var m = mode || selectedPricingMode;
         var key = App.addToCart(id, m);
@@ -521,7 +517,7 @@
         desktopCartKey = null;
         var control = document.getElementById('product-cart-control');
         if (control) {
-          control.innerHTML = '<button class="dk-buybox__add-btn" id="product-add-to-cart" onclick="ProductDetail.addDesktopToCart()"><span>افزودن به سبد خرید</span></button>';
+          control.innerHTML = '<button class="dk-buybox__add-btn" id="product-add-to-cart" onclick="ProductDetail.addDesktopToCart()"><span>Ø§ÙØ²ÙˆØ¯Ù† Ø¨Ù‡ Ø³Ø¨Ø¯ Ø®Ø±ÛŒØ¯</span></button>';
         }
         return true;
       },
@@ -545,7 +541,7 @@
         if (mAddBtn) mAddBtn.setAttribute('onclick', 'ProductDetail.addToCartWithOptions(' + p.id + ', \'' + mode + '\')');
       },
 
-      /* ── Wishlist toggle ──────────────────────────────── */
+      /* â”€â”€ Wishlist toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
       toggleWishlist: function () {
         App.toggleWishlist(p.id);
         var icon = $('.pdp-action-icon--wishlist');
@@ -555,22 +551,22 @@
           var svgContainer = icon.querySelector('svg') || icon.querySelector('div');
           if (svgContainer) {
             icon.innerHTML = (inList ? Icons.heartFill : Icons.heart) +
-              '<span class="pdp-action-icon__tooltip">' + (inList ? 'حذف از علاقه‌مندی' : 'اضافه به علاقه‌مندی') + '</span>';
+              '<span class="pdp-action-icon__tooltip">' + (inList ? 'Ø­Ø°Ù Ø§Ø² Ø¹Ù„Ø§Ù‚Ù‡â€ŒÙ…Ù†Ø¯ÛŒ' : 'Ø§Ø¶Ø§ÙÙ‡ Ø¨Ù‡ Ø¹Ù„Ø§Ù‚Ù‡â€ŒÙ…Ù†Ø¯ÛŒ') + '</span>';
           }
           icon.classList.toggle('is-active', inList);
         }
       },
 
-      /* ── Share product ────────────────────────────────── */
+      /* â”€â”€ Share product â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
       share: function () {
         var url = window.location.href;
         var title = p.name;
-        var text = 'مشاهده ' + p.name + ' در ابزار شکری';
+        var text = 'Ù…Ø´Ø§Ù‡Ø¯Ù‡ ' + p.name + ' Ø¯Ø± Ø§Ø¨Ø²Ø§Ø± Ø´Ú©Ø±ÛŒ';
         if (navigator.share) {
           navigator.share({ title: title, text: text, url: url }).catch(function () {});
         } else if (navigator.clipboard) {
           navigator.clipboard.writeText(url).then(function () {
-            App.showToast('لینک محصول کپی شد!', 'success');
+            App.showToast('Ù„ÛŒÙ†Ú© Ù…Ø­ØµÙˆÙ„ Ú©Ù¾ÛŒ Ø´Ø¯!', 'success');
           }).catch(function () {
             ProductDetail._fallbackCopy(url);
           });
@@ -587,14 +583,14 @@
         ta.select();
         try {
           document.execCommand('copy');
-          App.showToast('لینک محصول کپی شد!', 'success');
+          App.showToast('Ù„ÛŒÙ†Ú© Ù…Ø­ØµÙˆÙ„ Ú©Ù¾ÛŒ Ø´Ø¯!', 'success');
         } catch (e) {
-          App.showToast('امکان کپی لینک وجود ندارد.', 'danger');
+          App.showToast('Ø§Ù…Ú©Ø§Ù† Ú©Ù¾ÛŒ Ù„ÛŒÙ†Ú© ÙˆØ¬ÙˆØ¯ Ù†Ø¯Ø§Ø±Ø¯.', 'danger');
         }
         document.body.removeChild(ta);
       },
 
-      /* ── Compare toggle ────────────────────────────────── */
+      /* â”€â”€ Compare toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
       toggleCompare: function () {
         var key = 'as_compare_list';
         var list = [];
@@ -602,14 +598,14 @@
         var idx = list.indexOf(p.id);
         if (idx === -1) {
           if (list.length >= 4) {
-            App.showToast('حداکثر ۴ محصول قابل مقایسه هستند.', 'info');
+            App.showToast('Ø­Ø¯Ø§Ú©Ø«Ø± Û´ Ù…Ø­ØµÙˆÙ„ Ù‚Ø§Ø¨Ù„ Ù…Ù‚Ø§ÛŒØ³Ù‡ Ù‡Ø³ØªÙ†Ø¯.', 'info');
             return;
           }
           list.push(p.id);
-          App.showToast(p.name + ' به لیست مقایسه اضافه شد.', 'success');
+          App.showToast(p.name + ' Ø¨Ù‡ Ù„ÛŒØ³Øª Ù…Ù‚Ø§ÛŒØ³Ù‡ Ø§Ø¶Ø§ÙÙ‡ Ø´Ø¯.', 'success');
         } else {
           list.splice(idx, 1);
-          App.showToast(p.name + ' از لیست مقایسه حذف شد.', 'info');
+          App.showToast(p.name + ' Ø§Ø² Ù„ÛŒØ³Øª Ù…Ù‚Ø§ÛŒØ³Ù‡ Ø­Ø°Ù Ø´Ø¯.', 'info');
         }
         localStorage.setItem(key, JSON.stringify(list));
         /* Update compare icon state */
@@ -618,7 +614,7 @@
           var inList = list.indexOf(p.id) !== -1;
           icon.classList.toggle('is-active', inList);
           var tooltip = icon.querySelector('.pdp-action-icon__tooltip');
-          if (tooltip) tooltip.textContent = inList ? 'حذف از مقایسه' : 'مقایسه کالا';
+          if (tooltip) tooltip.textContent = inList ? 'Ø­Ø°Ù Ø§Ø² Ù…Ù‚Ø§ÛŒØ³Ù‡' : 'Ù…Ù‚Ø§ÛŒØ³Ù‡ Ú©Ø§Ù„Ø§';
         }
       }
     };
@@ -632,7 +628,7 @@
       if (icon && list.indexOf(p.id) !== -1) {
         icon.classList.add('is-active');
         var tooltip = icon.querySelector('.pdp-action-icon__tooltip');
-        if (tooltip) tooltip.textContent = 'حذف از مقایسه';
+        if (tooltip) tooltip.textContent = 'Ø­Ø°Ù Ø§Ø² Ù…Ù‚Ø§ÛŒØ³Ù‡';
       }
     })();
   }
@@ -662,7 +658,7 @@
     var reviews = AppData.reviews.filter(function (r) { return r.productId === product.id; });
     var reviewsHtml = '';
     if (reviews.length === 0) {
-      reviewsHtml = '<p style="color:var(--text-muted);padding:var(--space-4) 0;margin:0">هنوز نظری ثبت نشده است. اولین نفری باشید که نظر می‌دهید!</p>';
+      reviewsHtml = '<p style="color:var(--text-muted);padding:var(--space-4) 0;margin:0">Ù‡Ù†ÙˆØ² Ù†Ø¸Ø±ÛŒ Ø«Ø¨Øª Ù†Ø´Ø¯Ù‡ Ø§Ø³Øª. Ø§ÙˆÙ„ÛŒÙ† Ù†ÙØ±ÛŒ Ø¨Ø§Ø´ÛŒØ¯ Ú©Ù‡ Ù†Ø¸Ø± Ù…ÛŒâ€ŒØ¯Ù‡ÛŒØ¯!</p>';
     } else {
       reviewsHtml = reviews.map(function (rv) {
         var s = '';
@@ -678,37 +674,37 @@
     var isLoggedIn = App.isLoggedIn();
     var starsHtml = '';
     for (var i = 1; i <= 5; i++) {
-      starsHtml += '<button type="button" class="review-form__star" data-rating="' + i + '" title="' + i + ' از ۵">' + Icons.starEmpty + '</button>';
+      starsHtml += '<button type="button" class="review-form__star" data-rating="' + i + '" title="' + i + ' Ø§Ø² Ûµ">' + Icons.starEmpty + '</button>';
     }
     if (isLoggedIn) {
       var user = App.getCurrentUser();
-      var userName = user.firstName || user.name || 'کاربر';
-      return '<div class="review-form" id="review-form"><div class="review-form__heading">نظر خود را بنویسید</div>' +
-        '<div class="review-form__rating"><span class="review-form__rating-label">امتیاز:</span><div class="review-form__stars" id="review-stars">' + starsHtml + '</div></div>' +
-        '<textarea class="review-form__textarea" id="review-text" placeholder="نظر خود درباره این محصول را بنویسید..."></textarea>' +
-        '<div class="review-form__actions"><span class="review-form__login-hint">ارسال نظر توسط ' + userName + '</span><button class="btn btn-primary" id="review-submit" type="button" style="display:inline-flex;align-items:center;gap:6px">ارسال نظر</button></div>' +
+      var userName = user.firstName || user.name || 'Ú©Ø§Ø±Ø¨Ø±';
+      return '<div class="review-form" id="review-form"><div class="review-form__heading">Ù†Ø¸Ø± Ø®ÙˆØ¯ Ø±Ø§ Ø¨Ù†ÙˆÛŒØ³ÛŒØ¯</div>' +
+        '<div class="review-form__rating"><span class="review-form__rating-label">Ø§Ù…ØªÛŒØ§Ø²:</span><div class="review-form__stars" id="review-stars">' + starsHtml + '</div></div>' +
+        '<textarea class="review-form__textarea" id="review-text" placeholder="Ù†Ø¸Ø± Ø®ÙˆØ¯ Ø¯Ø±Ø¨Ø§Ø±Ù‡ Ø§ÛŒÙ† Ù…Ø­ØµÙˆÙ„ Ø±Ø§ Ø¨Ù†ÙˆÛŒØ³ÛŒØ¯..."></textarea>' +
+        '<div class="review-form__actions"><span class="review-form__login-hint">Ø§Ø±Ø³Ø§Ù„ Ù†Ø¸Ø± ØªÙˆØ³Ø· ' + userName + '</span><button class="btn btn-primary" id="review-submit" type="button" style="display:inline-flex;align-items:center;gap:6px">Ø§Ø±Ø³Ø§Ù„ Ù†Ø¸Ø±</button></div>' +
         '<div id="review-form-message"></div></div>';
     }
-    return '<div class="review-form" id="review-form"><div class="review-form__heading">نظر خود را بنویسید</div>' +
-      '<div class="review-form__rating"><span class="review-form__rating-label">امتیاز:</span><div class="review-form__stars" id="review-stars">' + starsHtml + '</div></div>' +
-      '<textarea class="review-form__textarea" id="review-text" placeholder="نظر خود درباره این محصول را بنویسید..."></textarea>' +
-      '<div class="review-form__actions"><span class="review-form__login-hint">برای ارسال نظر ابتدا <a href="/login">وارد حساب کاربری</a> شوید.</span><button class="btn btn-primary" id="review-submit" type="button" disabled style="display:inline-flex;align-items:center;gap:6px">ارسال نظر</button></div></div>';
+    return '<div class="review-form" id="review-form"><div class="review-form__heading">Ù†Ø¸Ø± Ø®ÙˆØ¯ Ø±Ø§ Ø¨Ù†ÙˆÛŒØ³ÛŒØ¯</div>' +
+      '<div class="review-form__rating"><span class="review-form__rating-label">Ø§Ù…ØªÛŒØ§Ø²:</span><div class="review-form__stars" id="review-stars">' + starsHtml + '</div></div>' +
+      '<textarea class="review-form__textarea" id="review-text" placeholder="Ù†Ø¸Ø± Ø®ÙˆØ¯ Ø¯Ø±Ø¨Ø§Ø±Ù‡ Ø§ÛŒÙ† Ù…Ø­ØµÙˆÙ„ Ø±Ø§ Ø¨Ù†ÙˆÛŒØ³ÛŒØ¯..."></textarea>' +
+      '<div class="review-form__actions"><span class="review-form__login-hint">Ø¨Ø±Ø§ÛŒ Ø§Ø±Ø³Ø§Ù„ Ù†Ø¸Ø± Ø§Ø¨ØªØ¯Ø§ <a href="/login">ÙˆØ§Ø±Ø¯ Ø­Ø³Ø§Ø¨ Ú©Ø§Ø±Ø¨Ø±ÛŒ</a> Ø´ÙˆÛŒØ¯.</span><button class="btn btn-primary" id="review-submit" type="button" disabled style="display:inline-flex;align-items:center;gap:6px">Ø§Ø±Ø³Ø§Ù„ Ù†Ø¸Ø±</button></div></div>';
   }
 
   function renderQA() {
-    return '<div class="qa-item"><div class="qa-item__question">آیا این محصول گارانتی دارد؟</div><div class="qa-item__answer">بله، تمامی محصولات با گارانتی اصالت کالا عرضه می‌شوند. برای اطلاعات بیشتر با پشتیبانی تماس بگیرید.</div></div>' +
-    '<div class="qa-item"><div class="qa-item__question">زمان ارسال این محصول چقدر است؟</div><div class="qa-item__answer">ارسال عادی ۳ تا ۵ روز کاری و ارسال سریع ۱ تا ۲ روز کاری است.</div></div>';
+    return '<div class="qa-item"><div class="qa-item__question">Ø¢ÛŒØ§ Ø§ÛŒÙ† Ù…Ø­ØµÙˆÙ„ Ú¯Ø§Ø±Ø§Ù†ØªÛŒ Ø¯Ø§Ø±Ø¯ØŸ</div><div class="qa-item__answer">Ø¨Ù„Ù‡ØŒ ØªÙ…Ø§Ù…ÛŒ Ù…Ø­ØµÙˆÙ„Ø§Øª Ø¨Ø§ Ú¯Ø§Ø±Ø§Ù†ØªÛŒ Ø§ØµØ§Ù„Øª Ú©Ø§Ù„Ø§ Ø¹Ø±Ø¶Ù‡ Ù…ÛŒâ€ŒØ´ÙˆÙ†Ø¯. Ø¨Ø±Ø§ÛŒ Ø§Ø·Ù„Ø§Ø¹Ø§Øª Ø¨ÛŒØ´ØªØ± Ø¨Ø§ Ù¾Ø´ØªÛŒØ¨Ø§Ù†ÛŒ ØªÙ…Ø§Ø³ Ø¨Ú¯ÛŒØ±ÛŒØ¯.</div></div>' +
+    '<div class="qa-item"><div class="qa-item__question">Ø²Ù…Ø§Ù† Ø§Ø±Ø³Ø§Ù„ Ø§ÛŒÙ† Ù…Ø­ØµÙˆÙ„ Ú†Ù‚Ø¯Ø± Ø§Ø³ØªØŸ</div><div class="qa-item__answer">Ø§Ø±Ø³Ø§Ù„ Ø¹Ø§Ø¯ÛŒ Û³ ØªØ§ Ûµ Ø±ÙˆØ² Ú©Ø§Ø±ÛŒ Ùˆ Ø§Ø±Ø³Ø§Ù„ Ø³Ø±ÛŒØ¹ Û± ØªØ§ Û² Ø±ÙˆØ² Ú©Ø§Ø±ÛŒ Ø§Ø³Øª.</div></div>';
   }
 
   function buyBarPriceHTML(p, mode) {
     var price = App.getProductPrice(p, mode);
     var oldPrice = p.oldPrice ? Format.price(p.oldPrice) : '';
     var discount = (p.discount !== undefined && p.discount !== null && Number(p.discount) > 0)
-      ? '٪ ' + Format.toPersianNumber(p.discount) : '';
+      ? 'Ùª ' + Format.toPersianNumber(p.discount) : '';
     var finalPrice = Format.price(price);
     var tomanIcon = (typeof Icons !== 'undefined' && Icons.toman)
       ? '<span class="mobile-purchase-bar__toman">' + Icons.toman + '</span>'
-      : '<span class="mobile-purchase-bar__currency">تومان</span>';
+      : '<span class="mobile-purchase-bar__currency">ØªÙˆÙ…Ø§Ù†</span>';
     /* Digikala-style: top row (discount + old price) / bottom row (final + toman) */
     return '<div class="mobile-purchase-bar__price-col">' +
       '<div class="mobile-purchase-bar__top-row">' +
@@ -719,7 +715,7 @@
         '<span class="mobile-purchase-bar__amount">' + finalPrice + '</span>' +
         tomanIcon +
         /* keep legacy currency node hidden for tests/back-compat */
-        '<span class="mobile-purchase-bar__currency" style="display:none">تومان</span>' +
+        '<span class="mobile-purchase-bar__currency" style="display:none">ØªÙˆÙ…Ø§Ù†</span>' +
       '</div>' +
     '</div>';
   }
@@ -727,7 +723,7 @@
   function buyBarHTML(p, mode) {
     var pricingMode = mode || 'retail';
     var priceHtml = buyBarPriceHTML(p, pricingMode);
-    var addBtnText = p.inStock ? 'افزودن به سبد خرید' : 'ناموجود';
+    var addBtnText = p.inStock ? 'Ø§ÙØ²ÙˆØ¯Ù† Ø¨Ù‡ Ø³Ø¨Ø¯ Ø®Ø±ÛŒØ¯' : 'Ù†Ø§Ù…ÙˆØ¬ÙˆØ¯';
     var addBtnClass = p.inStock ? '' : 'mobile-purchase-bar__add-btn--disabled';
     var addBtnDisabled = p.inStock ? '' : 'disabled';
     /* Digikala snippet layout: [button w-1/2 48px] + [price w-1/2] */
@@ -739,9 +735,9 @@
             '<span class="mobile-purchase-bar__add-btn-text">' + addBtnText + '</span>' +
           '</button>' +
           '<div class="mobile-purchase-bar__qty" id="mobile-qty-wrap" hidden>' +
-            '<button type="button" class="mobile-purchase-bar__qty-btn" data-act="inc" onclick="ProductDetail.updateMobileQty(1)" aria-label="افزایش">+</button>' +
+            '<button type="button" class="mobile-purchase-bar__qty-btn" data-act="inc" onclick="ProductDetail.updateMobileQty(1)" aria-label="Ø§ÙØ²Ø§ÛŒØ´">+</button>' +
             '<span class="mobile-purchase-bar__qty-value" id="mobile-qty">' + Format.toPersianNumber(1) + '</span>' +
-            '<button type="button" class="mobile-purchase-bar__qty-btn" data-act="dec" onclick="ProductDetail.updateMobileQty(-1)" aria-label="کاهش">−</button>' +
+            '<button type="button" class="mobile-purchase-bar__qty-btn" data-act="dec" onclick="ProductDetail.updateMobileQty(-1)" aria-label="Ú©Ø§Ù‡Ø´">âˆ’</button>' +
           '</div>' +
         '</div>' +
         '<div class="mobile-purchase-bar__price-wrap" id="mobile-price-row">' + priceHtml + '</div>' +
@@ -791,12 +787,12 @@
         return;
       }
       if (selectedRating === 0) {
-        messageEl.innerHTML = '<div class="review-form__message review-form__message--error">لطفاً امتیاز خود را انتخاب کنید.</div>';
+        messageEl.innerHTML = '<div class="review-form__message review-form__message--error">Ù„Ø·ÙØ§Ù‹ Ø§Ù…ØªÛŒØ§Ø² Ø®ÙˆØ¯ Ø±Ø§ Ø§Ù†ØªØ®Ø§Ø¨ Ú©Ù†ÛŒØ¯.</div>';
         return;
       }
       var text = (textArea.value || '').trim();
       if (!text) {
-        messageEl.innerHTML = '<div class="review-form__message review-form__message--error">لطفاً متن نظر خود را بنویسید.</div>';
+        messageEl.innerHTML = '<div class="review-form__message review-form__message--error">Ù„Ø·ÙØ§Ù‹ Ù…ØªÙ† Ù†Ø¸Ø± Ø®ÙˆØ¯ Ø±Ø§ Ø¨Ù†ÙˆÛŒØ³ÛŒØ¯.</div>';
         return;
       }
       var user = App.getCurrentUser();
@@ -805,7 +801,7 @@
       var newReview = {
         id: AppData.reviews.length + 1,
         productId: product.id,
-        author: user.firstName || user.name || 'کاربر',
+        author: user.firstName || user.name || 'Ú©Ø§Ø±Ø¨Ø±',
         rating: selectedRating,
         title: '',
         text: text,
@@ -823,15 +819,15 @@
       var countEl = $('.pdp-rating__count');
       if (countEl) {
         var actualCount = AppData.reviews.filter(function (rv) { return rv.productId === product.id; }).length;
-        countEl.textContent = '(' + Format.toPersianNumber(actualCount) + ' خریدار)';
+        countEl.textContent = '(' + Format.toPersianNumber(actualCount) + ' Ø®Ø±ÛŒØ¯Ø§Ø±)';
       }
       var reviewsTabBtn = $('.product-tabs__tab[data-tab="reviews"]');
       if (reviewsTabBtn) {
         var cnt = AppData.reviews.filter(function (rv) { return rv.productId === product.id; }).length;
-        reviewsTabBtn.textContent = 'دیدگاه‌ها' + (cnt > 0 ? ' (' + Format.toPersianNumber(cnt) + ')' : '');
+        reviewsTabBtn.textContent = 'Ø¯ÛŒØ¯Ú¯Ø§Ù‡â€ŒÙ‡Ø§' + (cnt > 0 ? ' (' + Format.toPersianNumber(cnt) + ')' : '');
       }
       messageEl = $('#review-form-message');
-      if (messageEl) messageEl.innerHTML = '<div class="review-form__message review-form__message--success">نظر شما با موفقیت ثبت شد. با تشکر از شما!</div>';
+      if (messageEl) messageEl.innerHTML = '<div class="review-form__message review-form__message--success">Ù†Ø¸Ø± Ø´Ù…Ø§ Ø¨Ø§ Ù…ÙˆÙÙ‚ÛŒØª Ø«Ø¨Øª Ø´Ø¯. Ø¨Ø§ ØªØ´Ú©Ø± Ø§Ø² Ø´Ù…Ø§!</div>';
       setTimeout(function () {
         var reviewsPanel2 = $('#tab-reviews');
         if (reviewsPanel2) reviewsPanel2.innerHTML = renderReviews();

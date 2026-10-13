@@ -1125,6 +1125,7 @@
       bb.style.display = count > 0 ? 'flex' : 'none';
     }
     renderCartDrawer();
+    try { syncProductCards(); } catch (e) {}
   }
 
   function renderCartDrawer() {
@@ -1176,6 +1177,60 @@
     return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none"><rect width="100" height="100" fill="%23f3f4f6"/><text x="50" y="55" text-anchor="middle" fill="%239ca3af" font-size="12">' + (p.brandName || '') + '</text></svg>');
   }
 
+  function renderProductCardCartControl(id) {
+    id = parseInt(id, 10);
+    var qty = 0;
+    try {
+      var pc = document.querySelector('.priceChanger[data-pricing="' + id + '"]');
+      var mode = (pc && pc.getAttribute('data-selected-mode')) || 'retail';
+      var key = getCartKey(id, mode, []);
+      var item = (state.cart || []).find(function (x) { return x.key === key; });
+      if (item) qty = item.quantity;
+    } catch (e) {}
+    if (qty > 0) {
+      return '<div class="qty-selector qty-selector--buybox product-card__qty" role="group" aria-label="تعداد محصول در سبد خرید">' +
+        '<button type="button" class="qty-selector__btn qty-selector__btn--minus" onclick="App.updateProductCardQty(' + id + ', -1)" aria-label="کاهش تعداد">' + Icons.minus + '</button>' +
+        '<span class="qty-selector__value product-card__qty-value">' + Format.toPersianNumber(qty) + '</span>' +
+        '<button type="button" class="qty-selector__btn qty-selector__btn--plus" onclick="App.updateProductCardQty(' + id + ', 1)" aria-label="افزایش تعداد">' + Icons.plus + '</button>' +
+      '</div>';
+    }
+    return '<button type="button" class="btn btn-primary btn-block product-card__add-to-cart" onclick="App.addToProductCard(' + id + ')" aria-label="افزودن به سبد خرید">افزودن به سبد خرید</button>';
+  }
+
+  function syncProductCards() {
+    try {
+      var containers = document.querySelectorAll('.product-card__cart[data-product-id]');
+      for (var i = 0; i < containers.length; i++) {
+        var container = containers[i];
+        var id = parseInt(container.getAttribute('data-product-id'), 10);
+        if (id) container.innerHTML = renderProductCardCartControl(id);
+      }
+    } catch (e) {}
+  }
+
+  function addToProductCard(id) {
+    var mode = 'retail';
+    try {
+      var pc = document.querySelector('.priceChanger[data-pricing="' + id + '"]');
+      mode = (pc && pc.getAttribute('data-selected-mode')) || 'retail';
+    } catch (e) {}
+    var key = addToCart(id, mode);
+    try { syncProductCards(); } catch (e) {}
+    return key;
+  }
+
+  function updateProductCardQty(id, delta) {
+    var mode = 'retail';
+    try {
+      var pc = document.querySelector('.priceChanger[data-pricing="' + id + '"]');
+      mode = (pc && pc.getAttribute('data-selected-mode')) || 'retail';
+    } catch (e) {}
+    var key = getCartKey(id, mode, []);
+    var item = (state.cart || []).find(function (x) { return x.key === key; });
+    if (!item) { try { syncProductCards(); } catch (e) {} return; }
+    updateCartQty(key, delta);
+  }
+
   function renderProductCard(p, opts) {
     opts = opts || {};
     var r = Format.rating(p.rating);
@@ -1217,6 +1272,7 @@
           (p.oldPrice ? '<span class="product-card__price-old">' + Format.price(p.oldPrice) + '</span>' : '') +
         '</div>' +
         pricingHtml +
+        '<div class="product-card__cart" data-product-id="' + p.id + '">' + renderProductCardCartControl(p.id) + '</div>' +
       '</div>' +
     '</div>';
   }
@@ -1940,7 +1996,7 @@ el.innerHTML = '\
      The support/chat widget is intended for public shopping pages.
      Hide it on focused flows (auth, checkout), offline fallback,
      and internal/dev pages. Design and behavior unchanged. */
-  var CHAT_HIDDEN_PAGES = ['login.html', 'register.html', 'forgot-password.html', 'checkout.html', 'checkout-step4.html', 'offline.html'];
+  var CHAT_HIDDEN_PAGES = ['login.html', 'register.html', 'forgot-password.html', 'checkout.html', 'checkout-step4.html', 'offline.html', 'product.html'];
 
   function isChatAllowedPage() {
     var page = storeFile().toLowerCase();
@@ -2758,6 +2814,7 @@ function renderOverlays(el) {
         priceSpan.innerHTML = Format.price(newPrice) + ' <span class="product-card__price-currency">تومان</span>';
       }
     }
+    try { syncProductCards(); } catch (e) {}
   }
 
   /* ── Shared mouse drag-to-scroll (desktop only) ──────────
@@ -3593,6 +3650,9 @@ function renderOverlays(el) {
     selectCardPricing: selectCardPricing,
     /* Shared product card */
     renderProductCard: renderProductCard,
+    addToProductCard: addToProductCard,
+    updateProductCardQty: updateProductCardQty,
+    syncProductCards: syncProductCards,
     /* Cart */
     addToCart: addToCart,
     getCartKey: getCartKey,
@@ -3707,4 +3767,188 @@ function renderOverlays(el) {
 
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
   watchForSiteLoaderCompletion();
+
+  /* ── Generic native <select> -> province-style custom dropdown ──
+     Enhances any <select> on the page so its open list matches the
+     addr-province-menu design (white card, radius-md, shadow-xl, fixed,
+     overscroll contain, z-index 560). Preserves the underlying select
+     value/events. Works for initially rendered and dynamically added selects. */
+  var __selectDropInstance = null;
+  var __selectDropTrigger = null;
+
+  function closeSelectDropdown() {
+    if (__selectDropInstance) { try { __selectDropInstance.remove(); } catch (e) {} __selectDropInstance = null; }
+    if (__selectDropTrigger) { try { __selectDropTrigger.setAttribute('aria-expanded', 'false'); } catch (e) {} __selectDropTrigger = null; }
+  }
+
+  function positionSelectDropdown(menu, trigger) {
+    var rect = trigger.getBoundingClientRect();
+    if (!rect.width && !rect.height) return;
+    var gap = 6, minHeight = 100;
+    var top = rect.bottom + gap;
+    var below = window.innerHeight - top - gap;
+    if (below < minHeight) {
+      top = Math.min(top, Math.max(8, window.innerHeight - minHeight - gap));
+      below = window.innerHeight - top - gap;
+    }
+    menu.style.position = 'fixed';
+    menu.style.left = Math.max(8, rect.left) + 'px';
+    menu.style.top = top + 'px';
+    menu.style.width = Math.min(rect.width, window.innerWidth - 16) + 'px';
+    menu.style.maxHeight = Math.max(0, below) + 'px';
+    menu.style.overflowY = 'auto';
+    menu.style.overscrollBehavior = 'contain';
+    menu.style.touchAction = 'pan-y';
+    menu.style.zIndex = '560';
+  }
+
+  function openSelectDropdown(sel, trigger) {
+    closeSelectDropdown();
+    var rect = trigger.getBoundingClientRect();
+    if (!rect.width && !rect.height) return;
+    var menu = document.createElement('ul');
+    menu.className = 'addr-province-menu';
+    var any = false, selected = null, i;
+    for (i = 0; i < sel.options.length; i++) {
+      var o = sel.options[i];
+      if (o.disabled) continue;
+      any = true;
+      var li = document.createElement('li');
+      li.className = 'addr-province-menu__item' + (o.selected ? ' is-selected' : '');
+      li.textContent = o.text;
+      li.setAttribute('data-value', o.value);
+      li.setAttribute('tabindex', '-1');
+      li.addEventListener('click', (function (value) {
+        return function () {
+          sel.value = value;
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+          closeSelectDropdown();
+        };
+      })(o.value));
+      if (o.selected) selected = li;
+      menu.appendChild(li);
+    }
+    if (!any) return;
+    document.body.appendChild(menu);
+    __selectDropInstance = menu;
+    __selectDropTrigger = trigger;
+    positionSelectDropdown(menu, trigger);
+    trigger.setAttribute('aria-expanded', 'true');
+    menu.addEventListener('wheel', function (e) { e.stopPropagation(); }, { passive: false });
+    menu.addEventListener('touchmove', function (e) { e.stopPropagation(); }, { passive: false });
+    menu.addEventListener('keydown', function (e) {
+      var items = Array.prototype.slice.call(menu.querySelectorAll('.addr-province-menu__item'));
+      if (!items.length) return;
+      var idx = items.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (idx < 0) idx = selected ? items.indexOf(selected) : -1;
+        idx = Math.min(items.length - 1, idx + 1);
+        items[idx].focus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (idx < 0) idx = selected ? items.indexOf(selected) : items.length;
+        idx = Math.max(0, idx - 1);
+        items[idx].focus();
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (document.activeElement && items.indexOf(document.activeElement) >= 0) document.activeElement.click();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeSelectDropdown();
+        if (trigger) trigger.focus();
+      } else if (e.key === 'Tab') {
+        closeSelectDropdown();
+      }
+    });
+    // initial focus
+    try {
+      if (selected) selected.focus();
+      else if (menu.firstChild) menu.firstChild.focus();
+    } catch (e) {}
+    if (selected) menu.scrollTop = Math.max(0, selected.offsetTop - menu.clientHeight / 2);
+  }
+
+  function enhanceSelect(sel) {
+    if (!sel || sel.nodeType !== 1 || sel.nodeName !== 'SELECT') return;
+    if (sel.dataset && sel.dataset.enhancedSelect === '1') return;
+    if (sel.closest && (sel.closest('.addr-province-dd') || sel.closest('.addr-city-dd'))) return;
+    if (sel.dataset) sel.dataset.enhancedSelect = '1';
+    var wrapper = document.createElement('span');
+    wrapper.className = 'addr-province-dd';
+    wrapper.style.display = 'inline-block';
+    if (sel.parentNode) sel.parentNode.insertBefore(wrapper, sel);
+    wrapper.appendChild(sel);
+    if (!sel.classList.contains('input') && !sel.classList.contains('shop-sort')) {
+      sel.classList.add('input');
+    }
+    var trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'addr-province-trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.setAttribute('aria-label', sel.getAttribute('aria-label') || 'انتخاب گزینه');
+    wrapper.appendChild(trigger);
+    trigger.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (__selectDropInstance && __selectDropTrigger === trigger) closeSelectDropdown();
+      else openSelectDropdown(sel, trigger);
+    });
+    trigger.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (__selectDropInstance && __selectDropTrigger === trigger) closeSelectDropdown();
+        else openSelectDropdown(sel, trigger);
+      } else if (e.key === 'Escape') {
+        closeSelectDropdown();
+      }
+    });
+  }
+
+  function enhanceAllSelects(root) {
+    if (!root || !root.querySelectorAll) return;
+    var nodes = root.querySelectorAll('select');
+    for (var i = 0; i < nodes.length; i++) enhanceSelect(nodes[i]);
+  }
+
+  // Initial pass
+  function runEnhance() { enhanceAllSelects(document); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', runEnhance);
+  else runEnhance();
+
+  // Future selects (modals, dynamically rendered pages)
+  try {
+    var mo = new MutationObserver(function (muts) {
+      muts.forEach(function (m) {
+        if (m.addedNodes) {
+          for (var i = 0; i < m.addedNodes.length; i++) {
+            var n = m.addedNodes[i];
+            if (n && n.nodeType === 1) {
+              if (n.nodeName === 'SELECT') enhanceSelect(n);
+              else enhanceAllSelects(n);
+            }
+          }
+        }
+      });
+    });
+    mo.observe(document.documentElement, { childList: true, subtree: true });
+  } catch (e) {}
+
+  // Global close handlers
+  document.addEventListener('click', function (e) {
+    if (__selectDropInstance) {
+      var t = __selectDropTrigger;
+      if (!(t && t.contains(e.target)) && !__selectDropInstance.contains(e.target)) closeSelectDropdown();
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeSelectDropdown();
+  });
+  window.addEventListener('resize', closeSelectDropdown);
+  window.addEventListener('scroll', function (e) {
+    var t = e && e.target;
+    if (t && t.closest && t.closest('.addr-province-menu')) return;
+    closeSelectDropdown();
+  }, true);
 })();
+

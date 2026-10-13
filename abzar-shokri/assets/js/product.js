@@ -680,15 +680,11 @@
       if (item && item.quantity > 0) {
         var countId = isBar ? 'pdp-buy-bar-qty' : 'product-qty';
         /* Digikala-style in-cart control requested by the user. */
-        return '<div class="flex items-center">' +
-          '<div class="qty-selector qty-selector--buybox" role="group" aria-label="تعداد محصول در سبد خرید">' +
+        return '<div class="flex items-center w-full justify-center">' +
+          '<div class="qty-selector qty-selector--buybox" style="width:240px;max-width:240px;height:54px;"  role="group" aria-label="تعداد محصول در سبد خرید">' +
             '<button type="button" class="qty-selector__btn qty-selector__btn--minus" onclick="ProductDetail.updateCartQty(-1)" aria-label="کاهش تعداد">' + Icons.minus + '</button>' +
             '<span class="qty-selector__value" id="' + countId + '">' + Format.toPersianNumber(item.quantity) + '</span>' +
             '<button type="button" class="qty-selector__btn qty-selector__btn--plus" onclick="ProductDetail.updateCartQty(1)" aria-label="افزایش تعداد">' + Icons.plus + '</button>' +
-          '</div>' +
-          '<div class="mr-2 lg:mr-4 hidden lg:block shrink-0">' +
-            '<p class="text-neutral-700 text-body-1">در سبد شما</p>' +
-            '<div class="flex items-center">مشاهده<a data-cro-id="pdp-see-cart-main" class="text-secondary-500" href="/checkout/cart/"><p class="mr-1 text-body-2">سبد خرید</p></a></div>' +
           '</div>' +
         '</div>';
       }
@@ -696,6 +692,91 @@
       return '<button class="dk-buybox__add-btn"' + (isBar ? ' id="pdp-buy-bar-add"' : ' id="product-add-to-cart"') + ' onclick="ProductDetail.addToCartWithOptions()">' +
         '<span>افزودن به سبد خرید</span>' +
       '</button>';
+
+      /* Transformed quantity-controls template (same wrapper, inline styles preserve width/height) */
+      window.ProductDetail.qtyCtrlHtml = '<div class="flex items-center justify-between user-select-none px-2 rounded-medium shadow-fab-button styles-module-scss-module__bgrzzq__ItemQuantity__box grow" style="width:100%;min-width:0;max-width:240px;">' +
+        '<div class="flex cursor-pointer opacity-50 pointer-events-none p-0 lg:p-0" data-testid="quantity-increase" data-cro-id="pdp-main-add-quantitiy"><dds-icon name="content-add" color="brand/primary-base" aria-hidden="true" style="font-size: 18px;"></dds-icon><span class="ml-2 text-xs font-medium dark:text-neutral-200">افزایش</span></div>' +
+        '<span class="flex flex-col items-center justify-between text-primary-500">' +
+          '<span class="relative flex items-center justify-center text-h5 styles-module-scss-module__bgrzzq__ItemQuantity__boxCount" style="width:100%;min-width:0;max-width:240px;">۱</span>' +
+          '<small class="text-caption text-neutral-300">حداکثر</small>' +
+        '</span>' +
+        '<div class="flex cursor-pointer" data-testid="quantity-decrease" data-cro-id="pdp-main-delete-quantitiy" onclick="ProductDetail.updateCartQty(-1)"><dds-icon name="action-delete" color="brand/primary-base" aria-hidden="true" style="font-size: 18px;"></dds-icon><span class="ml-2 text-xs font-medium dark:text-neutral-200">کاهش</span></div>' +
+      '</div>';
+
+      /* Transform the add-to-cart button into quantity controls in-place */
+      window.ProductDetail.transformButtonToQtyControls = function () {
+        var btnEl = document.getElementById('product-add-to-cart');
+        var barBtnEl = document.getElementById('pdp-buy-bar-add');
+        var targetEl = btnEl || barBtnEl;
+        if (targetEl) {
+          // Remember original HTML so we can restore later
+          if (!targetEl.dataset.originalHtml) {
+            targetEl.dataset.originalHtml = targetEl.innerHTML;
+          }
+          // Replace with quantity controls (same wrapper structure, same button element preserved)
+          targetEl.innerHTML = ProductDetail.qtyCtrlHtml;
+          // Keep the button's original dimensions via the dk-buybox__add-btn CSS (240px max-width, 54px height)
+          targetEl.style.maxWidth = '240px';
+          // The inline onclick on the minus button works because ProductDetail is in scope
+        }
+      };
+
+      /* Restore the original add-to-cart button content in the same element */
+      window.ProductDetail.restoreButton = function () {
+        var btnEl = document.getElementById('product-add-to-cart');
+        var barBtnEl = document.getElementById('pdp-buy-bar-add');
+        var targetEl = btnEl || barBtnEl;
+        if (targetEl && targetEl.dataset.originalHtml) {
+          targetEl.innerHTML = targetEl.dataset.originalHtml;
+          targetEl.dataset.originalHtml = null;
+          // Ensure max-width is reset (the dk-buybox__add-btn CSS will apply)
+          targetEl.style.maxWidth = '';
+        }
+      };
+
+      /* Original addToCartWithOptions: add item, show toast, then transform button in-place */
+      window.ProductDetail.addToCartWithOptions = function () {
+        var mode = selectedPricingMode;
+        var options = getSelectedOptions();
+        var key = getCartKey(p.id, mode);
+        var existingItem = App.getCart().find(function (x) { return x.key === key; });
+
+        // Calculate total price with options
+        var basePrice = App.getProductPrice(p, mode);
+        var optionsPrice = options.reduce(function(sum, opt) { return sum + opt.price; }, 0);
+        var totalPrice = basePrice + optionsPrice;
+
+        if (existingItem) {
+          existingItem.quantity += 1;
+          existingItem.options = options;
+          existingItem.price = totalPrice;
+        } else {
+          App.getCart().push({
+            key: key,
+            id: p.id,
+            name: p.name,
+            price: totalPrice,
+            basePrice: basePrice,
+            pricingMode: mode,
+            quantity: 1,
+            brandName: p.brandName,
+            image: p.image,
+            slug: p.slug,
+            options: options,
+          });
+        }
+        // Save cart (triggers as_cart_change event)
+        var cartKey = 'as_user_' + (App.getCurrentUser() ? App.getCurrentUser().id : 'guest_' + localStorage.getItem('as_guest_session')) + '_cart';
+        localStorage.setItem(cartKey, JSON.stringify(App.getCart()));
+        document.dispatchEvent(new CustomEvent('as_cart_change'));
+
+        var modeLabel = mode === 'wholesale' ? ' (عمده)' : '';
+        var optLabel = options.length ? ' + ' + options.length + ' گزینه' : '';
+        App.showToast(p.name + modeLabel + optLabel + ' به سبد خرید اضافه شد');
+
+        // --- Transform the add-to-cart button into quantity controls in-place ---
+        ProductDetail.transformButtonToQtyControls();
+      };
     }
 
     /* The buy box and the fixed mobile bar address the same cart line, so
@@ -706,7 +787,34 @@
       var targets = [{ el: $('#product-cart-control'), isBar: false }];
       if (p.inStock) targets.push({ el: $('#pdp-buy-bar-cart'), isBar: true });
       for (var i = 0; i < targets.length; i++) {
-        if (targets[i].el) targets[i].el.innerHTML = cartControlHTML(item, targets[i].isBar);
+        if (targets[i].el) {
+          // If the add-to-cart button has been transformed into quantity controls,
+          // preserve it and only update the quantity display/cart info.
+          // Otherwise, use the normal cart control HTML.
+          var isBar = targets[i].isBar;
+          var btnElId = isBar ? 'pdp-buy-bar-add' : 'product-add-to-cart';
+          var btnEl = document.getElementById(btnElId);
+          var transformed = btnEl && btnEl.dataset.originalHtml;
+          if (transformed) {
+            // Button has been transformed in-place.
+            // If the item quantity is 0 (or item removed from cart), restore the original button.
+            if (!item || item.quantity <= 0) {
+              // Restore original button content in the same element
+              btnEl.innerHTML = btnEl.dataset.originalHtml;
+              btnEl.dataset.originalHtml = null;
+              // The dk-buybox__add-btn CSS will restore the original appearance
+              btnEl.style.maxWidth = '';
+            } else {
+              // Item still in cart; update the quantity value in the transformed controls
+              var qtySpan = targets[i].el.querySelector('#product-qty');
+              if (qtySpan && !isBar) {
+                qtySpan.textContent = Format.toPersianNumber(item.quantity);
+              }
+            }
+          } else {
+            targets[i].el.innerHTML = cartControlHTML(item, targets[i].isBar);
+          }
+        }
       }
     }
 

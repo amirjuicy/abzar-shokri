@@ -320,12 +320,14 @@
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: #FFFFFF;
-  border: 1px solid #E5E5E5; border-radius: var(--radius-lg);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.12);
-  max-height: 420px;
+  background: var(--color-white);
+  border: 1px solid var(--border-color); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xl);
+  max-height: min(446.5px, 50vh);
   overflow-y: auto;
-  z-index: 250;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  z-index: 560;
   direction: rtl;
   opacity: 0;
   visibility: hidden;
@@ -445,8 +447,8 @@
   width: 100%;
   max-width: 100%;
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  z-index: 260;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  z-index: 560;
+  box-shadow: var(--shadow-xl);
   margin-top: 4px;
 }
 @media (max-width: 768px) {
@@ -616,8 +618,10 @@
   max-width: 340px;
 }
 .header-notif__list {
-  max-height: 320px;
+  max-height: min(446.5px, 50vh);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   padding: 2px;
 }
 .header-notif__empty {
@@ -699,8 +703,10 @@
 }
 
 .header-cart__list {
-  max-height: 320px;
+  max-height: min(446.5px, 50vh);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   padding: 2px;
 }
 
@@ -970,12 +976,14 @@
   top: 100%;
   right: 0;
   width: 280px;
-  max-height: 440px;
+  max-height: min(446.5px, 50vh);
   overflow-y: auto;
-  background: #FFFFFF;
-  border: 1px solid #E8E8E8; border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.10);
-  z-index: 210;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  background: var(--color-white);
+  border: 1px solid var(--border-color); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xl);
+  z-index: 560;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-6px);
@@ -1653,10 +1661,10 @@ a.top-bar__slide:hover {
   max-width: 280px;
   padding: 6px;
   background: var(--color-white);
-  border: 1px solid #e8e8e8;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.12);
-  z-index: 300;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xl);
+  z-index: 560;
   direction: rtl;
   text-align: right;
   font-family: inherit;
@@ -1664,6 +1672,8 @@ a.top-bar__slide:hover {
   visibility: hidden;
   transform: translateY(-6px);
   transition: opacity 180ms var(--ease-out-expo), transform 180ms var(--ease-out-expo), visibility 0s linear 180ms;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 .header-account.is-open .header-account-dropdown {
   opacity: 1;

@@ -1016,7 +1016,7 @@
   /* Buybox cart control — mobile: prevent overflow, keep centered */
   .dk-buybox__cart { justify-content: center; }
   .dk-buybox__add-btn { width: 100%; max-width: 240px; min-width: 0; }
-  .qty-selector--buybox { width: 100%; max-width: 220px; }
+  .qty-selector--buybox { width: 100%; max-width: 240px; }
 }
 
 /* Profile/account mobile fix — prevents horizontal overflow at 320-430px */
