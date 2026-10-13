@@ -292,9 +292,10 @@
               if (App.getCart().length === 0 && snap.length > 0) {
                 snap.forEach(function (it) {
                   try {
-                    App.addToCart(it.id, it.pricingMode);
+                    /* Preserve the line's add-on selection (and key identity). */
+                    var restoredKey = App.addToCart(it.id, it.pricingMode, it.options || []);
                     var need = (parseInt(it.quantity, 10) || 1) - 1;
-                    if (need > 0) App.updateCartQty(it.key || (it.id + '_' + (it.pricingMode || 'retail')), need);
+                    if (need > 0) App.updateCartQty(restoredKey || it.key || (it.id + '_' + (it.pricingMode || 'retail')), need);
                   } catch (e) {}
                 });
               }
@@ -322,7 +323,15 @@
     var el = $('#checkout-summary-items');
     if (!el) return;
     el.innerHTML = cart.map(function(item) {
-      return '<div style="display:flex;gap:var(--space-3);padding:var(--space-2) 0;font-size:var(--font-size-sm)"><div style="width:48px;height:48px;background:var(--color-gray-100);border-radius:var(--radius-md);overflow:hidden;flex-shrink:0"><img src="'+item.image+'" alt="'+item.name+'" style="width:100%;height:100%;object-fit:contain"></div><div style="flex:1"><div style="font-weight:var(--font-weight-medium)">'+item.name+'</div><div style="color:var(--text-muted)">'+Format.toPersianNumber(item.quantity)+' عدد</div></div><div style="font-weight:var(--font-weight-semibold)">'+Format.priceWithCurrency(item.price * item.quantity)+'</div></div>';
+      var optionsHtml = '';
+      if (item.options && item.options.length) {
+        optionsHtml = '<div style="margin-top:4px;font-size:var(--font-size-xs);color:var(--text-muted)">' +
+          item.options.map(function(opt) {
+            return '<span>• ' + opt.title + ': ' + Format.price(opt.price) + ' تومان</span>';
+          }).join('<br>') +
+        '</div>';
+      }
+      return '<div style="display:flex;gap:var(--space-3);padding:var(--space-2) 0;font-size:var(--font-size-sm)"><div style="width:48px;height:48px;background:var(--color-gray-100);border-radius:var(--radius-md);overflow:hidden;flex-shrink:0"><img src="'+item.image+'" alt="'+item.name+'" style="width:100%;height:100%;object-fit:contain"></div><div style="flex:1"><div style="font-weight:var(--font-weight-medium)">'+item.name+'</div>' + optionsHtml + '<div style="color:var(--text-muted)">'+Format.toPersianNumber(item.quantity)+' عدد</div></div><div style="font-weight:var(--font-weight-semibold)">'+Format.priceWithCurrency(item.price * item.quantity)+'</div></div>';
     }).join('');
 
     var sumEl = $('#checkout-summary-total');
@@ -615,7 +624,13 @@
           discountCode: appliedDiscount.code || undefined,
           itemsCount: cart.reduce(function(s, i) { return s + i.quantity; }, 0),
           items: cart.map(function(item) {
-            return { productId: item.id, name: item.name, price: item.price, quantity: item.quantity };
+            var itemData = { productId: item.id, name: item.name, price: item.price, quantity: item.quantity };
+            if (item.options && item.options.length) {
+              itemData.options = item.options.map(function(opt) {
+                return { id: opt.id, title: opt.title, price: opt.price };
+              });
+            }
+            return itemData;
           }),
           shipping: shippingCost,
           discount: 0,

@@ -385,6 +385,7 @@
     writeJSON(getCartStorageKey(), cart);
     /* Mirror the cart to the database for authenticated users (guest carts stay local). */
     try { pushCartToServer(cart); } catch (e) {}
+    try { document.dispatchEvent(new CustomEvent('as_cart_change')); } catch (e) {}
   }
 
   function toServerCartItems(cart) {
@@ -998,20 +999,30 @@
     return id + '_' + (pricingMode || 'retail');
   }
 
-  function addToCart(id, pricingMode) {
+  function addToCart(id, pricingMode, options) {
     var p = AppData.products.find(function (x) { return x.id === id; });
     if (!p) return;
     if (!pricingMode) {
       var pc = document.querySelector('.priceChanger[data-pricing="' + id + '"]');
       pricingMode = (pc && pc.getAttribute('data-selected-mode')) || 'retail';
     }
-    var price = getProductPrice(p, pricingMode);
+    var basePrice = getProductPrice(p, pricingMode);
+    var opts = options || [];
+    var optionsPrice = opts.reduce(function(sum, opt) { return sum + (opt.price || 0); }, 0);
+    var price = basePrice + optionsPrice;
     var key = getCartKey(id, pricingMode);
     var ex = state.cart.find(function (x) { return x.key === key; });
-    if (ex) { ex.quantity += 1; } else { state.cart.push({ key: key, id: p.id, name: p.name, price: price, pricingMode: pricingMode, quantity: 1, brandName: p.brandName, image: p.image, slug: p.slug }); }
+    if (ex) { 
+      ex.quantity += 1; 
+      if (opts.length) ex.options = opts;
+      ex.price = price;
+    } else { 
+      state.cart.push({ key: key, id: p.id, name: p.name, price: price, basePrice: basePrice, pricingMode: pricingMode, quantity: 1, brandName: p.brandName, image: p.image, slug: p.slug, options: opts }); 
+    }
     saveCart(state.cart); updateCartUI();
     var modeLabel = pricingMode === 'wholesale' ? ' (عمده)' : '';
-    showToast(p.name + modeLabel + ' به سبد خرید اضافه شد');
+    var optLabel = opts.length ? ' + ' + opts.length + ' گزینه' : '';
+    showToast(p.name + modeLabel + optLabel + ' به سبد خرید اضافه شد');
   }
 
   function removeFromCart(key) {
@@ -1073,7 +1084,15 @@
     }
     body.innerHTML = state.cart.map(function (item) {
       var modeLabel = item.pricingMode === 'wholesale' ? '<span class="cart-item__mode">عمده</span>' : '';
-      return '<div class="cart-item"><div class="cart-item__image"><img src=\"' + item.image + '\" alt=\"' + item.name + '\" loading=\"lazy\" class=\"cart-item__img\"></div><div class="cart-item__details"><span class="cart-item__title">' + item.name + '</span>' + modeLabel + '<span class="cart-item__price">' + Format.priceWithCurrency(item.price) + '</span><div class="cart-item__quantity"><button class="cart-item__qty-btn" onclick="App.updateCartQty(\'' + item.key + '\',-1)">' + Icons.minus + '</button><span class="cart-item__qty-value">' + item.quantity + '</span><button class="cart-item__qty-btn" onclick="App.updateCartQty(\'' + item.key + '\',1)">' + Icons.plus + '</button></div></div><button class="cart-item__remove" onclick="App.removeFromCart(\'' + item.key + '\')">' + Icons.trash + '</button></div>';
+      var optionsHtml = '';
+      if (item.options && item.options.length) {
+        optionsHtml = '<div class="cart-item__options" style="margin-top:4px;font-size:var(--font-size-xs);color:var(--text-muted)">' +
+          item.options.map(function(opt) {
+            return '<span>• ' + opt.title + ': ' + Format.price(opt.price) + ' تومان</span>';
+          }).join('<br>') +
+        '</div>';
+      }
+      return '<div class="cart-item"><div class="cart-item__image"><img src=\"' + item.image + '\" alt=\"' + item.name + '\" loading=\"lazy\" class=\"cart-item__img\"></div><div class="cart-item__details"><span class="cart-item__title">' + item.name + '</span>' + modeLabel + '<span class="cart-item__price">' + Format.priceWithCurrency(item.price) + '</span>' + optionsHtml + '<div class="cart-item__quantity"><button class="cart-item__qty-btn" onclick="App.updateCartQty(\'' + item.key + '\',-1)">' + Icons.minus + '</button><span class="cart-item__qty-value">' + item.quantity + '</span><button class="cart-item__qty-btn" onclick="App.updateCartQty(\'' + item.key + '\',1)">' + Icons.plus + '</button></div></div><button class="cart-item__remove" onclick="App.removeFromCart(\'' + item.key + '\')">' + Icons.trash + '</button></div>';
     }).join('');
     if (footer) {
       footer.style.display = 'block';
@@ -3295,7 +3314,8 @@ el.innerHTML = '\
       + '<div class="header-account-dropdown__divider" aria-hidden="true"></div>'
       + '<div class="header-cart__footer">'
       + '<div class="header-cart__total"><span>مبلغ قابل پرداخت</span><span class="header-cart__total-value">۰ تومان</span></div>'
-      + '<a href="/checkout/step1" class="btn btn-primary btn-block btn-sm">ثبت سفارش</a>'
+      + '<button type="button" class="btn btn-primary btn-block btn-sm header-cart__checkout-btn">ثبت سفارش</button>'
+      + '<a href="/shop" class="btn btn-secondary btn-block btn-sm header-cart__continue-btn" style="display:none">ادامه خرید</a>'
       + '</div>'
       + '</div></div>';
   }
@@ -3326,10 +3346,14 @@ el.innerHTML = '\
   function renderCartPopover(wrap) {
     var list = wrap.querySelector('.header-cart__list');
     var totalEl = wrap.querySelector('.header-cart__total-value');
+    var checkoutBtn = wrap.querySelector('.header-cart__checkout-btn');
+    var continueBtn = wrap.querySelector('.header-cart__continue-btn');
     if (!list) return;
     if (state.cart.length === 0) {
       list.innerHTML = '<p class="header-cart__empty">سبد خرید شما خالی است</p>';
       if (totalEl) totalEl.textContent = '۰ تومان';
+      if (checkoutBtn) checkoutBtn.style.display = 'none';
+      if (continueBtn) continueBtn.style.display = 'block';
       return;
     }
     list.innerHTML = state.cart.map(function (item) {
@@ -3351,6 +3375,8 @@ el.innerHTML = '\
     }).join('');
     var total = getCartTotal();
     if (totalEl) totalEl.textContent = Format.priceWithCurrency(total);
+    if (checkoutBtn) checkoutBtn.style.display = 'block';
+    if (continueBtn) continueBtn.style.display = 'none';
   }
 
   function bindCartPopovers(scope) {
@@ -3369,10 +3395,17 @@ el.innerHTML = '\
         var btn = e.target && e.target.closest ? e.target.closest('.header-cart__qty-btn, .header-cart__item-remove') : null;
         if (!btn) return;
         e.stopPropagation();
-        /* Inline onclick (App.updateCartQty / App.removeFromCart) already ran
-           at target phase and updated state + badge — re-render the open
-           popover from that same state so qty/total/rows/empty refresh now. */
         renderCartPopover(wrap);
+      });
+      var checkoutBtn = wrap.querySelector('.header-cart__checkout-btn');
+      if (checkoutBtn) checkoutBtn.addEventListener('click', function (e) {
+        if (state.cart.length === 0) {
+          e.preventDefault();
+          e.stopPropagation();
+          try { App.showToast('سبد خرید شما خالی است', 'warning'); } catch (_) {}
+          return;
+        }
+        window.location.href = '/checkout/step1';
       });
     });
   }

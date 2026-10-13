@@ -8,6 +8,10 @@
   var $$ = function (s, c) { return [...(c || document).querySelectorAll(s)]; };
   var product = null;
   var activeGalleryIndex = 0;
+  /* Pricing mode the page starts on. Also seeds the mobile purchase bar,
+     which is rendered before render()'s local state is declared. */
+  var INITIAL_PRICING_MODE = 'retail';
+  var buyBarSpaceBound = false;
 
   /* ── Review persistence (API-backed, localStorage as cache/offline fallback) ─── */
   var SEED_REVIEW_COUNT = 8; /* number of hardcoded reviews in data.js */
@@ -235,9 +239,101 @@
     activeGalleryIndex = 0;
     saveRecentlyViewed(product.id);
     loadPersistedReviews();
+    loadProductOptions();
     render();
     bindTabs();
     bindGallery();
+  }
+
+  function loadProductOptions() {
+    if (!apiAvailable()) return;
+    var url = '/api/products/' + encodeURIComponent(product.id) + '/options';
+    fetch(url, { headers: authHeaders() })
+      .then(function (res) { return res.json().catch(function () { return []; }); })
+      .then(function (options) {
+        product.options = options || [];
+        renderOptions();
+      })
+      .catch(function () { product.options = []; renderOptions(); });
+  }
+
+  function renderOptions() {
+    var container = $('#pdp-options');
+    if (!container) return;
+    var opts = product.options || [];
+    if (!opts.length) {
+      container.innerHTML = '';
+      return;
+    }
+    container.innerHTML =
+      '<div class="pdp-options__section">' +
+        '<h3 class="pdp-options__title">گزینه‌های اضافه</h3>' +
+        '<div class="pdp-options__list">' +
+          opts.map(function (opt) {
+            var finalPrice = opt.discountPrice != null ? opt.discountPrice : opt.price;
+            var hasDiscount = opt.discountPercent > 0 || (opt.discountPrice != null && opt.discountPrice < opt.price);
+            return '<label class="pdp-option" data-opt-id="' + opt.id + '">' +
+              '<input type="checkbox" class="pdp-option__checkbox" value="' + opt.id + '">' +
+              '<span class="pdp-option__check"></span>' +
+              '<div class="pdp-option__details">' +
+                '<p class="pdp-option__name">' + opt.title + '</p>' +
+                (opt.description ? '<p class="pdp-option__desc">' + opt.description + '</p>' : '') +
+                '<div class="pdp-option__price">' +
+                  (hasDiscount && opt.price > 0 ?
+                    '<span class="pdp-option__discount-badge">٪' + (opt.discountPercent || Math.round((1 - finalPrice / opt.price) * 100)) + '</span>' +
+                    '<span class="pdp-option__old-price">' + Format.price(opt.price) + '</span>' : '') +
+                  '<span class="pdp-option__final-price">' + Format.price(finalPrice) + ' تومان</span>' +
+                '</div>' +
+              '</div>' +
+            '</label>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+  }
+
+  /* ── Fixed mobile purchase bar (Digikala-style) ──────────────
+     Mobile only: pages.css hides .pdp-buy-bar above 768px, where the
+     sticky .dk-buybox-wrap (desktop.css) owns the buy action, so the
+     desktop layout is untouched. Everything here reuses what the page
+     already has — App.getProductPrice() for retail/wholesale, the same
+     p.oldPrice / p.discount discount rule as .dk-buybox__price-top, the
+     shared .priceChanger markup + click delegation (common.js) for the
+     pricing toggle, and ProductDetail.addToCartWithOptions() / .updateCartQty()
+     for the cart. */
+  function buyBarPriceHTML(p, mode) {
+    var hasWholesale = !!(p.wholesalePrice && Number(p.wholesalePrice) > 0);
+    return '<div class="pdp-buy-bar__price" id="pdp-buy-bar-price">' +
+      '<div class="pdp-buy-bar__price-top">' +
+        (p.oldPrice ?
+          '<span class="pdp-buy-bar__old-price">' + Format.priceWithCurrency(p.oldPrice) + '</span>' +
+          '<span class="pdp-buy-bar__discount-badge">٪' + p.discount + '</span>'
+        : '') +
+      '</div>' +
+      '<div class="pdp-buy-bar__final-price">' +
+        '<span class="pdp-buy-bar__amount">' + Format.price(App.getProductPrice(p, mode)) + '</span>' +
+        '<span class="pdp-buy-bar__currency">' + Icons.toman + '</span>' +
+        /* data-pricing="detail" routes clicks to ProductDetail.selectPricing
+           through the existing .priceChanger delegation in common.js. */
+        (hasWholesale ?
+          '<div class="priceChanger" id="product-detail-pricing" data-pricing="detail">' +
+            '<span class="mainPrice' + (mode === 'retail' ? ' active' : '') + '" data-mode="retail">قیمت تک</span>' +
+            '<span' + (mode === 'wholesale' ? ' class="active"' : '') + ' data-mode="wholesale">قیمت عمده</span>' +
+          '</div>'
+        : '') +
+      '</div>' +
+    '</div>';
+  }
+
+  function buyBarHTML(p, mode) {
+    /* RTL flex row: the price block comes first so it lands on the right
+       and the 48px add-to-cart control lands on the left. */
+    return '<div class="pdp-buy-bar" id="pdp-buy-bar" role="region" aria-label="افزودن محصول به سبد خرید">' +
+      buyBarPriceHTML(p, mode) +
+      '<div class="pdp-buy-bar__cart" id="pdp-buy-bar-cart">' +
+        /* Out of stock keeps a static disabled control, like the buy box. */
+        (p.inStock ? '' : '<button class="dk-buybox__add-btn dk-buybox__add-btn--disabled" disabled>ناموجود</button>') +
+      '</div>' +
+    '</div>';
   }
 
   /* ── Render ───────────────────────────────────────────────── */
@@ -391,24 +487,8 @@
         '</div>' +
       '</div>' +
 
-      /* ── Insurance ── */
-      '<div class="pdp-insurance">' +
-        '<h3 class="pdp-insurance__title">بیمه</h3>' +
-        '<div class="pdp-insurance__card">' +
-          '<label class="pdp-insurance__label">' +
-            '<input type="checkbox" class="pdp-insurance__checkbox">' +
-            '<span class="pdp-insurance__check"></span>' +
-            '<div class="pdp-insurance__details">' +
-              '<p class="pdp-insurance__name">بیمه تجهیزات دیجیتال</p>' +
-              '<div class="pdp-insurance__price">' +
-                '<span class="pdp-insurance__discount-badge">٪۵۰</span>' +
-                '<span class="pdp-insurance__old-price">۲,۳۱۰,۰۰۰</span>' +
-                '<span class="pdp-insurance__final-price">۱,۱۵۵,۰۰۰ تومان</span>' +
-              '</div>' +
-            '</div>' +
-          '</label>' +
-        '</div>' +
-      '</div>' +
+      /* ── Product Options (Add-ons) ── */
+      '<div class="pdp-options" id="pdp-options"></div>' +
 
       /* ── Return Policy Notice ── */
       '<div class="pdp-return-notice">' +
@@ -455,10 +535,8 @@
             '</div>' +
           '</div>' +
           (p.inStock ?
-          '<div class="dk-buybox__cart">' +
-            '<button class="dk-buybox__add-btn" id="product-add-to-cart" onclick="App.addToCart(' + p.id + ', ProductDetail.getPricingMode())">' +
-              '<span>افزودن به سبد خرید</span>' +
-            '</button>' +
+          '<div class="dk-buybox__cart" id="product-cart-control">' +
+            '<!-- Rendered by ProductDetail.renderCartControl() -->' +
           '</div>' :
           '<div class="dk-buybox__cart">' +
             '<button class="dk-buybox__add-btn dk-buybox__add-btn--disabled" disabled>ناموجود</button>' +
@@ -478,35 +556,10 @@
             '<span class="dk-buybox__delivery-title">روش‌ها و هزینه‌های تحویل</span>' +
             '<div class="dk-buybox__delivery-chevron">' + Icons.chevronLeft + '</div>' +
           '</div>' +
-          '<ul class="dk-buybox__delivery-list">' +
-            '<li class="dk-buybox__delivery-item">' +
-              '<div class="dk-buybox__delivery-dot"></div>' +
-              '<div class="dk-buybox__delivery-icon-sm">' + Icons.truck + '</div>' +
-              '<span class="dk-buybox__delivery-name">تحویل عادی دیجی‌کالا</span>' +
-              '<span class="dk-buybox__delivery-label">وابسته به سبد</span>' +
-            '</li>' +
-            '<li class="dk-buybox__delivery-item">' +
-              '<div class="dk-buybox__delivery-dot"></div>' +
-              '<div class="dk-buybox__delivery-icon-sm" style="color:var(--color-success)">' + Icons.truck + '</div>' +
-              '<span class="dk-buybox__delivery-name">تحویل سریع امروز دیجی‌کالا</span>' +
-              '<span class="dk-buybox__delivery-label">وابسته به سبد</span>' +
-            '</li>' +
-          '</ul>' +
-        '</div>' +
-
-        /* Plus Membership */
-        '<div class="dk-buybox__plus">' +
-          '<div class="dk-buybox__plus-header">' +
-            '<div class="dk-buybox__plus-icon">' + Icons.star + '</div>' +
-            '<span class="dk-buybox__plus-title">ویژه اعضای پلاس</span>' +
+          '<div class="dk-buybox__delivery-info">' +
+            '<p>هزینه ارسال بر اساس آدرس و مبلغ سفارش در مرحله تسویه‌حساب محاسبه می‌شود.</p>' +
+            '<p>برای سفارش‌های بالاتر از حد مشخص، ارسال رایگان است.</p>' +
           '</div>' +
-          '<ul class="dk-buybox__plus-list">' +
-            '<li class="dk-buybox__plus-item">' +
-              '<div class="dk-buybox__plus-dot"></div>' +
-              '<div class="dk-buybox__plus-icon-sm">' + Icons.truck + '</div>' +
-              '<span class="dk-buybox__plus-text">ارسال سریع و رایگان دیجی‌کالا</span>' +
-            '</li>' +
-          '</ul>' +
         '</div>' +
 
         /* Better Price */
@@ -564,7 +617,13 @@
     '</div></div>' +
 
     /* ── Related Products ── */
-    '<div class="related-products"><div class="container"><div class="section-header"><h2 class="section-title">محصولات مرتبط</h2></div><div class="product-listing-grid" id="related-grid"></div></div></div>';
+    '<div class="related-products"><div class="container"><div class="section-header"><h2 class="section-title">محصولات مرتبط</h2></div><div class="product-listing-grid" id="related-grid"></div></div></div>' +
+
+    /* ── Fixed mobile purchase bar ──
+       Part of this template (not a shared shell) so it is rebuilt, never
+       duplicated, every time render() replaces #product-detail-content —
+       including the live-catalog re-render. */
+    buyBarHTML(p, INITIAL_PRICING_MODE);
 
     renderRelated();
     bindReviewForm();
@@ -584,7 +643,84 @@
     } catch (e) {}
 
     var qty = 1;
-    var selectedPricingMode = 'retail';
+    var selectedPricingMode = INITIAL_PRICING_MODE;
+    var cartControlBound = false;
+
+    function getCartKey(id, pricingMode) {
+      return id + '_' + (pricingMode || 'retail');
+    }
+
+    function findCartItem(productId, pricingMode) {
+      var key = getCartKey(productId, pricingMode);
+      return App.getCart().find(function (x) { return x.key === key; });
+    }
+
+    function getSelectedOptions() {
+      var opts = [];
+      var checkboxes = document.querySelectorAll('.pdp-option__checkbox:checked');
+      checkboxes.forEach(function(cb) {
+        var optId = parseInt(cb.value, 10);
+        var opt = (product.options || []).find(function(o) { return o.id === optId; });
+        if (opt) {
+          var finalPrice = opt.discountPrice != null ? opt.discountPrice : opt.price;
+          opts.push({
+            id: opt.id,
+            title: opt.title,
+            price: finalPrice,
+          });
+        }
+      });
+      return opts;
+    }
+
+    /* Markup for one cart control. `isBar` only swaps the element id so the
+       same control can live in the buy box and the fixed bar at once
+       without duplicate-id collisions. */
+    function cartControlHTML(item, isBar) {
+      if (item && item.quantity > 0) {
+        /* Quantity control (already in cart) */
+        return '<div class="qty-selector qty-selector--buybox" role="group" aria-label="تعداد محصول در سبد خرید">' +
+          '<button type="button" class="qty-selector__btn qty-selector__btn--minus" onclick="ProductDetail.updateCartQty(-1)" aria-label="کاهش تعداد">' + Icons.minus + '</button>' +
+          '<span class="qty-selector__value"' + (isBar ? ' id="pdp-buy-bar-qty"' : ' id="product-qty"') + '>' + Format.toPersianNumber(item.quantity) + '</span>' +
+          '<button type="button" class="qty-selector__btn qty-selector__btn--plus" onclick="ProductDetail.updateCartQty(1)" aria-label="افزایش تعداد">' + Icons.plus + '</button>' +
+        '</div>';
+      }
+      /* Add to cart button */
+      return '<button class="dk-buybox__add-btn"' + (isBar ? ' id="pdp-buy-bar-add"' : ' id="product-add-to-cart"') + ' onclick="ProductDetail.addToCartWithOptions()">' +
+        '<span>افزودن به سبد خرید</span>' +
+      '</button>';
+    }
+
+    /* The buy box and the fixed mobile bar address the same cart line, so
+       they always show the same state. Out of stock: the bar keeps its
+       static disabled button. */
+    function renderCartControl() {
+      var item = findCartItem(p.id, selectedPricingMode);
+      var targets = [{ el: $('#product-cart-control'), isBar: false }];
+      if (p.inStock) targets.push({ el: $('#pdp-buy-bar-cart'), isBar: true });
+      for (var i = 0; i < targets.length; i++) {
+        if (targets[i].el) targets[i].el.innerHTML = cartControlHTML(item, targets[i].isBar);
+      }
+    }
+
+    function bindCartControlEvents() {
+      if (cartControlBound) return;
+      cartControlBound = true;
+      document.addEventListener('as_cart_change', function () {
+        renderCartControl();
+      });
+      /* Also refresh when pricing mode changes (different cart key) */
+      var pricingChanger = document.getElementById('product-detail-pricing');
+      if (pricingChanger) {
+        pricingChanger.addEventListener('click', function (e) {
+          var span = e.target.closest('span[data-mode]');
+          if (span) {
+            setTimeout(renderCartControl, 0);
+          }
+        });
+      }
+    }
+
     window.ProductDetail = {
       changeQty: function (d) {
         qty = Math.max(1, qty + d);
@@ -606,6 +742,57 @@
         if (priceEl) {
           priceEl.innerHTML = '<span class="pdp-buybox__amount">' + Format.price(newPrice) + '</span><span class="pdp-buybox__currency">تومان</span>';
         }
+        /* Mirror the new price into the fixed mobile bar (and keep its
+           pricing-toggle active state in sync with the shared one). */
+        var barPriceEl = document.getElementById('pdp-buy-bar-price');
+        if (barPriceEl) barPriceEl.outerHTML = buyBarPriceHTML(p, mode);
+        setTimeout(renderCartControl, 0);
+      },
+
+      updateCartQty: function (delta) {
+        var mode = selectedPricingMode;
+        var key = getCartKey(p.id, mode);
+        App.updateCartQty(key, delta);
+      },
+
+      addToCartWithOptions: function () {
+        var mode = selectedPricingMode;
+        var options = getSelectedOptions();
+        var key = getCartKey(p.id, mode);
+        var existingItem = App.getCart().find(function (x) { return x.key === key; });
+        
+        // Calculate total price with options
+        var basePrice = App.getProductPrice(p, mode);
+        var optionsPrice = options.reduce(function(sum, opt) { return sum + opt.price; }, 0);
+        var totalPrice = basePrice + optionsPrice;
+        
+        if (existingItem) {
+          existingItem.quantity += 1;
+          existingItem.options = options;
+          existingItem.price = totalPrice;
+        } else {
+          App.getCart().push({
+            key: key,
+            id: p.id,
+            name: p.name,
+            price: totalPrice,
+            basePrice: basePrice,
+            pricingMode: mode,
+            quantity: 1,
+            brandName: p.brandName,
+            image: p.image,
+            slug: p.slug,
+            options: options,
+          });
+        }
+        // Save cart (triggers as_cart_change event)
+        var cartKey = 'as_user_' + (App.getCurrentUser() ? App.getCurrentUser().id : 'guest_' + localStorage.getItem('as_guest_session')) + '_cart';
+        localStorage.setItem(cartKey, JSON.stringify(App.getCart()));
+        document.dispatchEvent(new CustomEvent('as_cart_change'));
+        
+        var modeLabel = mode === 'wholesale' ? ' (عمده)' : '';
+        var optLabel = options.length ? ' + ' + options.length + ' گزینه' : '';
+        App.showToast(p.name + modeLabel + optLabel + ' به سبد خرید اضافه شد');
       },
 
       /* ── Wishlist toggle ──────────────────────────────── */
@@ -698,6 +885,34 @@
         if (tooltip) tooltip.textContent = 'حذف از مقایسه';
       }
     })();
+
+    /* Reserve the fixed bar's band in the document flow so page content is
+       never hidden behind it, and publish the two measured heights the bar
+       layout depends on. They are measured rather than hard-coded because
+       the bar changes height (pricing toggle, quantity stepper vs. disabled
+       state) and the mobile bottom nav carries its own safe-area padding.
+       See .has-pdp-buy-bar / .pdp-buy-bar in pages.css. */
+    function reserveBuyBarSpace() {
+      var bar = $('#pdp-buy-bar');
+      if (!bar || !document.body) return;
+      document.body.classList.add('has-pdp-buy-bar');
+      var barH = Math.round(bar.getBoundingClientRect().height);
+      if (barH > 0) document.documentElement.style.setProperty('--pdp-buy-bar-h', barH + 'px');
+      /* The nav is display:none on desktop (height 0) — keep the CSS default
+         so the value is still correct the first time the viewport is mobile. */
+      var nav = $('.mobile-bottom-nav');
+      var navH = nav ? Math.round(nav.getBoundingClientRect().height) : 0;
+      if (navH > 0) document.documentElement.style.setProperty('--pdp-bottom-nav-h', navH + 'px');
+      /* render() can run again on live-catalog refresh — bind resize once. */
+      if (buyBarSpaceBound) return;
+      buyBarSpaceBound = true;
+      window.addEventListener('resize', reserveBuyBarSpace);
+    }
+
+    /* Initialize cart control (buy box + fixed mobile bar) */
+    renderCartControl();
+    bindCartControlEvents();
+    reserveBuyBarSpace();
   }
 
   function startPdpCountdown() {

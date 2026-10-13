@@ -33,6 +33,13 @@
     setupPage();
     bindEvents();
     render();
+    try {
+      // Live catalog (admin wholesale edits) may land after first paint.
+      if (typeof AppData !== 'undefined' && AppData.catalogReady && typeof AppData.catalogReady.then === 'function') {
+        AppData.catalogReady.then(function () { render(); });
+      }
+      document.addEventListener('abzar:catalog-updated', function () { render(); });
+    } catch (e) {}
   }
 
   function setupPage() {

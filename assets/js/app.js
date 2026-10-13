@@ -471,7 +471,7 @@
   }
 
   /* ── Init ─────────────────────────────────────────────────── */
-  function init() {
+  function renderAll() {
     renderCategories();
     renderBestSellers();
     renderNewProducts();
@@ -479,6 +479,17 @@
     renderRecommendations();
     renderBrands();
     renderArticles();
+  }
+  function init() {
+    renderAll();
+    try {
+      // Live catalog (admin wholesale edits) may land after first paint:
+      // re-render grids so wholesale toggles appear without reload.
+      if (typeof AppData !== 'undefined' && AppData.catalogReady && typeof AppData.catalogReady.then === 'function') {
+        AppData.catalogReady.then(function () { renderAll(); });
+      }
+      document.addEventListener('abzar:catalog-updated', function () { renderAll(); });
+    } catch (e) {}
     startCountdown();
     initHeroSlideshow();
     bindMobileShortcuts();

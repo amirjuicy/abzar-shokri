@@ -118,7 +118,8 @@ const MIGRATIONS = [
     product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
     name TEXT NOT NULL DEFAULT '',
     price INTEGER NOT NULL DEFAULT 0,
-    quantity INTEGER NOT NULL DEFAULT 1
+    quantity INTEGER NOT NULL DEFAULT 1,
+    options_json TEXT NOT NULL DEFAULT '[]'
   );
   CREATE TABLE IF NOT EXISTS customer_sessions (
     token TEXT PRIMARY KEY,
@@ -299,12 +300,26 @@ function migrate() {
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (scope, ref)
   )`);
+  /* Product add-on options (per product, admin-managed). */
+  db.exec(`CREATE TABLE IF NOT EXISTS product_options (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    title TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    price INTEGER NOT NULL DEFAULT 0,
+    discount_percent INTEGER NOT NULL DEFAULT 0,
+    discount_price INTEGER,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_product_options_product ON product_options(product_id)');
   /* Support tickets + conversation messages (admin-managed; widget untouched). */
   db.exec(`CREATE TABLE IF NOT EXISTS tickets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     subject TEXT NOT NULL DEFAULT '',
-    category TEXT NOT NULL DEFAULT 'سایر',
     priority TEXT NOT NULL DEFAULT 'normal',
     status TEXT NOT NULL DEFAULT 'open',
     created_by TEXT NOT NULL DEFAULT 'customer',
@@ -413,6 +428,7 @@ function migrate() {
   ensureColumn(db, 'products', 'features_json', "TEXT NOT NULL DEFAULT '[]'");
   ensureColumn(db, 'products', 'gallery_json', "TEXT NOT NULL DEFAULT '[]'");
   ensureColumn(db, 'products', 'shipping_json', "TEXT NOT NULL DEFAULT '{}'");
+  ensureColumn(db, 'order_items', 'options_json', "TEXT NOT NULL DEFAULT '[]'");
   ensureColumn(db, 'notifications', 'image_url', "TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, 'notifications', 'link_type', "TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, 'notifications', 'link_value', "TEXT NOT NULL DEFAULT ''");
@@ -463,36 +479,6 @@ function migrate() {
   ensureColumn(db, 'hero_slides', 'background_color', "TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, 'hero_slides', 'background_gradient_second', "TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, 'hero_slides', 'background_gradient_angle', "TEXT NOT NULL DEFAULT '135deg'");
-  /* کارت به کارت — bank cards the customer transfers to. Admin-managed;
-     only enabled rows are exposed at checkout. */
-  db.exec(`CREATE TABLE IF NOT EXISTS bank_cards (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    bank_name TEXT NOT NULL DEFAULT '',
-    card_number TEXT NOT NULL DEFAULT '',
-    card_holder TEXT NOT NULL DEFAULT '',
-    account_number TEXT NOT NULL DEFAULT '',
-    logo TEXT NOT NULL DEFAULT '',
-    note TEXT NOT NULL DEFAULT '',
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    is_enabled INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )`);
-  db.exec('CREATE INDEX IF NOT EXISTS idx_bank_cards_order ON bank_cards(sort_order, id)');
-  // Orders remember which card the customer was told to transfer to. The bank
-  // name/number/holder are denormalized onto the order so admin still sees the
-  // instruction even after the card row is edited or deleted.
-  try { var _bc=db.prepare('PRAGMA table_info(orders)').all().map(function(c){return c.name;});
-    if(_bc.indexOf('card_id')===-1) db.exec('ALTER TABLE orders ADD COLUMN card_id INTEGER REFERENCES bank_cards(id) ON DELETE SET NULL');
-    if(_bc.indexOf('card_bank_name')===-1) db.exec("ALTER TABLE orders ADD COLUMN card_bank_name TEXT NOT NULL DEFAULT ''");
-    if(_bc.indexOf('card_number')===-1) db.exec("ALTER TABLE orders ADD COLUMN card_number TEXT NOT NULL DEFAULT ''");
-    if(_bc.indexOf('card_holder')===-1) db.exec("ALTER TABLE orders ADD COLUMN card_holder TEXT NOT NULL DEFAULT ''");
-    // The customer's photo/screenshot of the card-to-card transfer receipt.
-    if(_bc.indexOf('card_receipt_url')===-1) db.exec("ALTER TABLE orders ADD COLUMN card_receipt_url TEXT NOT NULL DEFAULT ''");
-    if(_bc.indexOf('card_receipt_name')===-1) db.exec("ALTER TABLE orders ADD COLUMN card_receipt_name TEXT NOT NULL DEFAULT ''");
-    if(_bc.indexOf('card_receipt_type')===-1) db.exec("ALTER TABLE orders ADD COLUMN card_receipt_type TEXT NOT NULL DEFAULT ''");
-    if(_bc.indexOf('card_receipt_size')===-1) db.exec('ALTER TABLE orders ADD COLUMN card_receipt_size INTEGER NOT NULL DEFAULT 0');
-  } catch(_){}
   var _hs=db.prepare('SELECT COUNT(*) as c FROM hero_slides').get();  if(_hs.c===0){
     var _ins=db.prepare('INSERT INTO hero_slides (sort_order,image_desktop,image_mobile,image_position,badge,title,text,btn1_text,btn1_url,btn2_text,btn2_url,show_mobile) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
     _ins.run(1,'assets/images/products/bosch-gsr-180-li.svg','','center','فروش ویژه تابستانه','ابزارآلات حرفه‌ای با بهترین قیمت','بیش از ۱۵۰۰ محصول از معتبرترین برندهای ابزارآلات جهان با ضمانت اصالت کالا و ارسال رایگان','مشاهده محصولات','#bestsellers','دسته‌بندی محصولات','#categories',1);

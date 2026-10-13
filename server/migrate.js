@@ -118,7 +118,8 @@ const MIGRATIONS = [
     product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
     name TEXT NOT NULL DEFAULT '',
     price INTEGER NOT NULL DEFAULT 0,
-    quantity INTEGER NOT NULL DEFAULT 1
+    quantity INTEGER NOT NULL DEFAULT 1,
+    options_json TEXT NOT NULL DEFAULT '[]'
   );
   CREATE TABLE IF NOT EXISTS customer_sessions (
     token TEXT PRIMARY KEY,
@@ -299,6 +300,21 @@ function migrate() {
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (scope, ref)
   )`);
+  /* Product add-on options (per product, admin-managed). */
+  db.exec(`CREATE TABLE IF NOT EXISTS product_options (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    title TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    price INTEGER NOT NULL DEFAULT 0,
+    discount_percent INTEGER NOT NULL DEFAULT 0,
+    discount_price INTEGER,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_product_options_product ON product_options(product_id)');
   /* Support tickets + conversation messages (admin-managed; widget untouched). */
   db.exec(`CREATE TABLE IF NOT EXISTS tickets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -412,6 +428,7 @@ function migrate() {
   ensureColumn(db, 'products', 'features_json', "TEXT NOT NULL DEFAULT '[]'");
   ensureColumn(db, 'products', 'gallery_json', "TEXT NOT NULL DEFAULT '[]'");
   ensureColumn(db, 'products', 'shipping_json', "TEXT NOT NULL DEFAULT '{}'");
+  ensureColumn(db, 'order_items', 'options_json', "TEXT NOT NULL DEFAULT '[]'");
   ensureColumn(db, 'notifications', 'image_url', "TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, 'notifications', 'link_type', "TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, 'notifications', 'link_value', "TEXT NOT NULL DEFAULT ''");

@@ -220,13 +220,13 @@
 /* Seller Store */
 .dk-buybox__store { padding: 0 16px; cursor: pointer; }
 .dk-buybox__store-inner { display: flex; padding: 12px 0 16px; }
-.dk-buybox__store-badge { width: 24px; height: 24px; background: #ed1944; color: #fff; border-radius: var(--radius-circle); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 4px; }
+.dk-buybox__store-badge { width: 24px; height: 24px; background: var(--color-primary); color: var(--color-dark); border-radius: var(--radius-circle); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 4px; }
 .dk-buybox__store-badge svg { width: 16px; height: 16px; }
 .dk-buybox__store-info { margin-right: 16px; }
-.dk-buybox__store-name { font-size: 16px; font-weight: 600; color: #3f4064; margin-bottom: 8px; }
+.dk-buybox__store-name { font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
 .dk-buybox__store-stats { display: flex; align-items: center; gap: 8px; font-size: 14px; }
-.dk-buybox__store-stat { color: #81858b; white-space: nowrap; }
-.dk-buybox__store-divider { width: 1px; height: 16px; background: #e0e0e2; flex-shrink: 0; }
+.dk-buybox__store-stat { color: var(--text-secondary); white-space: nowrap; }
+.dk-buybox__store-divider { width: 1px; height: 16px; background: var(--border-color); flex-shrink: 0; }
 
 /* Price + Cart Section */
 .dk-buybox__price-cart { padding: 16px; }
@@ -234,16 +234,17 @@
 /* Price */
 .dk-buybox__price { margin-bottom: 8px; }
 .dk-buybox__price-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; justify-content: flex-end; }
-.dk-buybox__old-price { font-size: 14px; color: #c0c2c5; text-decoration: line-through; }
-.dk-buybox__discount-badge { background: #eb3850; color: #fff; padding: 2px 6px; border-radius: var(--radius-lg); font-size: 14px; font-weight: 600; }
+.dk-buybox__old-price { font-size: 14px; color: var(--text-muted); text-decoration: line-through; }
+.dk-buybox__discount-badge { background: var(--color-primary); color: var(--color-dark); padding: 2px 6px; border-radius: var(--radius-lg); font-size: 14px; font-weight: 600; }
 .dk-buybox__final-price { display: flex; align-items: center; gap: 4px; }
 .dk-buybox__amount { font-size: 22px; font-weight: 700; color: #23254e; }
 
 /* Add to Cart Button */
-.dk-buybox__cart { margin-top: 8px; }
-.dk-buybox__add-btn { width: 100%; height: 48px; display: flex; align-items: center; justify-content: center; background: #ed1944; color: #fff; border: none; border-radius: var(--radius-lg); font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.15s; user-select: none; }
-.dk-buybox__add-btn:hover { background: #c41230; }
-.dk-buybox__add-btn--disabled { background: #c0c2c5; cursor: not-allowed; }
+.dk-buybox__cart { margin-top: 8px; display: flex; justify-content: center; }
+.dk-buybox__add-btn { width: 240px; min-width: 240px; height: 54px; padding: 0 var(--space-6); display: inline-flex; align-items: center; justify-content: center; background: var(--color-primary); color: var(--color-dark); border: none; border-radius: var(--radius-lg); font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); cursor: pointer; transition: background 150ms ease-out, box-shadow 150ms ease-out, transform 80ms ease-out; box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap; }
+.dk-buybox__add-btn:hover { background: var(--color-primary-light); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.dk-buybox__add-btn:active { transform: scale(0.98); }
+.dk-buybox__add-btn--disabled { background: var(--color-gray-300); color: var(--color-gray-500); cursor: not-allowed; box-shadow: none; }
 
 /* Guarantee */
 .dk-buybox__guarantee { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid #ecedef; }
@@ -252,38 +253,16 @@
 .dk-buybox__guarantee-text { font-size: 14px; font-weight: 500; color: #3f4064; }
 
 /* Delivery Methods */
-.dk-buybox__delivery { padding: 12px 16px; border-top: 1px solid #ecedef; cursor: pointer; }
+.dk-buybox__delivery { padding: 12px 16px; border-top: 1px solid var(--border-color-light); cursor: pointer; }
 .dk-buybox__delivery-header { display: flex; align-items: center; margin-bottom: 8px; }
 .dk-buybox__delivery-icon { margin-left: 12px; flex-shrink: 0; }
 .dk-buybox__delivery-icon svg { width: 24px; height: 24px; }
-.dk-buybox__delivery-title { font-size: 14px; font-weight: 500; color: #3f4064; }
-.dk-buybox__delivery-chevron { margin-right: auto; color: #a1a3a8; }
+.dk-buybox__delivery-title { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.dk-buybox__delivery-chevron { margin-right: auto; color: var(--text-muted); }
 .dk-buybox__delivery-chevron svg { width: 24px; height: 24px; }
-.dk-buybox__delivery-list { list-style: none; display: flex; flex-direction: column; padding: 0; margin: 0; }
-.dk-buybox__delivery-item { display: flex; align-items: center; margin-left: 12px; font-size: 14px; color: #81858b; margin-bottom: 4px; }
-.dk-buybox__delivery-dot { position: relative; width: 24px; min-width: 24px; display: flex; align-items: center; justify-content: center; margin-left: 12px; }
-.dk-buybox__delivery-dot::before { content: ''; width: 5px; height: 5px; background: #a2a2a2; border-radius: var(--radius-circle); }
-.dk-buybox__delivery-dot::after { content: ''; position: absolute; top: 0; width: 1px; height: calc(50% - 2.5px); background: #e0e0e2; }
-.dk-buybox__delivery-item:last-child .dk-buybox__delivery-dot::after { display: none; }
-.dk-buybox__delivery-icon-sm { flex-shrink: 0; }
-.dk-buybox__delivery-icon-sm svg { width: 16px; height: 16px; }
-.dk-buybox__delivery-name { margin-right: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dk-buybox__delivery-label { margin-right: auto; font-size: 14px; font-weight: 600; color: #424242; white-space: nowrap; }
-
-/* Plus Membership */
-.dk-buybox__plus { padding: 12px 16px; border-top: 1px solid #ecedef; }
-.dk-buybox__plus-header { display: flex; align-items: center; margin-bottom: 8px; }
-.dk-buybox__plus-icon { margin-left: 12px; flex-shrink: 0; color: #b12ba4; }
-.dk-buybox__plus-icon svg { width: 24px; height: 24px; }
-.dk-buybox__plus-title { font-size: 14px; font-weight: 500; color: #3f4064; }
-.dk-buybox__plus-list { list-style: none; display: flex; flex-direction: column; padding: 0; margin: 0; }
-.dk-buybox__plus-item { display: flex; align-items: center; margin-left: 12px; font-size: 14px; color: #81858b; }
-.dk-buybox__plus-dot { position: relative; width: 24px; min-width: 24px; display: flex; align-items: center; justify-content: center; margin-left: 12px; }
-.dk-buybox__plus-dot::before { content: ''; width: 5px; height: 5px; background: #b12ba4; border-radius: var(--radius-circle); }
-.dk-buybox__plus-dot::after { content: ''; position: absolute; top: 0; bottom: 0; width: 1px; background: #e0e0e2; }
-.dk-buybox__plus-icon-sm { flex-shrink: 0; }
-.dk-buybox__plus-icon-sm svg { width: 16px; height: 16px; color: #b12ba4; }
-.dk-buybox__plus-text { white-space: nowrap; }
+.dk-buybox__delivery-info { margin-right: 36px; font-size: 13px; color: var(--text-secondary); line-height: 1.8; }
+.dk-buybox__delivery-info p { margin: 0 0 4px; }
+.dk-buybox__delivery-info p:last-child { margin-bottom: 0; }
 
 /* Better Price */
 .dk-buybox__better-price { display: flex; align-items: center; padding: 12px 20px; cursor: pointer; }
@@ -306,6 +285,76 @@
 .pdp-feature { display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); color: var(--text-secondary); }
 .pdp-feature__icon { color: var(--color-success); flex-shrink: 0; }
 .pdp-feature__icon svg { width: 18px; height: 18px; }
+
+/* ── Fixed Mobile Purchase Bar (Digikala-style) ──────────────
+   White bar pinned directly above the mobile bottom nav: the add-to-cart
+   control on the LEFT, pricing on the RIGHT. Markup is emitted by
+   product.js (buyBarHTML) inside #product-detail-content, so the page
+   can only ever have one bar and it disappears with the page.
+   Mobile only — above 768px the bar is display:none and the sticky
+   .dk-buybox-wrap in desktop.css owns the buy action, so desktop
+   rendering is unchanged. */
+.pdp-buy-bar { display: none; }
+
+@media (max-width: 768px) {
+  /* Default bands: the bar is 8px padding + 48px control + 8px padding;
+     the nav is 56px items + 1px top border. product.js publishes the
+     measured values (--pdp-buy-bar-h, --pdp-bottom-nav-h). The nav
+     measurement already includes its own env(safe-area-inset-bottom). */
+  .pdp-buy-bar {
+    --pdp-buy-bar-h: 64px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--pdp-bottom-nav-h, 57px);
+    z-index: calc(var(--z-sticky) + 1);
+    padding: 8px var(--space-4);
+    background: var(--bg-surface);
+    border-top: var(--border-width) solid var(--border-color-light);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Reserve the bar band in the document flow so page content is never
+     hidden behind it. 76px is the existing mobile bottom-nav reserve set
+     in header.css; the bar's own band (--pdp-buy-bar-h) is added on top. */
+  body.has-pdp-buy-bar { padding-bottom: calc(76px + var(--pdp-buy-bar-h, 64px) + env(safe-area-inset-bottom, 0px)); }
+
+  /* The chat FAB / panel sit bottom-left and would overlap the bar. */
+  body.has-pdp-buy-bar .chat-fab { bottom: calc(132px + var(--pdp-buy-bar-h, 64px)); }
+  body.has-pdp-buy-bar .chat-panel { bottom: calc(140px + var(--pdp-buy-bar-h, 64px)); max-height: calc(100vh - 260px); }
+
+  /* Pricing column (right) — stacks the discount line over the price. */
+  .pdp-buy-bar__price {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;   /* RTL: hug the right edge of the bar */
+    gap: 2px;
+  }
+  .pdp-buy-bar__price-top { display: flex; align-items: center; gap: var(--mobile-gap-sm); min-height: 16px; }
+  .pdp-buy-bar__old-price { font-size: var(--font-size-xs); color: var(--text-muted); text-decoration: line-through; white-space: nowrap; }
+  .pdp-buy-bar__discount-badge { background: var(--color-primary); color: var(--color-dark); padding: 1px 5px; border-radius: var(--radius-sm); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); line-height: 1.5; white-space: nowrap; }
+  .pdp-buy-bar__final-price { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+  .pdp-buy-bar__amount { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); color: #23254e; white-space: nowrap; }
+  .pdp-buy-bar__currency { display: inline-flex; align-items: center; color: #23254e; flex-shrink: 0; }
+  .pdp-buy-bar__currency svg { width: 14px; height: 14px; display: block; }
+
+  /* Compact retail/wholesale toggle, reusing the shared .priceChanger
+     markup so its styles, click delegation and state stay identical. */
+  .pdp-buy-bar__price .priceChanger { flex: 0 0 auto; width: auto; margin-top: 0; gap: var(--mobile-gap-sm); }
+  .pdp-buy-bar__price .priceChanger > span { flex: 0 0 auto; min-height: 22px; padding: 1px 6px; font-size: 11px; border-radius: var(--radius-sm); }
+
+  /* Cart control (left) — 48px tall, same button language as the buy box. */
+  .pdp-buy-bar__cart { flex: 0 0 45%; display: flex; }
+  .pdp-buy-bar__cart .dk-buybox__add-btn { width: 100%; min-width: 0; height: 48px; border-radius: var(--radius-lg); }
+  .pdp-buy-bar__cart .qty-selector--buybox { width: 100%; height: 48px; }
+  .pdp-buy-bar__cart .qty-selector--buybox .qty-selector__btn,
+  .pdp-buy-bar__cart .qty-selector--buybox .qty-selector__value { height: 48px; line-height: 48px; }
+}
 
 /* ── Product Tabs ──────────────────────────────────────────── */
 .product-tabs { margin-top: var(--space-8); }
@@ -963,6 +1012,11 @@
   .product-tabs__nav { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
   .product-tabs__tab { white-space: nowrap; flex-shrink: 0; padding: var(--space-3) var(--space-4); font-size: var(--font-size-sm); }
   .breadcrumb-list { flex-wrap: wrap; gap: var(--space-1); }
+
+  /* Buybox cart control — mobile: prevent overflow, keep centered */
+  .dk-buybox__cart { justify-content: center; }
+  .dk-buybox__add-btn { width: 100%; max-width: 240px; min-width: 0; }
+  .qty-selector--buybox { width: 100%; max-width: 220px; }
 }
 
 /* Profile/account mobile fix — prevents horizontal overflow at 320-430px */

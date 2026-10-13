@@ -69,6 +69,7 @@
         '/account/addresses': 'account-addresses.html',
         '/account/wishlist': 'account-wishlist.html',
         '/account/notifications': 'account-notifications.html',
+        '/account/contact': 'account-contact.html',
         '/checkout': 'checkout.html',
         '/checkout/step1': 'checkout-step1.html',
         '/checkout/step2': 'checkout-step2.html',
@@ -125,6 +126,7 @@
         'account-addresses.html': '/account/addresses',
         'account-wishlist.html': '/account/wishlist',
         'account-notifications.html': '/account/notifications',
+        'account-contact.html': '/account/contact',
         'checkout.html': '/checkout',
         'checkout-step1.html': '/checkout/step1',
         'checkout-step2.html': '/checkout/step2',
@@ -309,7 +311,13 @@
     if (isAdminSession()) return Promise.resolve(getCurrentUser());
     return apiRequest('GET', '/auth/me').then(function (data) {
       if (data && data.user) {
-        cacheSessionUser(data.user, session.token);
+        /* The request may resolve after the session changed (e.g. logout
+           during a slow handshake). Only re-cache when this is still the
+           current session — never resurrect a cleared session. */
+        var fresh = getSession();
+        if (fresh && fresh.token && fresh.token === session.token) {
+          cacheSessionUser(data.user, session.token);
+        }
         try { refreshState(); } catch (e) {}
         try { pullCartFromServer(); } catch (e) {}
         try { pullWishlistFromServer(); } catch (e) {}
@@ -377,6 +385,7 @@
     writeJSON(getCartStorageKey(), cart);
     /* Mirror the cart to the database for authenticated users (guest carts stay local). */
     try { pushCartToServer(cart); } catch (e) {}
+    try { document.dispatchEvent(new CustomEvent('as_cart_change')); } catch (e) {}
   }
 
   function toServerCartItems(cart) {
@@ -685,8 +694,25 @@
 
   function logout() {
     var session = getSession();
+    /* Storefront login mirrors admin tokens into as_admin_session (see login):
+       revoke and drop that half too. POST /auth/logout only deletes
+       customer_sessions rows, so without this the admin_sessions row stays
+       valid and /admin/ remains accessible after a storefront logout. */
+    var adminSession = null;
+    try { adminSession = readJSON('as_admin_session', null); } catch (e) {}
+    var adminToken = adminSession && adminSession.token;
+    var revokeAdmin = function () {
+      if (!adminToken || !apiAvailable()) return Promise.resolve();
+      try {
+        return fetch(API_BASE + '/api/admin/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+        }).catch(function () {});
+      } catch (e) { return Promise.resolve(); }
+    };
     var done = function () {
       setSession(null);
+      try { localStorage.removeItem('as_admin_session'); } catch (e) {}
       state.cart = [];
       state.wishlist = [];
       try { refreshHeaderAuth(); } catch (e) {}
@@ -694,10 +720,12 @@
       return { success: true };
     };
     if (session && session.token && apiAvailable()) {
-      return apiRequest('POST', '/auth/logout').catch(function () {}).then(done);
+      return apiRequest('POST', '/auth/logout').catch(function () {}).then(function () {
+        return revokeAdmin();
+      }).then(done);
     }
-    try { done(); } catch (e) {}
-    return Promise.resolve({ success: true });
+    var fallback = function () { try { done(); } catch (e) {} return { success: true }; };
+    try { return revokeAdmin().then(fallback); } catch (e) { return Promise.resolve(fallback()); }
   }
 
   function updateProfile(data) {
@@ -1357,9 +1385,8 @@
       actions.innerHTML = headerAuthHTML()
         + '<span class="header-divider" aria-hidden="true"></span>'
         + notifBellHTML()
-        + '<button class="header-action header-action--cart" data-action="cart" data-tooltip="سبد خرید" aria-label="سبد خرید">' + Icons.cart.replace('width="22" height="22"', 'width="22" height="22"') + '<span class="header-action__badge" style="display:none">0</span></button>';
-      var newCartBtn = actions.querySelector('[data-action="cart"]');
-      if (newCartBtn) newCartBtn.addEventListener('click', toggleCartPopover);
+        + '' + cartPopoverHTML() + '';
+      bindCartPopovers(actions);
       bindAccountDropdown(actions);
       bindNotifBells(actions);
       bindLogoutButtons(actions);
@@ -1514,7 +1541,7 @@ el.innerHTML = '\
     ' + authHtml + '\
     <span class="header-divider" aria-hidden="true"></span>\
     ' + notifBellHTML() + '\
-    <button class="header-action header-action--cart" data-action="cart" data-tooltip="سبد خرید" aria-label="سبد خرید">' + Icons.cart.replace('width="22" height="22"', 'width="22" height="22"') + '<span class="header-action__badge" style="display:none">0</span></button>\
+    ' + cartPopoverHTML() + '\
     </div></div></div>\
     <nav class="site-nav" aria-label="ناوبری اصلی"><div class="container">\
     <div class="nav-categories">\
@@ -1546,7 +1573,7 @@ el.innerHTML = '\
     ' + mobileSearchHtml + '\
     ' + authHtml + '\
     ' + notifBellHTML() + '\
-    <button class="header-action header-action--cart" data-action="cart">' + Icons.cart + '<span class="header-action__badge">0</span></button>\
+    ' + cartPopoverHTML() + '\
     </div>';
     if (hideSearch) el.classList.add('is-account-header');
   }
@@ -1931,12 +1958,18 @@ el.innerHTML = '\
     }
     /* Set active state on bottom nav */
     var currentPage = storeFile();
+    /* Cart lives at /cart (legacy alias /account-cart). storeFile() maps it to
+       account-cart.html, which the Profile rule below would otherwise claim —
+       leaving the Cart tab dark and Profile lit on the cart page. */
+    var onCartPage = /^\/(account-)?cart\/?$/.test(window.location.pathname || '');
     el.querySelectorAll('.mobile-bottom-nav__item').forEach(function (item) {
       var href = item.getAttribute('href') || '';
       var page = href.split('?')[0];
       if (page === currentPage) item.classList.add('is-active');
+      /* Cart tab: active on the cart page only — Profile must not light up here. */
+      if (page === '/cart') { if (onCartPage) item.classList.add('is-active'); return; }
       /* Keep "پروفایل من" active across all account/auth pages (except wishlist, which has its own tab) */
-      if (item.getAttribute('data-nav') === 'profile' && currentPage !== '/account/wishlist' && /^(account|login|register|forgot-password)/.test(currentPage)) item.classList.add('is-active');
+      if (item.getAttribute('data-nav') === 'profile' && !onCartPage && currentPage !== '/account/wishlist' && /^(account|login|register|forgot-password)/.test(currentPage)) item.classList.add('is-active');
     });
     /* Update bottom nav cart badge */
     var bb = el.querySelector('#mobile-bottom-cart-badge');
@@ -2014,7 +2047,7 @@ el.innerHTML = '\
       });
     }
 
-    $$('.header-action--cart, [data-action="cart"]').forEach(function (el) { el.addEventListener('click', toggleCartDrawer); });
+    bindCartPopovers(document);
 
     /* Account dropdown (logged-in top bar): hover on desktop, click on touch */
     bindAccountDropdown(document);
@@ -2234,8 +2267,8 @@ el.innerHTML = '\
       function syncSupportUI(){ var tid=localStorage.getItem(LS_TICKET); var b=document.getElementById('chat-support-btn'), s=document.getElementById('chat-support-status'); if(!b||!s) return; if(tid){ s.style.display='block'; b.style.display='none'; b.disabled=true; showWaiting(); } else { s.style.display='none'; b.style.display=''; b.disabled=false; b.textContent='درخواست چت با پشتیبانی'; } }
       function fileHtml(m){ if(!m.fileUrl) return ''; var isImg=m.fileType&&m.fileType.indexOf('image')===0; if(isImg) return '<div><a href="'+m.fileUrl+'" target="_blank"><img src="'+m.fileUrl+'" style="max-width:160px;border-radius:var(--radius-lg);display:block;margin-top:6px"></a><a href="'+m.fileUrl+'" target="_blank" download>'+String(m.fileName||'فایل').replace(/</g,'&lt;')+'</a></div>'; return '<div style="margin-top:6px"><a href="'+m.fileUrl+'" target="_blank" download style="color:#2563eb">📎 '+String(m.fileName||'فایل').replace(/</g,'&lt;')+'</a></div>'; }
       function renderMessages(msgs){ var body=document.getElementById('chat-body'); if(!body||!msgs) return; msgs.forEach(function(m){ if(document.querySelector('[data-msg-id="'+m.id+'"]')) return; var div=document.createElement('div'); var isAdmin=m.sender==='admin'; div.setAttribute('data-msg-id', m.id); div.className='chat-msg '+(isAdmin?'chat-msg--bot':'chat-msg--user'); var txt=m.message?String(m.message).replace(/</g,'&lt;'):''; var fh=fileHtml(m); if(isAdmin) div.innerHTML='<div class="chat-msg__avatar">'+Icons.headphones+'</div><div class="chat-msg__bubble"><div class="chat-msg__text">'+txt+fh+'</div></div>'; else div.innerHTML='<div class="chat-msg__text">'+txt+fh+'</div>'; body.appendChild(div); }); body.scrollTop=body.scrollHeight; }
-      function poll(){ var tid=localStorage.getItem(LS_TICKET); if(!tid) return; fetch('/api/support/chat/'+tid+'/messages?guestId='+encodeURIComponent(getGuestId()),{headers:authHeaders()}).then(function(r){return r.ok?r.json():null;}).then(function(d){ if(d&&d.messages) renderMessages(d.messages); }).catch(function(){}); }
-      syncSupportUI(); poll(); var _pollTimer=setInterval(poll,3000);
+      function poll(){ var tid=localStorage.getItem(LS_TICKET); if(!tid) return; fetch('/api/support/chat/'+tid+'/messages?guestId='+encodeURIComponent(getGuestId()),{headers:authHeaders()}).then(function(r){ if(!r.ok){ if(r.status===404){ localStorage.removeItem(LS_TICKET); if(_pollTimer){ clearInterval(_pollTimer); _pollTimer=null; } syncSupportUI(); } return null; } return r.json(); }).then(function(d){ if(d&&d.messages) renderMessages(d.messages); }).catch(function(){}); }
+      syncSupportUI();       var _pollTimer=null; poll(); _pollTimer=setInterval(poll,3000);
       // Delegated click — works even after widget re-render/open
       document.addEventListener('click', function(e){
         var btn=e.target.closest && e.target.closest('#chat-support-btn');
@@ -2259,7 +2292,7 @@ el.innerHTML = '\
           if(tid){
             var body=document.getElementById('chat-body'), sug=document.getElementById('chat-suggestions');
             if(body){ var d=document.createElement('div'); d.className='chat-msg chat-msg--user'; d.innerHTML='<div class="chat-msg__text">'+String(userText).replace(/</g,'&lt;')+'</div>'; body.appendChild(d); if(sug) sug.style.display='none'; body.scrollTop=body.scrollHeight; }
-            fetch('/api/support/chat/'+tid+'/message',{method:'POST',headers:authHeaders(),body:JSON.stringify({message:userText,guestId:getGuestId()})}).then(function(){ setTimeout(poll,600); }).catch(function(){});
+            fetch('/api/support/chat/'+tid+'/message',{method:'POST',headers:authHeaders(),body:JSON.stringify({message:userText,guestId:getGuestId()})}).then(function(r){ if(r.status===404){ localStorage.removeItem(LS_TICKET); if(_pollTimer){ clearInterval(_pollTimer); _pollTimer=null; } syncSupportUI(); return; } setTimeout(poll,600); }).catch(function(){});
             return;
           }
           _orig(userText);
@@ -2345,13 +2378,13 @@ el.innerHTML = '\
     if (!dd || typeof AppData === 'undefined' || !AppData.categories) return;
     /* Build Digikala-style two-panel mega menu: left = category list, right = subcategories */
     var leftPanel = AppData.categories.map(function(cat, idx) {
-      var catIcon = (cat.icon && Icons[cat.icon]) ? Icons[cat.icon] : Icons.package;
+      var catIcon = getCategoryIcon(cat.icon) || Icons.package;
       var isActive = idx === 0 ? ' is-active' : '';
       return '<a href="/shop?category=' + cat.slug + '" class="mega-cat' + isActive + '" data-cat-index="' + idx + '" data-cat-slug="' + cat.slug + '">' + catIcon + '<span class="mega-cat__name">' + cat.name + '</span>' + Icons.chevronRight + '</a>';
     }).join('');
     /* Build subcategory panels (one per category) */
     var rightPanels = AppData.categories.map(function(cat, idx) {
-      var catIcon = (cat.icon && Icons[cat.icon]) ? Icons[cat.icon] : Icons.package;
+      var catIcon = getCategoryIcon(cat.icon) || Icons.package;
       var subs = cat.subcategories || [];
       var subLinks = subs.map(function(sub) {
         return '<a href="/shop?category=' + cat.slug + '" class="mega-sub__item"><span class="mega-sub__icon">' + catIcon + '</span><span>' + sub + '</span></a>';
@@ -2381,6 +2414,11 @@ el.innerHTML = '\
 
     if (headerEl) renderHeader(headerEl);
     if (mobileHeaderEl) renderMobileHeader(mobileHeaderEl);
+    /* Pages may ship pre-rendered (Visual Builder) header markup — including a
+       baked-in logged-in account menu. renderHeader preserves it, so always
+       re-sync just the auth area from live state on init; later async auth
+       changes (fetchMe/401/logout) already re-sync via their own paths. */
+    try { refreshHeaderAuth(); } catch (e) {}
     var _currentPage = storeFile().toLowerCase();
     if (!_currentPage) _currentPage = '/';
     if (footerEl) {
@@ -2503,7 +2541,10 @@ el.innerHTML = '\
       if(location.protocol!=='file:' && typeof fetch==='function'){
         fetch('/api/content').then(function(r){ return r.ok?r.json():null; }).then(function(c){
           if(!c) return;
-          var promos=document.querySelectorAll('.promo-topbar__msg');
+          // Skip viewports inside a Visual-Builder-saved page header: per-page
+          // header edits (site_pages.header_html) own those spans; the global
+          // CMS values must not stomp them after site-page.js applies them.
+          var promos=[]; try{ Array.prototype.forEach.call(document.querySelectorAll('.promo-topbar__msg'),function(el){ if(!(el.closest&&el.closest('[data-pb-page-header]'))) promos.push(el); }); }catch(e){ promos=document.querySelectorAll('.promo-topbar__msg'); }
           for(var j=0;j<3;j++){ if(promos[j] && c['promo.topbar.'+(j+1)]!=null) promos[j].textContent=c['promo.topbar.'+(j+1)]; }
           if(c['footer.brand.desc']!=null){ var fd=document.querySelector('.footer-brand__desc'); if(fd) fd.textContent=c['footer.brand.desc']; }
           if(c['footer.address']!=null){
@@ -2988,6 +3029,12 @@ el.innerHTML = '\
   /* ── User notifications (DB-backed via /api/notifications; read state persists in SQLite) ── */
   function listNotifications() {
     if (!isLoggedIn() || !apiAvailable()) return Promise.resolve({ unreadCount: 0, items: [] });
+    /* Admin sessions are logged in but carry an admin_sessions token, which the
+       customer-scoped /api/notifications endpoint (customer_sessions only)
+       always rejects with 401. Skip the request so admin storefront sessions
+       see an empty state instead of a false "session expired" error — the
+       session itself stays valid and no auth check is weakened. */
+    if (isAdminSession()) return Promise.resolve({ unreadCount: 0, items: [] });
     return apiRequest('GET', '/notifications')
       .then(function (data) {
         return { unreadCount: Number(data.unreadCount) || 0, items: Array.isArray(data.items) ? data.items : [] };
@@ -3003,6 +3050,9 @@ el.innerHTML = '\
 
   function markNotificationRead(id) {
     if (!isLoggedIn() || !apiAvailable()) return Promise.resolve({ ok: false });
+    /* Same admin-session guard as listNotifications: no customer row exists for
+       admins, so the read endpoint would only answer 401. */
+    if (isAdminSession()) return Promise.resolve({ ok: false });
     return apiRequest('POST', '/notifications/' + encodeURIComponent(id) + '/read', {}).catch(function () { return { ok: false }; });
   }
 
@@ -3240,7 +3290,7 @@ el.innerHTML = '\
       + Icons.cart.replace('width="22" height="22"', 'width="22" height="22"')
       + '<span class="header-action__badge" style="display:none">0</span></button>'
       + '<div class="header-account-dropdown header-cart__panel" role="menu" aria-label="سبد خرید">'
-      + '<div class="header-account-dropdown__header"><span>سبد خرید</span><a href="/cart" style="font-size:var(--font-size-xs);font-weight:var(--font-weight-medium)">مشاهده سبد خرید</a></div>'
+      + '<div class="header-account-dropdown__header"><span>سبد خرید</span><a href="/account-cart" style="font-size:var(--font-size-xs);font-weight:var(--font-weight-medium)">مشاهده سبد خرید</a></div>'
       + '<div class="header-account-dropdown__divider" aria-hidden="true"></div>'
       + '<div class="header-cart__list"><p class="header-cart__empty">در حال بارگذاری…</p></div>'
       + '<div class="header-account-dropdown__divider" aria-hidden="true"></div>'
@@ -3320,6 +3370,10 @@ el.innerHTML = '\
         var btn = e.target && e.target.closest ? e.target.closest('.header-cart__qty-btn, .header-cart__item-remove') : null;
         if (!btn) return;
         e.stopPropagation();
+        /* Inline onclick (App.updateCartQty / App.removeFromCart) already ran
+           at target phase and updated state + badge — re-render the open
+           popover from that same state so qty/total/rows/empty refresh now. */
+        renderCartPopover(wrap);
       });
     });
   }
@@ -3432,6 +3486,7 @@ el.innerHTML = '\
     updateProfile: updateProfile,
     fetchMe: fetchMe,
     authReady: function () { return authReady; },
+    apiRequest: apiRequest,
     isLoggedIn: isLoggedIn,
     isAdminSession: isAdminSession,
     getCurrentUser: getCurrentUser,

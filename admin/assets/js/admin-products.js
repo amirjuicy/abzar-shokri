@@ -23,7 +23,7 @@
   }
 
   var EXPORT_COL_DEFS=[
-    {k:'id',l:'شناسه'},{k:'name',l:'نام محصول'},{k:'sku',l:'SKU'},{k:'brand',l:'برند'},{k:'category',l:'دسته‌بندی'},{k:'subcategory',l:'زیردسته'},{k:'model',l:'مدل'},{k:'short_description',l:'توضیحات کوتاه'},{k:'description',l:'توضیحات کامل'},{k:'price',l:'قیمت'},{k:'sale_price',l:'قیمت فروش'},{k:'discount',l:'تخفیف'},{k:'stock_count',l:'موجودی'},{k:'in_stock',l:'وضعیت موجودی'},{k:'min_order',l:'حداقل سفارش'},{k:'max_order',l:'حداکثر سفارش'},{k:'warehouse',l:'انبار'},{k:'weight',l:'وزن'},{k:'dimensions',l:'ابعاد'},{k:'manufacturer',l:'تولیدکننده'},{k:'country',l:'کشور سازنده'},{k:'warranty',l:'گارانتی'},{k:'included_items',l:'اقلام همراه'},{k:'authenticity',l:'اصالت'},{k:'features_json',l:'ویژگی‌ها'},{k:'gallery',l:'تصاویر'},{k:'variants_json',l:'واریانت‌ها'},{k:'is_active',l:'وضعیت'},{k:'created_at',l:'تاریخ ایجاد'},{k:'updated_at',l:'تاریخ بروزرسانی'},{k:'seo_title',l:'عنوان SEO'},{k:'seo_description',l:'توضیحات SEO'},{k:'seo_keywords',l:'کلمات کلیدی SEO'},{k:'og_image',l:'تصویر OG'}
+    {k:'id',l:'شناسه'},{k:'name',l:'نام محصول'},{k:'sku',l:'SKU'},{k:'brand',l:'برند'},{k:'category',l:'دسته‌بندی'},{k:'subcategory',l:'زیردسته'},{k:'model',l:'مدل'},{k:'short_description',l:'توضیحات کوتاه'},{k:'description',l:'توضیحات کامل'},{k:'price',l:'قیمت'},{k:'wholesale_price',l:'قیمت عمده'},{k:'sale_price',l:'قیمت فروش'},{k:'discount',l:'تخفیف'},{k:'stock_count',l:'موجودی'},{k:'in_stock',l:'وضعیت موجودی'},{k:'min_order',l:'حداقل سفارش'},{k:'max_order',l:'حداکثر سفارش'},{k:'warehouse',l:'انبار'},{k:'weight',l:'وزن'},{k:'dimensions',l:'ابعاد'},{k:'manufacturer',l:'تولیدکننده'},{k:'country',l:'کشور سازنده'},{k:'warranty',l:'گارانتی'},{k:'included_items',l:'اقلام همراه'},{k:'authenticity',l:'اصالت'},{k:'features_json',l:'ویژگی‌ها'},{k:'gallery',l:'تصاویر'},{k:'variants_json',l:'واریانت‌ها'},{k:'is_active',l:'وضعیت'},{k:'created_at',l:'تاریخ ایجاد'},{k:'updated_at',l:'تاریخ بروزرسانی'},{k:'seo_title',l:'عنوان SEO'},{k:'seo_description',l:'توضیحات SEO'},{k:'seo_keywords',l:'کلمات کلیدی SEO'},{k:'og_image',l:'تصویر OG'}
   ];
   function bindExcel(){
     var exp=document.getElementById('adm-export-excel');
@@ -134,7 +134,12 @@
       category: p.category || '',
       categorySlug: p.categorySlug || p.category_slug || '',
       price: Number(p.price) || 0,
-      wholesalePrice: (p.wholesalePrice != null ? Number(p.wholesalePrice) : (p.wholesale_price != null ? Number(p.wholesale_price) : null)),
+      wholesalePrice: (function () {
+        var raw = (p.wholesalePrice != null ? p.wholesalePrice : p.wholesale_price);
+        if (raw == null || raw === '') return null;
+        var n = Number(raw);
+        return n > 0 ? n : null;
+      })(),
       stock: stock,
       isActive: isActive,
       status: status,
@@ -396,6 +401,80 @@
     });
     return out;
   }
+  function renderOptions(rows){
+    var box=$('#adm-pm-options'); if(!box) return;
+    box.innerHTML=(rows||[]).map(function(o,i){
+      var discPrice = o.discountPrice != null && o.discountPrice !== '' ? o.discountPrice : '';
+      var discPct = o.discountPercent != null && o.discountPercent !== '' ? o.discountPercent : '';
+      var active = o.isActive !== undefined ? !!o.isActive : true;
+      return '<div class="adm-options-row" data-opt-id="'+(o.id != null ? esc(o.id) : '')+'" style="display:grid;grid-template-columns:1.5fr 2fr 1fr 1fr 1fr auto auto;gap:8px;align-items:center">'
+        + '<input class="input" data-opt-title placeholder="عنوان گزینه" value="'+esc(o.title||'')+'">'
+        + '<input class="input" data-opt-desc placeholder="توضیح (اختیاری)" value="'+esc(o.description||'')+'">'
+        + '<input class="input" data-opt-price type="number" min="0" step="1000" placeholder="قیمت" value="'+esc(o.price != null ? o.price : '')+'" style="direction:ltr">'
+        + '<input class="input" data-opt-dpct type="number" min="0" max="100" step="1" placeholder="% تخفیف" value="'+esc(discPct)+'" style="direction:ltr">'
+        + '<input class="input" data-opt-dprice type="number" min="0" step="1000" placeholder="قیمت با تخفیف" value="'+esc(discPrice)+'" style="direction:ltr">'
+        + '<label style="display:flex;gap:4px;align-items:center;font-size:12px;white-space:nowrap" title="گزینه فعال در صفحه محصول نمایش داده می‌شود"><input type="checkbox" data-opt-active'+(active?' checked':'')+'> فعال</label>'
+        + '<button type="button" class="btn btn-secondary btn-sm" data-opt-del="'+i+'">حذف</button>'
+        + '</div>';
+    }).join('');
+  }
+  function collectOptions(){
+    var rows=$$('#adm-pm-options .adm-options-row');
+    var out=[];
+    rows.forEach(function(row){
+      var idRaw=row.getAttribute('data-opt-id');
+      var title=row.querySelector('[data-opt-title]').value.trim();
+      var desc=row.querySelector('[data-opt-desc]').value.trim();
+      var price=Math.max(0,Math.round(Number(row.querySelector('[data-opt-price]').value)||0));
+      var dpct=row.querySelector('[data-opt-dpct]').value.trim();
+      var dprice=row.querySelector('[data-opt-dprice]').value.trim();
+      var active=row.querySelector('[data-opt-active]').checked;
+      if(title||price>0||dpct||dprice){
+        out.push({
+          id: idRaw ? Number(idRaw) : null,
+          title: title,
+          description: desc,
+          price: price,
+          discountPercent: dpct ? Math.max(0,Math.min(100,Math.round(Number(dpct)))) : 0,
+          discountPrice: dprice ? Math.max(0,Math.round(Number(dprice))) : null,
+          isActive: active
+        });
+      }
+    });
+    return out;
+  }
+  async function syncOptions(productId, options){
+    // Id-based sync: PUT existing rows, POST new rows, DELETE removed rows.
+    var existing=[];
+    try {
+      existing = await api('/admin/products/' + encodeURIComponent(productId) + '/options');
+    } catch (e) { existing=[]; }
+    var existingById={};
+    (existing||[]).forEach(function(o){ existingById[o.id]=o; });
+    var seen={};
+    for (var i=0; i<options.length; i++) {
+      var opt=options[i];
+      var payload={ title: opt.title, description: opt.description, price: opt.price,
+        discountPercent: opt.discountPercent, discountPrice: opt.discountPrice, isActive: opt.isActive };
+      if (opt.id && existingById[opt.id]) {
+        await api('/admin/products/' + encodeURIComponent(productId) + '/options/' + encodeURIComponent(opt.id), {
+          method: 'PUT', body: JSON.stringify(payload)
+        });
+        seen[opt.id]=true;
+      } else {
+        await api('/admin/products/' + encodeURIComponent(productId) + '/options', {
+          method: 'POST', body: JSON.stringify(payload)
+        });
+      }
+    }
+    for (var eid in existingById) {
+      if (existingById.hasOwnProperty(eid) && !seen[eid]) {
+        await api('/admin/products/' + encodeURIComponent(productId) + '/options/' + encodeURIComponent(eid), {
+          method: 'DELETE'
+        });
+      }
+    }
+  }
   function openAdd() {
     $('#adm-product-form').reset();
     $('#adm-pm-id').value = '';
@@ -403,10 +482,11 @@
     $('#adm-pm-submit').textContent = 'ذخیره محصول';
     $('#adm-pm-image').value = PRODUCT_IMAGES[0];
     renderFeatures([]);
+    renderOptions([]);
     updatePreview();
     openModal(pmModal);
   }
-  function openEdit(id) {
+  async function openEdit(id) {
     var p = products.filter(function (x) { return String(x.id) === String(id); })[0];
     if (!p) return;
     $('#adm-pm-id').value = p.id;
@@ -425,6 +505,18 @@
       feats=Object.keys(p.specs).map(function(k){ return {key:k,value:String(p.specs[k])}; });
     }
     renderFeatures(feats);
+    // load add-on options via the ADMIN endpoint (includes inactive ones, so
+    // saving the product never drops disabled options).
+    if (useApi) {
+      try {
+        var optsData = await api('/admin/products/' + encodeURIComponent(p.id) + '/options');
+        renderOptions(optsData);
+      } catch (e) {
+        renderOptions([]);
+      }
+    } else {
+      renderOptions([]);
+    }
     if (PRODUCT_IMAGES.indexOf(p.image) === -1) PRODUCT_IMAGES.push(p.image);
     fillImageOptions();
     $('#adm-pm-image').value = p.image;
@@ -493,6 +585,11 @@
   var featBox=$('#adm-pm-features');
   if(featBox) featBox.addEventListener('click', function(e){ var b=e.target.closest('[data-feat-del]'); if(!b) return; var idx=parseInt(b.getAttribute('data-feat-del'),10); var cur=collectFeatures(); cur.splice(idx,1); renderFeatures(cur); });
 
+  var optAdd=$('#adm-pm-options-add');
+  if(optAdd) optAdd.addEventListener('click', function(){ var cur=collectOptions(); cur.push({id:null,title:'',description:'',price:0,discountPercent:0,discountPrice:null,isActive:true}); renderOptions(cur); });
+  var optBox=$('#adm-pm-options');
+  if(optBox) optBox.addEventListener('click', function(e){ var b=e.target.closest('[data-opt-del]'); if(!b) return; var idx=parseInt(b.getAttribute('data-opt-del'),10); var cur=collectOptions(); cur.splice(idx,1); renderOptions(cur); });
+
   var delConfirm = $('#adm-del-confirm');
   if (delConfirm) delConfirm.addEventListener('click', async function () {
     if (deleteId == null || busy) return;
@@ -546,15 +643,22 @@
       price: price, wholesalePrice: wholesalePrice,
       stock: effStock, status: effStatus, isActive: isActive, image: image, desc: desc, features: collectFeatures()
     };
+    var options = collectOptions();
     busy = true;
     try {
+      var productId = id;
       if (id) {
         await apiUpdate(id, fields);
         toast('محصول به‌روزرسانی شد', 'success');
       } else {
-        await apiCreate(fields);
+        var newProd = await apiCreate(fields);
+        productId = newProd && newProd.id;
         page = 1;
         toast('محصول جدید اضافه شد', 'success');
+      }
+      // Persist add-on options (id-based diff; rows removed in the editor are deleted).
+      if (productId && useApi) {
+        await syncOptions(productId, options);
       }
       closeModal(pmModal);
       await reload();

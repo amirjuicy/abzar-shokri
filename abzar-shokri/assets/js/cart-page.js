@@ -111,11 +111,11 @@
             </div>\
           </div>\
         </div>\
-        <div class="empty-state empty-state--lg">\
-          <div class="empty-state__icon">' + Icons.shoppingBag + '</div>\
-           <h3 class="empty-state__title">سبد خرید شما خالی است</h3>\
-          <p class="empty-state__text">می‌توانید از فروشگاه محصول مورد نظر خود را انتخاب کنید و به سبد خرید اضافه نمایید.</p>\
-          <a href="/shop" class="empty-state__btn">' + Icons.shoppingBag + ' مشاهده و خرید محصول</a>\
+        <div class="cart-empty-state">\
+          <div class="cart-empty-state__icon">' + Icons.shoppingBag + '</div>\
+           <h3 class="cart-empty-state__title">سبد شما خالی است</h3>\
+          <p class="cart-empty-state__text">اگر به صفحه\u200Cهای زیر سر بزنید، دست\u200C\u200Cپُر برمی\u200Cگردید.</p>\
+          <a href="/shop" class="btn btn-outline-primary cart-empty-state__btn">' + Icons.shoppingBag + ' لیست های شما</a>\
         </div>\
         <div class="cart-charity-banner cart-charity-banner--full">\
           <div class="cart-charity-banner__row">\
@@ -196,12 +196,21 @@
     if (!container) return;
     container.innerHTML = cart.map(function(item) {
       var modeLabel = item.pricingMode === 'wholesale' ? '<span class="cart-item-row__mode">عمده</span>' : '';
+      var optionsHtml = '';
+      if (item.options && item.options.length) {
+        optionsHtml = '<div class="cart-item-row__options" style="margin-top:4px;font-size:var(--font-size-xs);color:var(--text-muted)">' +
+          item.options.map(function(opt) {
+            return '<span>• ' + opt.title + ': ' + Format.price(opt.price) + ' تومان</span>';
+          }).join('<br>') +
+        '</div>';
+      }
       return '<div class="cart-item-row">\
         <div class="cart-item-row__image"><img src="' + item.image + '" alt="' + item.name + '" loading="lazy" class="cart-item__img"></div>\
         <div class="cart-item-row__info">\
           <div class="cart-item-row__details">\
             <span class="cart-item-row__brand">' + item.brandName + '</span>\
             <a href="/product/' + item.slug + '" class="cart-item-row__title">' + item.name + '</a>' + modeLabel + '\
+            ' + optionsHtml + '\
           </div>\
           <div class="cart-item-row__bottom">\
             <span class="cart-item-row__price">' + Format.priceWithCurrency(item.price) + '</span>\

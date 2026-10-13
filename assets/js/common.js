@@ -19,6 +19,36 @@
 (function () {
   'use strict';
 
+  /* ── Live catalog sync (admin DB → storefront) ──────────────────
+     Admin wholesale edits are stored in SQLite (wholesale_price) and served
+     by GET /api/products via mapProduct(). The static AppData.products mock
+     ships with wholesalePrice null, so without this sync wholesale can never
+     display. Fetch once on script load, replace the catalog in place, then
+     notify pages (homepage grids, product detail) that may have rendered
+     from stale static data. Fails silently to the static fallback. */
+  try {
+    if (typeof AppData !== 'undefined' && !AppData.catalogReady) {
+      AppData.catalogReady = (function () {
+        try {
+          if (typeof location !== 'undefined' && location.protocol === 'file:') return Promise.resolve();
+          if (typeof fetch !== 'function') return Promise.resolve();
+        } catch (e) { return Promise.resolve(); }
+        return fetch('/api/products?limit=200', { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (data) {
+            var items = Array.isArray(data) ? data : (data && data.items);
+            if (!Array.isArray(items) || !items.length) return;
+            AppData.products = items;
+            try {
+              if (typeof CustomEvent === 'function') document.dispatchEvent(new CustomEvent('abzar:catalog-updated'));
+              else { var ev = document.createEvent('Event'); ev.initEvent('abzar:catalog-updated', true, false); document.dispatchEvent(ev); }
+            } catch (e) {}
+          })
+          .catch(function () {});
+      })();
+    }
+  } catch (e) {}
+
   /* ════════════════════════════════════════════════════════════
      HELPERS
      ============================================================ */
@@ -69,6 +99,7 @@
         '/account/addresses': 'account-addresses.html',
         '/account/wishlist': 'account-wishlist.html',
         '/account/notifications': 'account-notifications.html',
+        '/account/contact': 'account-contact.html',
         '/checkout': 'checkout.html',
         '/checkout/step1': 'checkout-step1.html',
         '/checkout/step2': 'checkout-step2.html',
@@ -125,6 +156,7 @@
         'account-addresses.html': '/account/addresses',
         'account-wishlist.html': '/account/wishlist',
         'account-notifications.html': '/account/notifications',
+        'account-contact.html': '/account/contact',
         'checkout.html': '/checkout',
         'checkout-step1.html': '/checkout/step1',
         'checkout-step2.html': '/checkout/step2',
@@ -370,7 +402,7 @@
     var changed = false;
     cart.forEach(function (item) {
       if (!item.key) {
-        item.key = getCartKey(item.id, item.pricingMode || 'retail');
+        item.key = getCartKey(item.id, item.pricingMode || 'retail', item.options);
         item.pricingMode = item.pricingMode || 'retail';
         changed = true;
       }
@@ -383,6 +415,7 @@
     writeJSON(getCartStorageKey(), cart);
     /* Mirror the cart to the database for authenticated users (guest carts stay local). */
     try { pushCartToServer(cart); } catch (e) {}
+    try { document.dispatchEvent(new CustomEvent('as_cart_change')); } catch (e) {}
   }
 
   function toServerCartItems(cart) {
@@ -392,6 +425,7 @@
         pricingMode: item.pricingMode || 'retail',
         price: item.price, name: item.name,
         brandName: item.brandName, image: item.image, slug: item.slug,
+        options: (item.options || []).map(function (o) { return { id: o.id, title: o.title, price: o.price }; }),
       };
     });
   }
@@ -408,7 +442,7 @@
       var items = (data && data.items) || [];
       /* Migrate/normalize server items (key + pricingMode). */
       items.forEach(function (item) {
-        if (!item.key) item.key = getCartKey(item.id, item.pricingMode || 'retail');
+        if (!item.key) item.key = getCartKey(item.id, item.pricingMode || 'retail', item.options);
         item.pricingMode = item.pricingMode || 'retail';
       });
       state.cart = items;
@@ -427,9 +461,14 @@
     var userCart = readJSON(userKey, []);
 
     guestCart.forEach(function (gItem) {
-      var existing = userCart.find(function (uItem) { return uItem.id === gItem.id; });
+      if (!gItem.key) gItem.key = getCartKey(gItem.id, gItem.pricingMode || 'retail', gItem.options);
+      var existing = userCart.find(function (uItem) {
+        var uKey = uItem.key || getCartKey(uItem.id, uItem.pricingMode || 'retail', uItem.options);
+        return uKey === gItem.key;
+      });
       if (existing) {
         existing.quantity += gItem.quantity;
+        if (!existing.key) existing.key = gItem.key;
       } else {
         userCart.push(gItem);
       }
@@ -985,31 +1024,59 @@
   }
 
   /* ── Cart Operations ─────────────────────────────────────── */
-  /* Pricing helper */
+  /* Pricing helper: wholesale only when the DB defines one (>0).
+     Retail is always the fallback so retail pricing never breaks. */
+  function hasWholesalePrice(product) {
+    return !!product && product.wholesalePrice != null && Number(product.wholesalePrice) > 0;
+  }
   function getProductPrice(product, mode) {
     if (!product) return 0;
-    if (mode === 'wholesale' && product.wholesalePrice) return product.wholesalePrice;
+    if (mode === 'wholesale' && hasWholesalePrice(product)) return Number(product.wholesalePrice);
     return product.price;
   }
 
-  function getCartKey(id, pricingMode) {
-    return id + '_' + (pricingMode || 'retail');
+  /* Cart line identity: product + pricing mode + selected add-on option IDs
+     (sorted). Different option selections stay separate lines; lines without
+     options keep the legacy `id_mode` key so existing carts keep working. */
+  function optionIdsOf(options) {
+    var ids = (options || []).map(function (o) { return Number(o && o.id); })
+      .filter(function (n) { return Number.isInteger(n) && n > 0; });
+    ids.sort(function (a, b) { return a - b; });
+    return ids;
   }
 
-  function addToCart(id, pricingMode) {
+  function getCartKey(id, pricingMode, options) {
+    var base = id + '_' + (pricingMode || 'retail');
+    var ids = optionIdsOf(options);
+    if (!ids.length) return base;
+    return base + '_opt' + ids.join('_');
+  }
+
+  function addToCart(id, pricingMode, options) {
     var p = AppData.products.find(function (x) { return x.id === id; });
-    if (!p) return;
+    if (!p) return null;
     if (!pricingMode) {
       var pc = document.querySelector('.priceChanger[data-pricing="' + id + '"]');
       pricingMode = (pc && pc.getAttribute('data-selected-mode')) || 'retail';
     }
-    var price = getProductPrice(p, pricingMode);
-    var key = getCartKey(id, pricingMode);
+    var basePrice = getProductPrice(p, pricingMode);
+    var opts = options || [];
+    var optionsPrice = opts.reduce(function(sum, opt) { return sum + (opt.price || 0); }, 0);
+    var price = basePrice + optionsPrice;
+    var key = getCartKey(id, pricingMode, opts);
     var ex = state.cart.find(function (x) { return x.key === key; });
-    if (ex) { ex.quantity += 1; } else { state.cart.push({ key: key, id: p.id, name: p.name, price: price, pricingMode: pricingMode, quantity: 1, brandName: p.brandName, image: p.image, slug: p.slug }); }
+    if (ex) {
+      ex.quantity += 1;
+      ex.options = opts;
+      ex.price = price;
+    } else {
+      state.cart.push({ key: key, id: p.id, name: p.name, price: price, basePrice: basePrice, pricingMode: pricingMode, quantity: 1, brandName: p.brandName, image: p.image, slug: p.slug, options: opts });
+    }
     saveCart(state.cart); updateCartUI();
     var modeLabel = pricingMode === 'wholesale' ? ' (عمده)' : '';
-    showToast(p.name + modeLabel + ' به سبد خرید اضافه شد');
+    var optLabel = opts.length ? ' + ' + opts.length + ' گزینه' : '';
+    showToast(p.name + modeLabel + optLabel + ' به سبد خرید اضافه شد');
+    return key;
   }
 
   function removeFromCart(key) {
@@ -1071,7 +1138,15 @@
     }
     body.innerHTML = state.cart.map(function (item) {
       var modeLabel = item.pricingMode === 'wholesale' ? '<span class="cart-item__mode">عمده</span>' : '';
-      return '<div class="cart-item"><div class="cart-item__image"><img src=\"' + item.image + '\" alt=\"' + item.name + '\" loading=\"lazy\" class=\"cart-item__img\"></div><div class="cart-item__details"><span class="cart-item__title">' + item.name + '</span>' + modeLabel + '<span class="cart-item__price">' + Format.priceWithCurrency(item.price) + '</span><div class="cart-item__quantity"><button class="cart-item__qty-btn" onclick="App.updateCartQty(\'' + item.key + '\',-1)">' + Icons.minus + '</button><span class="cart-item__qty-value">' + item.quantity + '</span><button class="cart-item__qty-btn" onclick="App.updateCartQty(\'' + item.key + '\',1)">' + Icons.plus + '</button></div></div><button class="cart-item__remove" onclick="App.removeFromCart(\'' + item.key + '\')">' + Icons.trash + '</button></div>';
+      var optionsHtml = '';
+      if (item.options && item.options.length) {
+        optionsHtml = '<div class="cart-item__options" style="margin-top:4px;font-size:var(--font-size-xs);color:var(--text-muted)">' +
+          item.options.map(function(opt) {
+            return '<span>• ' + opt.title + ': ' + Format.price(opt.price) + ' تومان</span>';
+          }).join('<br>') +
+        '</div>';
+      }
+      return '<div class="cart-item"><div class="cart-item__image"><img src=\"' + item.image + '\" alt=\"' + item.name + '\" loading=\"lazy\" class=\"cart-item__img\"></div><div class="cart-item__details"><span class="cart-item__title">' + item.name + '</span>' + modeLabel + '<span class="cart-item__price">' + Format.priceWithCurrency(item.price) + '</span>' + optionsHtml + '<div class="cart-item__quantity"><button class="cart-item__qty-btn" onclick="App.updateCartQty(\'' + item.key + '\',-1)">' + Icons.minus + '</button><span class="cart-item__qty-value">' + item.quantity + '</span><button class="cart-item__qty-btn" onclick="App.updateCartQty(\'' + item.key + '\',1)">' + Icons.plus + '</button></div></div><button class="cart-item__remove" onclick="App.removeFromCart(\'' + item.key + '\')">' + Icons.trash + '</button></div>';
     }).join('');
     if (footer) {
       footer.style.display = 'block';
@@ -1116,10 +1191,12 @@
     var stockHtml = p.inStock
       ? '<span class="product-card__stock product-card__stock--in">' + Icons.checkCircle.replace('width="20" height="20"', 'width="12" height="12"') + ' موجود در انبار</span>'
       : '<span class="product-card__stock product-card__stock--out">ناموجود</span>';
-    var pricingHtml = '<div class="priceChanger" data-pricing="' + p.id + '">' +
-      '<span class="mainPrice active" data-mode="retail">قیمت تک</span>' +
-      '<span data-mode="wholesale">قیمت عمده</span>' +
-    '</div>';
+    var pricingHtml = hasWholesalePrice(p)
+      ? '<div class="priceChanger" data-pricing="' + p.id + '">' +
+        '<span class="mainPrice active" data-mode="retail">قیمت تک</span>' +
+        '<span data-mode="wholesale">قیمت عمده</span>' +
+        '</div>'
+      : '';
     return '<div class="product-card">' +
       '<div class="product-card__image">' +
         '<img src="' + p.image + '" alt="' + p.name + '" loading="lazy" class="product-card__img" onerror="this.onerror=null;this.src=\'' + productCardFallbackImg(p) + '\'">' +
@@ -1382,9 +1459,8 @@
       actions.innerHTML = headerAuthHTML()
         + '<span class="header-divider" aria-hidden="true"></span>'
         + notifBellHTML()
-        + '<button class="header-action header-action--cart" data-action="cart" data-tooltip="سبد خرید" aria-label="سبد خرید">' + Icons.cart.replace('width="22" height="22"', 'width="22" height="22"') + '<span class="header-action__badge" style="display:none">0</span></button>';
-      var newCartBtn = actions.querySelector('[data-action="cart"]');
-      if (newCartBtn) newCartBtn.addEventListener('click', toggleCartPopover);
+        + '' + cartPopoverHTML() + '';
+      bindCartPopovers(actions);
       bindAccountDropdown(actions);
       bindNotifBells(actions);
       bindLogoutButtons(actions);
@@ -1539,7 +1615,7 @@ el.innerHTML = '\
     ' + authHtml + '\
     <span class="header-divider" aria-hidden="true"></span>\
     ' + notifBellHTML() + '\
-    <button class="header-action header-action--cart" data-action="cart" data-tooltip="سبد خرید" aria-label="سبد خرید">' + Icons.cart.replace('width="22" height="22"', 'width="22" height="22"') + '<span class="header-action__badge" style="display:none">0</span></button>\
+    ' + cartPopoverHTML() + '\
     </div></div></div>\
     <nav class="site-nav" aria-label="ناوبری اصلی"><div class="container">\
     <div class="nav-categories">\
@@ -1571,7 +1647,7 @@ el.innerHTML = '\
     ' + mobileSearchHtml + '\
     ' + authHtml + '\
     ' + notifBellHTML() + '\
-    <button class="header-action header-action--cart" data-action="cart">' + Icons.cart + '<span class="header-action__badge">0</span></button>\
+    ' + cartPopoverHTML() + '\
     </div>';
     if (hideSearch) el.classList.add('is-account-header');
   }
@@ -1919,7 +1995,7 @@ el.innerHTML = '\
   }
 
   /* ── Render Overlays ──────────────────────────────────────── */
-  function renderOverlays(el) {
+function renderOverlays(el) {
     var chatHtml = buildChatHtml();
     el.innerHTML = '\
     <div class="mobile-menu">\
@@ -1956,12 +2032,18 @@ el.innerHTML = '\
     }
     /* Set active state on bottom nav */
     var currentPage = storeFile();
+    /* Cart lives at /cart (legacy alias /account-cart). storeFile() maps it to
+       account-cart.html, which the Profile rule below would otherwise claim —
+       leaving the Cart tab dark and Profile lit on the cart page. */
+    var onCartPage = /^\/(account-)?cart\/?$/.test(window.location.pathname || '');
     el.querySelectorAll('.mobile-bottom-nav__item').forEach(function (item) {
       var href = item.getAttribute('href') || '';
       var page = href.split('?')[0];
       if (page === currentPage) item.classList.add('is-active');
+      /* Cart tab: active on the cart page only — Profile must not light up here. */
+      if (page === '/cart') { if (onCartPage) item.classList.add('is-active'); return; }
       /* Keep "پروفایل من" active across all account/auth pages (except wishlist, which has its own tab) */
-      if (item.getAttribute('data-nav') === 'profile' && currentPage !== '/account/wishlist' && /^(account|login|register|forgot-password)/.test(currentPage)) item.classList.add('is-active');
+      if (item.getAttribute('data-nav') === 'profile' && !onCartPage && currentPage !== '/account/wishlist' && /^(account|login|register|forgot-password)/.test(currentPage)) item.classList.add('is-active');
     });
     /* Update bottom nav cart badge */
     var bb = el.querySelector('#mobile-bottom-cart-badge');
@@ -2259,8 +2341,8 @@ el.innerHTML = '\
       function syncSupportUI(){ var tid=localStorage.getItem(LS_TICKET); var b=document.getElementById('chat-support-btn'), s=document.getElementById('chat-support-status'); if(!b||!s) return; if(tid){ s.style.display='block'; b.style.display='none'; b.disabled=true; showWaiting(); } else { s.style.display='none'; b.style.display=''; b.disabled=false; b.textContent='درخواست چت با پشتیبانی'; } }
       function fileHtml(m){ if(!m.fileUrl) return ''; var isImg=m.fileType&&m.fileType.indexOf('image')===0; if(isImg) return '<div><a href="'+m.fileUrl+'" target="_blank"><img src="'+m.fileUrl+'" style="max-width:160px;border-radius:var(--radius-lg);display:block;margin-top:6px"></a><a href="'+m.fileUrl+'" target="_blank" download>'+String(m.fileName||'فایل').replace(/</g,'&lt;')+'</a></div>'; return '<div style="margin-top:6px"><a href="'+m.fileUrl+'" target="_blank" download style="color:#2563eb">📎 '+String(m.fileName||'فایل').replace(/</g,'&lt;')+'</a></div>'; }
       function renderMessages(msgs){ var body=document.getElementById('chat-body'); if(!body||!msgs) return; msgs.forEach(function(m){ if(document.querySelector('[data-msg-id="'+m.id+'"]')) return; var div=document.createElement('div'); var isAdmin=m.sender==='admin'; div.setAttribute('data-msg-id', m.id); div.className='chat-msg '+(isAdmin?'chat-msg--bot':'chat-msg--user'); var txt=m.message?String(m.message).replace(/</g,'&lt;'):''; var fh=fileHtml(m); if(isAdmin) div.innerHTML='<div class="chat-msg__avatar">'+Icons.headphones+'</div><div class="chat-msg__bubble"><div class="chat-msg__text">'+txt+fh+'</div></div>'; else div.innerHTML='<div class="chat-msg__text">'+txt+fh+'</div>'; body.appendChild(div); }); body.scrollTop=body.scrollHeight; }
-      function poll(){ var tid=localStorage.getItem(LS_TICKET); if(!tid) return; fetch('/api/support/chat/'+tid+'/messages?guestId='+encodeURIComponent(getGuestId()),{headers:authHeaders()}).then(function(r){return r.ok?r.json():null;}).then(function(d){ if(d&&d.messages) renderMessages(d.messages); }).catch(function(){}); }
-      syncSupportUI(); poll(); var _pollTimer=setInterval(poll,3000);
+      function poll(){ var tid=localStorage.getItem(LS_TICKET); if(!tid) return; fetch('/api/support/chat/'+tid+'/messages?guestId='+encodeURIComponent(getGuestId()),{headers:authHeaders()}).then(function(r){ if(!r.ok){ if(r.status===404){ localStorage.removeItem(LS_TICKET); if(_pollTimer){ clearInterval(_pollTimer); _pollTimer=null; } syncSupportUI(); } return null; } return r.json(); }).then(function(d){ if(d&&d.messages) renderMessages(d.messages); }).catch(function(){}); }
+      syncSupportUI();       var _pollTimer=null; poll(); _pollTimer=setInterval(poll,3000);
       // Delegated click — works even after widget re-render/open
       document.addEventListener('click', function(e){
         var btn=e.target.closest && e.target.closest('#chat-support-btn');
@@ -2284,7 +2366,7 @@ el.innerHTML = '\
           if(tid){
             var body=document.getElementById('chat-body'), sug=document.getElementById('chat-suggestions');
             if(body){ var d=document.createElement('div'); d.className='chat-msg chat-msg--user'; d.innerHTML='<div class="chat-msg__text">'+String(userText).replace(/</g,'&lt;')+'</div>'; body.appendChild(d); if(sug) sug.style.display='none'; body.scrollTop=body.scrollHeight; }
-            fetch('/api/support/chat/'+tid+'/message',{method:'POST',headers:authHeaders(),body:JSON.stringify({message:userText,guestId:getGuestId()})}).then(function(){ setTimeout(poll,600); }).catch(function(){});
+            fetch('/api/support/chat/'+tid+'/message',{method:'POST',headers:authHeaders(),body:JSON.stringify({message:userText,guestId:getGuestId()})}).then(function(r){ if(r.status===404){ localStorage.removeItem(LS_TICKET); if(_pollTimer){ clearInterval(_pollTimer); _pollTimer=null; } syncSupportUI(); return; } setTimeout(poll,600); }).catch(function(){});
             return;
           }
           _orig(userText);
@@ -3021,6 +3103,12 @@ el.innerHTML = '\
   /* ── User notifications (DB-backed via /api/notifications; read state persists in SQLite) ── */
   function listNotifications() {
     if (!isLoggedIn() || !apiAvailable()) return Promise.resolve({ unreadCount: 0, items: [] });
+    /* Admin sessions are logged in but carry an admin_sessions token, which the
+       customer-scoped /api/notifications endpoint (customer_sessions only)
+       always rejects with 401. Skip the request so admin storefront sessions
+       see an empty state instead of a false "session expired" error — the
+       session itself stays valid and no auth check is weakened. */
+    if (isAdminSession()) return Promise.resolve({ unreadCount: 0, items: [] });
     return apiRequest('GET', '/notifications')
       .then(function (data) {
         return { unreadCount: Number(data.unreadCount) || 0, items: Array.isArray(data.items) ? data.items : [] };
@@ -3036,6 +3124,9 @@ el.innerHTML = '\
 
   function markNotificationRead(id) {
     if (!isLoggedIn() || !apiAvailable()) return Promise.resolve({ ok: false });
+    /* Same admin-session guard as listNotifications: no customer row exists for
+       admins, so the read endpoint would only answer 401. */
+    if (isAdminSession()) return Promise.resolve({ ok: false });
     return apiRequest('POST', '/notifications/' + encodeURIComponent(id) + '/read', {}).catch(function () { return { ok: false }; });
   }
 
@@ -3273,13 +3364,14 @@ el.innerHTML = '\
       + Icons.cart.replace('width="22" height="22"', 'width="22" height="22"')
       + '<span class="header-action__badge" style="display:none">0</span></button>'
       + '<div class="header-account-dropdown header-cart__panel" role="menu" aria-label="سبد خرید">'
-      + '<div class="header-account-dropdown__header"><span>سبد خرید</span><a href="/cart" style="font-size:var(--font-size-xs);font-weight:var(--font-weight-medium)">مشاهده سبد خرید</a></div>'
+      + '<div class="header-account-dropdown__header"><span>سبد خرید</span><a href="/account-cart" style="font-size:var(--font-size-xs);font-weight:var(--font-weight-medium)">مشاهده سبد خرید</a></div>'
       + '<div class="header-account-dropdown__divider" aria-hidden="true"></div>'
       + '<div class="header-cart__list"><p class="header-cart__empty">در حال بارگذاری…</p></div>'
       + '<div class="header-account-dropdown__divider" aria-hidden="true"></div>'
       + '<div class="header-cart__footer">'
       + '<div class="header-cart__total"><span>مبلغ قابل پرداخت</span><span class="header-cart__total-value">۰ تومان</span></div>'
-      + '<a href="/checkout/step1" class="btn btn-primary btn-block btn-sm">ثبت سفارش</a>'
+      + '<button type="button" class="btn btn-primary btn-block btn-sm header-cart__checkout-btn">ثبت سفارش</button>'
+      + '<a href="/shop" class="btn btn-secondary btn-block btn-sm header-cart__continue-btn" style="display:none">ادامه خرید</a>'
       + '</div>'
       + '</div></div>';
   }
@@ -3310,10 +3402,14 @@ el.innerHTML = '\
   function renderCartPopover(wrap) {
     var list = wrap.querySelector('.header-cart__list');
     var totalEl = wrap.querySelector('.header-cart__total-value');
+    var checkoutBtn = wrap.querySelector('.header-cart__checkout-btn');
+    var continueBtn = wrap.querySelector('.header-cart__continue-btn');
     if (!list) return;
     if (state.cart.length === 0) {
       list.innerHTML = '<p class="header-cart__empty">سبد خرید شما خالی است</p>';
       if (totalEl) totalEl.textContent = '۰ تومان';
+      if (checkoutBtn) checkoutBtn.style.display = 'none';
+      if (continueBtn) continueBtn.style.display = 'block';
       return;
     }
     list.innerHTML = state.cart.map(function (item) {
@@ -3335,6 +3431,8 @@ el.innerHTML = '\
     }).join('');
     var total = getCartTotal();
     if (totalEl) totalEl.textContent = Format.priceWithCurrency(total);
+    if (checkoutBtn) checkoutBtn.style.display = 'block';
+    if (continueBtn) continueBtn.style.display = 'none';
   }
 
   function bindCartPopovers(scope) {
@@ -3352,8 +3450,18 @@ el.innerHTML = '\
       if (list) list.addEventListener('click', function (e) {
         var btn = e.target && e.target.closest ? e.target.closest('.header-cart__qty-btn, .header-cart__item-remove') : null;
         if (!btn) return;
-        /* Quantity/remove buttons handled by onclick; just ensure popover stays open */
         e.stopPropagation();
+        renderCartPopover(wrap);
+      });
+      var checkoutBtn = wrap.querySelector('.header-cart__checkout-btn');
+      if (checkoutBtn) checkoutBtn.addEventListener('click', function (e) {
+        if (state.cart.length === 0) {
+          e.preventDefault();
+          e.stopPropagation();
+          try { App.showToast('سبد خرید شما خالی است', 'warning'); } catch (_) {}
+          return;
+        }
+        window.location.href = '/checkout/step1';
       });
     });
   }
@@ -3466,6 +3574,7 @@ el.innerHTML = '\
     updateProfile: updateProfile,
     fetchMe: fetchMe,
     authReady: function () { return authReady; },
+    apiRequest: apiRequest,
     isLoggedIn: isLoggedIn,
     isAdminSession: isAdminSession,
     getCurrentUser: getCurrentUser,
@@ -3480,11 +3589,14 @@ el.innerHTML = '\
     initDragCarousels: initDragCarousels,
     /* Pricing */
     getProductPrice: getProductPrice,
+    hasWholesalePrice: hasWholesalePrice,
     selectCardPricing: selectCardPricing,
     /* Shared product card */
     renderProductCard: renderProductCard,
     /* Cart */
     addToCart: addToCart,
+    getCartKey: getCartKey,
+    saveCart: saveCart,
     removeFromCart: removeFromCart,
     updateCartQty: updateCartQty,
     getCart: function () { return state.cart; },

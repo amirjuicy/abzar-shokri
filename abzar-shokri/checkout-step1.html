@@ -80,6 +80,32 @@ function load(){try{return JSON.parse(localStorage.getItem(K))||{}}catch(e){retu
 function save(d){localStorage.setItem(K,JSON.stringify(d))}
 var d=load();
 ['firstName','lastName','mobile','email'].forEach(function(k){if(d[k])document.getElementById('f-'+k).value=d[k]});
+
+// Check if cart is empty
+function getCartItems() {
+  var user=null;
+  try {
+    var s=JSON.parse(localStorage.getItem('as_session'));
+    if(s&&s.userId) user=s.user||{id:s.userId};
+  } catch(e) {}
+  var keys=user?['as_user_'+user.id+'_cart']:[];
+  var g=null;
+  try{g=localStorage.getItem('as_guest_session');}catch(e){}
+  if(g) keys.push('as_guest_cart_'+g);
+  for(var i=0;i<keys.length;i++){
+    try{
+      var c=JSON.parse(localStorage.getItem(keys[i]));
+      if(Array.isArray(c)&&c.length) return c;
+    }catch(e){}
+  }
+  return [];
+}
+var cart = getCartItems();
+if(cart.length === 0) {
+  window.location.href = '/cart';
+  return;
+}
+
 document.getElementById('step1-form').addEventListener('submit',function(e){
 e.preventDefault();var ok=true;
 function setErr(id,msg){document.getElementById(id).textContent=msg||'';if(msg)ok=false}

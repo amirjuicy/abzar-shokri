@@ -95,6 +95,7 @@
     saveRecentlyViewed(product.id);
     loadPersistedReviews();
     render();
+    document.body.classList.add('has-mobile-purchase-bar');
     bindTabs();
     bindGallery();
   }
@@ -330,42 +331,17 @@
           '<span class="dk-buybox__guarantee-text">گارانتی اصالت کالا</span>' +
         '</div>' +
 
-        /* Delivery Methods */
+        /* Delivery Methods (current design: summary text, no per-method list) */
         '<div class="dk-buybox__delivery">' +
           '<div class="dk-buybox__delivery-header">' +
             '<div class="dk-buybox__delivery-icon">' + Icons.truck + '</div>' +
             '<span class="dk-buybox__delivery-title">روش‌ها و هزینه‌های تحویل</span>' +
             '<div class="dk-buybox__delivery-chevron">' + Icons.chevronLeft + '</div>' +
           '</div>' +
-          '<ul class="dk-buybox__delivery-list">' +
-            '<li class="dk-buybox__delivery-item">' +
-              '<div class="dk-buybox__delivery-dot"></div>' +
-              '<div class="dk-buybox__delivery-icon-sm">' + Icons.truck + '</div>' +
-              '<span class="dk-buybox__delivery-name">تحویل عادی دیجی‌کالا</span>' +
-              '<span class="dk-buybox__delivery-label">وابسته به سبد</span>' +
-            '</li>' +
-            '<li class="dk-buybox__delivery-item">' +
-              '<div class="dk-buybox__delivery-dot"></div>' +
-              '<div class="dk-buybox__delivery-icon-sm" style="color:var(--color-success)">' + Icons.truck + '</div>' +
-              '<span class="dk-buybox__delivery-name">تحویل سریع امروز دیجی‌کالا</span>' +
-              '<span class="dk-buybox__delivery-label">وابسته به سبد</span>' +
-            '</li>' +
-          '</ul>' +
-        '</div>' +
-
-        /* Plus Membership */
-        '<div class="dk-buybox__plus">' +
-          '<div class="dk-buybox__plus-header">' +
-            '<div class="dk-buybox__plus-icon">' + Icons.star + '</div>' +
-            '<span class="dk-buybox__plus-title">ویژه اعضای پلاس</span>' +
+          '<div class="dk-buybox__delivery-info">' +
+            '<p>هزینه ارسال بر اساس آدرس و مبلغ سفارش در مرحله تسویه‌حساب محاسبه می‌شود.</p>' +
+            '<p>برای سفارش‌های بالاتر از حد مشخص، ارسال رایگان است.</p>' +
           '</div>' +
-          '<ul class="dk-buybox__plus-list">' +
-            '<li class="dk-buybox__plus-item">' +
-              '<div class="dk-buybox__plus-dot"></div>' +
-              '<div class="dk-buybox__plus-icon-sm">' + Icons.truck + '</div>' +
-              '<span class="dk-buybox__plus-text">ارسال سریع و رایگان دیجی‌کالا</span>' +
-            '</li>' +
-          '</ul>' +
         '</div>' +
 
         /* Better Price */
@@ -385,6 +361,9 @@
 
       '</div>' +
       '</div>' +
+
+      /* ── Mobile Purchase Bar (Digikala-style, mobile only via CSS) ── */
+      '<div class="mobile-purchase-bar" id="mobile-purchase-bar">' + buyBarHTML(p, 'retail') + '</div>' +
 
       /* ── Features ── */
       '<div class="pdp-features">' +
@@ -444,14 +423,60 @@
 
     var qty = 1;
     var selectedPricingMode = 'retail';
+    var mobileCartKey = null;
+    function syncMobileBar() {
+      var addBtn = document.getElementById('mobile-add-to-cart');
+      var qtyWrap = document.getElementById('mobile-qty-wrap');
+      var mEl = document.getElementById('mobile-qty');
+      if (!addBtn || !qtyWrap) return;
+      var lineQty = 0;
+      try {
+        if (mobileCartKey && App.getCart) {
+          var cart = App.getCart();
+          for (var i = 0; i < cart.length; i++) {
+            if (cart[i].key === mobileCartKey) { lineQty = cart[i].quantity; break; }
+          }
+          if (!lineQty) mobileCartKey = null;
+        }
+      } catch (e) {}
+      if (lineQty > 0) {
+        addBtn.hidden = true;
+        qtyWrap.hidden = false;
+        if (mEl) mEl.textContent = Format.toPersianNumber(lineQty);
+      } else {
+        addBtn.hidden = false;
+        qtyWrap.hidden = true;
+        if (mEl) mEl.textContent = Format.toPersianNumber(1);
+      }
+    }
     window.ProductDetail = {
       changeQty: function (d) {
         qty = Math.max(1, qty + d);
         var el = $('#product-qty');
         if (el) el.textContent = Format.toPersianNumber(qty);
+        var mEl = document.getElementById('mobile-qty');
+        if (mEl) mEl.textContent = Format.toPersianNumber(qty);
       },
       getQty: function () { return qty; },
       getPricingMode: function () { return selectedPricingMode; },
+      /* Mobile purchase bar (Digikala-style): add → swap button to stepper */
+      addToCartWithOptions: function (id, mode) {
+        var m = mode || selectedPricingMode;
+        var key = App.addToCart(id, m);
+        if (key && qty > 1 && typeof App.updateCartQty === 'function') {
+          App.updateCartQty(key, qty - 1);
+        }
+        if (key) mobileCartKey = key;
+        qty = 1;
+        syncMobileBar();
+        return key;
+      },
+      updateMobileQty: function (d) {
+        if (!mobileCartKey || typeof App.updateCartQty !== 'function') return;
+        App.updateCartQty(mobileCartKey, d);
+        setTimeout(syncMobileBar, 30);
+      },
+      syncMobileBar: syncMobileBar,
       selectPricing: function (mode) {
         selectedPricingMode = mode;
         var changer = document.getElementById('product-detail-pricing');
@@ -463,8 +488,13 @@
         var newPrice = App.getProductPrice(p, mode);
         var priceEl = document.getElementById('product-detail-price');
         if (priceEl) {
-          priceEl.innerHTML = '<span class="pdp-buybox__amount">' + Format.price(newPrice) + '</span><span class="pdp-buybox__currency">تومان</span>';
+          priceEl.innerHTML = '<span class="dk-buybox__amount">' + Format.price(newPrice) + '</span>' +
+            '<svg style="width:14px;height:14px;fill:currentColor"><use xlink:href="#toman"></use></svg>';
         }
+        var mPriceWrap = document.getElementById('mobile-price-row');
+        if (mPriceWrap) mPriceWrap.innerHTML = buyBarPriceHTML(p, mode);
+        var mAddBtn = document.getElementById('mobile-add-to-cart');
+        if (mAddBtn) mAddBtn.setAttribute('onclick', 'ProductDetail.addToCartWithOptions(' + p.id + ', \'' + mode + '\')');
       },
 
       /* ── Wishlist toggle ──────────────────────────────── */
@@ -620,6 +650,55 @@
   function renderQA() {
     return '<div class="qa-item"><div class="qa-item__question">آیا این محصول گارانتی دارد؟</div><div class="qa-item__answer">بله، تمامی محصولات با گارانتی اصالت کالا عرضه می‌شوند. برای اطلاعات بیشتر با پشتیبانی تماس بگیرید.</div></div>' +
     '<div class="qa-item"><div class="qa-item__question">زمان ارسال این محصول چقدر است؟</div><div class="qa-item__answer">ارسال عادی ۳ تا ۵ روز کاری و ارسال سریع ۱ تا ۲ روز کاری است.</div></div>';
+  }
+
+  function buyBarPriceHTML(p, mode) {
+    var price = App.getProductPrice(p, mode);
+    var oldPrice = p.oldPrice ? Format.price(p.oldPrice) : '';
+    var discount = (p.discount !== undefined && p.discount !== null && Number(p.discount) > 0)
+      ? '٪ ' + Format.toPersianNumber(p.discount) : '';
+    var finalPrice = Format.price(price);
+    var tomanIcon = (typeof Icons !== 'undefined' && Icons.toman)
+      ? '<span class="mobile-purchase-bar__toman">' + Icons.toman + '</span>'
+      : '<span class="mobile-purchase-bar__currency">تومان</span>';
+    /* Digikala-style: top row (discount + old price) / bottom row (final + toman) */
+    return '<div class="mobile-purchase-bar__price-col">' +
+      '<div class="mobile-purchase-bar__top-row">' +
+        (discount ? '<span class="mobile-purchase-bar__discount-badge">' + discount + '</span>' : '') +
+        (oldPrice ? '<span class="mobile-purchase-bar__old-price">' + oldPrice + '</span>' : '') +
+      '</div>' +
+      '<div class="mobile-purchase-bar__final-row">' +
+        '<span class="mobile-purchase-bar__amount">' + finalPrice + '</span>' +
+        tomanIcon +
+        /* keep legacy currency node hidden for tests/back-compat */
+        '<span class="mobile-purchase-bar__currency" style="display:none">تومان</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function buyBarHTML(p, mode) {
+    var pricingMode = mode || 'retail';
+    var priceHtml = buyBarPriceHTML(p, pricingMode);
+    var addBtnText = p.inStock ? 'افزودن به سبد خرید' : 'ناموجود';
+    var addBtnClass = p.inStock ? '' : 'mobile-purchase-bar__add-btn--disabled';
+    var addBtnDisabled = p.inStock ? '' : 'disabled';
+    /* Digikala snippet layout: [button w-1/2 48px] + [price w-1/2] */
+    return '<div class="mobile-purchase-bar__box">' +
+      '<div class="mobile-purchase-bar__inner">' +
+        '<div class="mobile-purchase-bar__cart-wrap">' +
+          '<button id="mobile-add-to-cart" class="mobile-purchase-bar__add-btn ' + addBtnClass + '" ' + addBtnDisabled +
+            ' data-cro-id="pdp-add-to-cart" data-testid="add-to-cart" onclick="ProductDetail.addToCartWithOptions(' + p.id + ', \'' + pricingMode + '\')">' +
+            '<span class="mobile-purchase-bar__add-btn-text">' + addBtnText + '</span>' +
+          '</button>' +
+          '<div class="mobile-purchase-bar__qty" id="mobile-qty-wrap" hidden>' +
+            '<button type="button" class="mobile-purchase-bar__qty-btn" data-act="inc" onclick="ProductDetail.updateMobileQty(1)" aria-label="افزایش">+</button>' +
+            '<span class="mobile-purchase-bar__qty-value" id="mobile-qty">' + Format.toPersianNumber(1) + '</span>' +
+            '<button type="button" class="mobile-purchase-bar__qty-btn" data-act="dec" onclick="ProductDetail.updateMobileQty(-1)" aria-label="کاهش">−</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="mobile-purchase-bar__price-wrap" id="mobile-price-row">' + priceHtml + '</div>' +
+      '</div>' +
+    '</div>';
   }
 
   function renderRelated() {

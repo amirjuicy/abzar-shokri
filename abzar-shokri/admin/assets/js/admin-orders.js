@@ -15,12 +15,16 @@
 
   var STATUS_META = {
     pending:    { text: 'در انتظار پرداخت', badge: 'adm-badge--warning' },
+    awaiting_payment_approval: { text: 'در انتظار تأیید پرداخت', badge: 'adm-badge--warning' },
+    awaiting_order_approval:   { text: 'در انتظار تأیید سفارش',   badge: 'adm-badge--warning' },
+    approved:   { text: 'تأیید شد / آماده ارسال', badge: 'adm-badge--success' },
     processing: { text: 'در حال پردازش',    badge: 'adm-badge--primary' },
     shipping:   { text: 'ارسال‌شده',         badge: 'adm-badge--info' },
     shipped:    { text: 'ارسال‌شده',         badge: 'adm-badge--info' },
     delivered:  { text: 'تحویل‌شده',         badge: 'adm-badge--success' },
     cancelled:  { text: 'لغوشده',            badge: 'adm-badge--danger' }
   };
+  var APPROVAL_STATUSES = ['awaiting_payment_approval', 'awaiting_order_approval'];
 
   var state = { orders: [], status: 'all', query: '', loading: true, error: false };
 
@@ -79,12 +83,6 @@
       email: (o.customer && o.customer.email) || '',
       address: o.address || '—',
       paymentMethod: o.paymentMethod || o.payment_method || '—',
-      cardBankName: o.cardBankName || o.card_bank_name || '',
-      cardNumber: o.cardNumber || o.card_number || '',
-      cardHolder: o.cardHolder || o.card_holder || '',
-      cardReceiptUrl: o.cardReceiptUrl || o.card_receipt_url || '',
-      cardReceiptName: o.cardReceiptName || o.card_receipt_name || '',
-      cardReceiptSize: Number(o.cardReceiptSize || o.card_receipt_size || 0),
       items: items,
       itemsCount: o.itemsCount != null ? o.itemsCount :
         items.reduce(function (s, it) { return s + Number(it.quantity || 0); }, 0),
@@ -106,15 +104,20 @@
     return api('/orders/' + encodeURIComponent(id)).then(toView);
   }
 
-  function adminToken() { try { var s=JSON.parse(localStorage.getItem('as_admin_session')||'null'); return s&&s.token||''; } catch(e){return '';} }
   function saveStatus(order, newStatus) {
     newStatus = normStatus(newStatus);
-    var h = { 'Content-Type': 'application/json' };
-    var t = adminToken(); if (t) h['Authorization'] = 'Bearer ' + t;
     return api('/orders/' + encodeURIComponent(order.id), {
       method: 'PATCH',
-      headers: h,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus, statusText: STATUS_META[newStatus].text })
+    }).then(function (updated) { return toView(updated); });
+  }
+
+  function approveOrder(order) {
+    return api('/orders/' + encodeURIComponent(order.id), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'approved', statusText: STATUS_META.approved.text })
     }).then(function (updated) { return toView(updated); });
   }
 
@@ -170,7 +173,7 @@
   }
 
   function renderChips() {
-    var counts = { all: state.orders.length, pending: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0 };
+    var counts = { all: state.orders.length, pending: 0, awaiting_payment_approval: 0, awaiting_order_approval: 0, approved: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0 };
     state.orders.forEach(function (o) { if (counts[o.status] != null) counts[o.status]++; });
     Array.prototype.forEach.call(document.querySelectorAll(CHIP_SEL), function (chip) {
       var st = chip.getAttribute('data-status');
@@ -205,34 +208,19 @@
     });
   }
 
-  /* رسید واریز کارت به کارت: the image the customer uploaded with the order.
-     Shown as a clickable thumbnail that opens the full-size file. */
-  function fmtBytes(n) {
-    n = Number(n) || 0;
-    if (!n) return '';
-    if (n < 1024) return n + ' بایت';
-    if (n < 1024 * 1024) return Math.round(n / 1024) + ' کیلوبایت';
-    return (n / 1024 / 1024).toFixed(1) + ' مگابایت';
-  }
-  function receiptHtml(o) {
-    if (!o || !o.cardReceiptUrl) return '';
-    var url = o.cardReceiptUrl;
-    var size = fmtBytes(o.cardReceiptSize);
-    return '<div style="background:var(--color-primary-50);border:1px solid var(--color-primary);border-radius:var(--radius-lg);padding:10px 12px;display:grid;gap:8px">' +
-      '<div><strong>کارت به کارت — رسید واریز مشتری:</strong> ' +
-      '<a href="' + esc(url) + '" target="_blank" rel="noopener" style="word-break:break-all">' + esc(o.cardReceiptName || url) + '</a>' +
-      (size ? ' <span style="color:var(--text-muted)">(' + esc(size) + ')</span>' : '') + '</div>' +
-      '<a href="' + esc(url) + '" target="_blank" rel="noopener" style="justify-self:start">' +
-      '<img src="' + esc(url) + '" alt="رسید واریز کارت به کارت" ' +
-      'style="max-width:220px;max-height:220px;border-radius:var(--radius-lg);border:1px solid var(--border-color);background:#fff;display:block;object-fit:contain">' +
-      '</a></div>';
-  }
-
   function fillDetails(m, o) {
     var meta = STATUS_META[o.status];
     var items = o.items.length ? o.items.map(function (it) {
+      var optionsHtml = '';
+      if (it.options && it.options.length) {
+        optionsHtml = '<div style="margin-top:4px;font-size:11px;color:var(--text-muted)">' +
+          it.options.map(function(opt) {
+            return '<span>• ' + esc(opt.title) + ': ' + faNum(opt.price) + ' تومان</span>';
+          }).join('<br>') +
+        '</div>';
+      }
       return '<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px dashed var(--border-color-light);font-size:13px">' +
-        '<span>' + esc(it.name) + ' <span style="color:var(--text-muted)">× ' + faNum(it.quantity) + '</span></span>' +
+        '<span>' + esc(it.name) + ' <span style="color:var(--text-muted)">× ' + faNum(it.quantity) + '</span>' + optionsHtml + '</span>' +
         '<span style="font-weight:600">' + faNum(Number(it.price) * Number(it.quantity)) + '</span></div>';
     }).join('') : '<p style="font-size:13px;color:var(--text-muted)">قلم کالایی ثبت نشده است.</p>';
 
@@ -246,15 +234,6 @@
       '<div><strong>تاریخ:</strong> ' + esc(o.date) + ' &nbsp; <strong>پرداخت:</strong> ' + esc(o.paymentMethod) +
       ' &nbsp; <span class="adm-badge ' + meta.badge + '">' + meta.text + '</span></div>' +
       '<div><strong>اقلام:</strong>' + items + '</div>' +
-      (o.cardNumber
-        ? '<div style="background:var(--color-primary-50);border:1px solid var(--color-primary);border-radius:var(--radius-lg);padding:10px 12px">' +
-          '<strong>کارت به کارت — کارت انتخابی مشتری:</strong> ' +
-          (o.cardBankName ? esc(o.cardBankName) + ' — ' : '') +
-          '<span dir="ltr">' + esc(o.cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')) + '</span>' +
-          (o.cardHolder ? ' <span style="color:var(--text-muted)">به نام ' + esc(o.cardHolder) + '</span>' : '') +
-        '</div>'
-        : '') +
-      receiptHtml(o) +
       '<div style="background:var(--color-gray-100);border-radius:var(--radius-lg);padding:10px 12px;display:grid;gap:6px">' +
       '<div style="display:flex;justify-content:space-between"><span>جمع اقلام</span><span>' + faNum(o.subtotal) + ' تومان</span></div>' +
       '<div style="display:flex;justify-content:space-between"><span>هزینه ارسال</span><span>' + (o.shipping ? faNum(o.shipping) + ' تومان' : 'رایگان') + '</span></div>' +
@@ -266,6 +245,9 @@
       Object.keys(STATUS_META).filter(function (k) { return k !== 'shipping'; }).map(function (k) {
         return '<option value="' + k + '"' + (k === o.status ? ' selected' : '') + '>' + STATUS_META[k].text + '</option>';
       }).join('') + '</select></label>' +
+      (APPROVAL_STATUSES.indexOf(o.status) !== -1
+        ? '<button type="button" class="btn btn-primary" id="adm-om-approve" style="width:100%;margin-top:4px">تأیید و آماده‌سازی ارسال</button>'
+        : '') +
       '</div>';
 
     m.querySelector('#adm-om-status').addEventListener('change', function () {
@@ -284,6 +266,24 @@
         toast('خطا در به‌روزرسانی وضعیت سفارش', 'danger');
       });
     });
+
+    var approveBtn = m.querySelector('#adm-om-approve');
+    if (approveBtn) {
+      approveBtn.addEventListener('click', function () {
+        approveBtn.disabled = true;
+        approveOrder(o).then(function (updated) {
+          var idx = -1;
+          state.orders.forEach(function (x, i) { if (x.id === updated.id) idx = i; });
+          if (idx !== -1) state.orders[idx] = updated;
+          render();
+          fillDetails(m, updated);
+          toast('سفارش تأیید شد و آماده ارسال است', 'success');
+        }).catch(function () {
+          approveBtn.disabled = false;
+          toast('خطا در تأیید سفارش', 'danger');
+        });
+      });
+    }
   }
 
   function closeDetails() {

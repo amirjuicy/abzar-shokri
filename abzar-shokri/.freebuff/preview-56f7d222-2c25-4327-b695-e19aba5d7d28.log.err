@@ -1,2 +1,78 @@
 (node:11384) ExperimentalWarning: SQLite is an experimental feature and might change at any time
 (Use `node --trace-warnings ...` to show where the warning was created)
+Error: Unknown named parameter 'sale_price'
+    at C:\Users\INO\Desktop\project\abzar-shokri\abzar-shokri\server\app.js:690:96
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\route.js:157:13)
+    at requireAdmin (C:\Users\INO\Desktop\project\abzar-shokri\abzar-shokri\server\app.js:1021:3)
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\route.js:117:3)
+    at handle (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:295:15
+    at processParams (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:582:12)
+    at next (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:291:5)
+    at router.handle (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:186:3)
+    at router (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:60:12)
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:342:13) {
+  code: 'ERR_INVALID_STATE'
+}
+Error: Unknown named parameter 'sale_price'
+    at C:\Users\INO\Desktop\project\abzar-shokri\abzar-shokri\server\app.js:690:96
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\route.js:157:13)
+    at requireAdmin (C:\Users\INO\Desktop\project\abzar-shokri\abzar-shokri\server\app.js:1021:3)
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\route.js:117:3)
+    at handle (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:295:15
+    at processParams (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:582:12)
+    at next (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:291:5)
+    at router.handle (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:186:3)
+    at router (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:60:12)
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:342:13) {
+  code: 'ERR_INVALID_STATE'
+}
+Error: Unknown named parameter 'sale_price'
+    at C:\Users\INO\Desktop\project\abzar-shokri\abzar-shokri\server\app.js:690:96
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\route.js:157:13)
+    at requireAdmin (C:\Users\INO\Desktop\project\abzar-shokri\abzar-shokri\server\app.js:1021:3)
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\route.js:117:3)
+    at handle (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:295:15
+    at processParams (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:582:12)
+    at next (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:291:5)
+    at router.handle (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:186:3)
+    at router (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:60:12)
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:342:13) {
+  code: 'ERR_INVALID_STATE'
+}
+Error: Unknown named parameter 'sale_price'
+    at C:\Users\INO\Desktop\project\abzar-shokri\abzar-shokri\server\app.js:690:96
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\route.js:157:13)
+    at requireAdmin (C:\Users\INO\Desktop\project\abzar-shokri\abzar-shokri\server\app.js:1021:3)
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\route.js:117:3)
+    at handle (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:295:15
+    at processParams (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:582:12)
+    at next (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:291:5)
+    at router.handle (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:186:3)
+    at router (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:60:12)
+    at Layer.handleRequest (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (C:\Users\INO\Desktop\project\abzar-shokri\node_modules\router\index.js:342:13) {
+  code: 'ERR_INVALID_STATE'
+}

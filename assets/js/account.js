@@ -27,7 +27,8 @@
     bindLogout();
 
     /* ── Auth Guard ──────────────────────────────────────── */
-    if (!App.isLoggedIn()) {
+    var page = getPage();
+    if (!App.isLoggedIn() && page !== 'cart') {
       var content = $('#account-content');
       if (content) {
         var _pbSnapLogin = pbCartSnap(content);
@@ -445,7 +446,15 @@
       <div>\
         <h3 style="font-weight:var(--font-weight-bold);margin-bottom:var(--space-4)">اقلام سفارش</h3>\
         <div style="background:var(--color-gray-50);border-radius:var(--radius-lg);padding:var(--space-4)">' + order.items.map(function(item) {
-          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-2) 0;border-bottom:1px solid var(--border-color-light)"><div><div style="font-weight:var(--font-weight-medium);font-size:var(--font-size-sm)">' + item.name + '</div><div style="font-size:var(--font-size-xs);color:var(--text-muted)">' + Format.toPersianNumber(item.quantity) + ' عدد × ' + Format.priceWithCurrency(item.price) + '</div></div><div style="font-weight:var(--font-weight-semibold)">' + Format.priceWithCurrency(item.price * item.quantity) + '</div></div>';
+          var optionsHtml = '';
+          if (item.options && item.options.length) {
+            optionsHtml = '<div style="margin-top:4px;font-size:var(--font-size-xs);color:var(--text-muted)">' +
+              item.options.map(function(opt) {
+                return '<span>• ' + opt.title + ': ' + Format.price(opt.price) + ' تومان</span>';
+              }).join('<br>') +
+            '</div>';
+          }
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-2) 0;border-bottom:1px solid var(--border-color-light)"><div><div style="font-weight:var(--font-weight-medium);font-size:var(--font-size-sm)">' + item.name + '</div><div style="font-size:var(--font-size-xs);color:var(--text-muted)">' + Format.toPersianNumber(item.quantity) + ' عدد × ' + Format.priceWithCurrency(item.price) + '</div>' + optionsHtml + '</div><div style="font-weight:var(--font-weight-semibold)">' + Format.priceWithCurrency(item.price * item.quantity) + '</div></div>';
         }).join('') + '\
         <div style="margin-top:var(--space-3);padding-top:var(--space-3);border-top:2px solid var(--border-color)">\
           <div style="display:flex;justify-content:space-between;font-size:var(--font-size-sm);padding:var(--space-1) 0"><span>هزینه ارسال</span><span>' + (order.shipping === 0 ? 'رایگان' : Format.priceWithCurrency(order.shipping)) + '</span></div>\

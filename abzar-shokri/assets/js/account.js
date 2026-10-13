@@ -182,7 +182,7 @@
   function paintDashboard(el, user, orders) {
     orders = orders || [];
     var wishCount = App.getWishlist().length;
-    var pending = orders.filter(function(o) { return o.status === 'pending'; }).length;
+    var pending = orders.filter(function(o) { return o.status === 'pending' || o.status === 'awaiting_payment_approval'; }).length;
     var processing = orders.filter(function(o) { return o.status === 'processing' || o.status === 'shipping'; }).length;
     var delivered = orders.filter(function(o) { return o.status === 'delivered'; }).length;
 
@@ -348,8 +348,8 @@
 
     if (orders.length === 0) {
       el.innerHTML += '\
-      <div class="empty-state">\
-        <span class="empty-state__icon">' + Icons.package + '</span>\
+      <div class="empty-state" style="padding:var(--space-12) 0">\
+        <span class="empty-state__icon" style="width:80px;height:80px">' + Icons.package + '</span>\
         <h3 class="empty-state__title">هنوز سفارشی ثبت نکرده‌اید</h3>\
         <p class="empty-state__text">پس از ثبت سفارش، لیست سفارش‌های شما اینجا نمایش داده خواهد شد.</p>\
         <a href="/shop" class="btn btn-primary">مشاهده فروشگاه</a>\
@@ -415,8 +415,8 @@
 
     if (!order) {
       el.innerHTML = '\
-      <div class="empty-state">\
-        <span class="empty-state__icon">' + Icons.package + '</span>\
+      <div class="empty-state" style="padding:var(--space-12) 0">\
+        <span class="empty-state__icon" style="width:80px;height:80px">' + Icons.package + '</span>\
         <h3 class="empty-state__title">سفارش یافت نشد</h3>\
         <p class="empty-state__text">این سفارش متعلق به حساب کاربری شما نیست یا وجود ندارد.</p>\
         <a href="/account/orders" class="btn btn-primary">بازگشت به سفارش‌ها</a>\
@@ -445,7 +445,15 @@
       <div>\
         <h3 style="font-weight:var(--font-weight-bold);margin-bottom:var(--space-4)">اقلام سفارش</h3>\
         <div style="background:var(--color-gray-50);border-radius:var(--radius-lg);padding:var(--space-4)">' + order.items.map(function(item) {
-          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-2) 0;border-bottom:1px solid var(--border-color-light)"><div><div style="font-weight:var(--font-weight-medium);font-size:var(--font-size-sm)">' + item.name + '</div><div style="font-size:var(--font-size-xs);color:var(--text-muted)">' + Format.toPersianNumber(item.quantity) + ' عدد × ' + Format.priceWithCurrency(item.price) + '</div></div><div style="font-weight:var(--font-weight-semibold)">' + Format.priceWithCurrency(item.price * item.quantity) + '</div></div>';
+          var optionsHtml = '';
+          if (item.options && item.options.length) {
+            optionsHtml = '<div style="margin-top:4px;font-size:var(--font-size-xs);color:var(--text-muted)">' +
+              item.options.map(function(opt) {
+                return '<span>• ' + opt.title + ': ' + Format.price(opt.price) + ' تومان</span>';
+              }).join('<br>') +
+            '</div>';
+          }
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-2) 0;border-bottom:1px solid var(--border-color-light)"><div><div style="font-weight:var(--font-weight-medium);font-size:var(--font-size-sm)">' + item.name + '</div><div style="font-size:var(--font-size-xs);color:var(--text-muted)">' + Format.toPersianNumber(item.quantity) + ' عدد × ' + Format.priceWithCurrency(item.price) + '</div>' + optionsHtml + '</div><div style="font-weight:var(--font-weight-semibold)">' + Format.priceWithCurrency(item.price * item.quantity) + '</div></div>';
         }).join('') + '\
         <div style="margin-top:var(--space-3);padding-top:var(--space-3);border-top:2px solid var(--border-color)">\
           <div style="display:flex;justify-content:space-between;font-size:var(--font-size-sm);padding:var(--space-1) 0"><span>هزینه ارسال</span><span>' + (order.shipping === 0 ? 'رایگان' : Format.priceWithCurrency(order.shipping)) + '</span></div>\
@@ -718,8 +726,8 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-6);flex-wrap:wrap;gap:12px"><h2 class="account-content__title" style="margin:0">آدرس‌ها</h2><button class="btn btn-primary btn-sm" onclick="AccountPage.showAddAddress()">افزودن آدرس جدید</button></div>';
     if (addresses.length === 0) {
       el.innerHTML += '\
-      <div class="empty-state">\
-        <span class="empty-state__icon">' + Icons.mapPin + '</span>\
+      <div class="empty-state" style="padding:var(--space-12) 0">\
+        <span class="empty-state__icon" style="width:80px;height:80px">' + Icons.mapPin + '</span>\
         <h3 class="empty-state__title">هنوز آدرسی ثبت نکرده‌اید</h3>\
         <p class="empty-state__text">آدرس‌های خود را برای تسریع در فرآیند خرید ثبت کنید.</p>\
         <button class="btn btn-primary" onclick="AccountPage.showAddAddress()">افزودن آدرس جدید</button>\
@@ -840,8 +848,8 @@
 
     if (products.length === 0) {
       el.innerHTML += '\
-      <div class="empty-state">\
-        <span class="empty-state__icon">' + Icons.heart + '</span>\
+      <div class="empty-state" style="padding:var(--space-12) 0">\
+        <span class="empty-state__icon" style="width:80px;height:80px">' + Icons.heart + '</span>\
         <h3 class="empty-state__title">لیست علاقه‌مندی‌ها خالی است</h3>\
         <p class="empty-state__text">محصولات مورد علاقه خود را اضافه کنید.</p>\
         <a href="/shop" class="btn btn-primary">مشاهده فروشگاه</a>\
@@ -937,11 +945,11 @@
 
     if (cart.length === 0) {
       el.innerHTML += '\
-      <div class="empty-state empty-state--lg">\
-        <span class="empty-state__icon">' + Icons.shoppingBag + '</span>\
+      <div class="empty-state" style="padding:var(--space-12) 0">\
+        <span class="empty-state__icon" style="width:80px;height:80px">' + Icons.shoppingBag + '</span>\
         <h3 class="empty-state__title">سبد شما خالی است</h3>\
         <p class="empty-state__text">محصولات مورد نظر خود را از فروشگاه انتخاب کنید.</p>\
-        <a href="/shop" class="empty-state__btn">مشاهده فروشگاه</a>\
+        <a href="/shop" class="btn btn-primary">مشاهده فروشگاه</a>\
       </div>';
       pbCartRestore(el, _pbSnap, _pbCountSuffix);
       return;

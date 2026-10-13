@@ -134,7 +134,7 @@ const AppData = {
    Format Helpers
    ================================================================ */
 const Format = {
-  price(v) { return new Intl.NumberFormat('fa-IR').format(v); },
+  price(v) { return v !== undefined && v !== null ? new Intl.NumberFormat('fa-IR').format(v) : '0'; },
   priceWithCurrency(v) { return this.price(v) + ' تومان'; },
   rating(v) { const f = Math.floor(v); const h = v % 1 >= 0.5 ? 1 : 0; return { full: f, half: h, empty: 5 - f - h }; },
   starHtml(v) { const r = this.rating(v); let s = ''; for (let i = 0; i < r.full; i++) s += Icons.star; for (let i = 0; i < r.empty; i++) s += Icons.starEmpty; return s; },

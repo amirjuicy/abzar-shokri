@@ -158,181 +158,8 @@
     host.appendChild(label);
     return label.querySelector('input');
   }
-  /* ── کارت به کارت: admin-configured bank cards ──────────────────────
-     Same source of truth as the checkout wizard: GET /api/bank-cards
-     returns only the enabled cards. The chosen card id travels with the
-     order; the server re-validates it and snapshots it onto the order. */
-  var bankCards = [];
-  var selectedCardId = null;
-  function bankCardsHost() {
-    var card = document.querySelector('.payment-option input[value="card"]');
-    if (!card) return null;
-    var host = document.getElementById('checkout-bank-cards');
-    if (host) return host;
-    host = document.createElement('div');
-    host.id = 'checkout-bank-cards';
-    host.className = 'checkout-bank-cards';
-    host.hidden = true;
-    var section = card.closest('.checkout-section');
-    (section || card.parentNode).appendChild(host);
-    return host;
-  }
-  function bankCardError(msg) {
-    var el = document.getElementById('checkout-bank-cards-error');
-    if (el) el.textContent = msg || '';
-  }
-  function escHtml(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
-
-  /* ── کارت به کارت: رسید واریز (receipt upload) ───────────────────────
-     Renders directly below the chosen bank card. Images only. The file is
-     POSTed to /api/orders/card-receipt right away (same on-disk upload
-     approach as the support-chat attachments) and the returned path rides
-     along with the order payload so admin can inspect it. Required for
-     card-to-card: the order cannot be submitted until the upload succeeded. */
-  var RECEIPT_MAX_BYTES = 5 * 1024 * 1024;
-  var receiptFile = null;    // File as picked (also covers the in-flight upload)
-  var receiptMeta = null;    // { url, name, size } once the server accepted it
-  var receiptPreview = '';   // local object URL for the preview
-  var receiptBusy = false;
-  function receiptError(msg) { var el = document.getElementById('checkout-receipt-error'); if (el) el.textContent = msg || ''; }
-  function clearReceipt() {
-    if (receiptPreview) { try { URL.revokeObjectURL(receiptPreview); } catch (e) {} }
-    receiptFile = null; receiptMeta = null; receiptPreview = ''; receiptBusy = false;
-  }
-  function fmtBytes(n) {
-    n = Number(n) || 0;
-    if (n < 1024) return n + ' بایت';
-    if (n < 1024 * 1024) return (n / 1024).toFixed(0) + ' کیلوبایت';
-    return (n / 1024 / 1024).toFixed(1) + ' مگابایت';
-  }
-  function receiptDropHtml() {
-    return '<div class="rc-head">تصویر رسید واریز <small>الزامی — بدون آن ثبت سفارش کارت به کارت ممکن نیست</small></div>'
-      + '<label class="rc-drop' + (receiptBusy ? ' is-busy' : '') + '">'
-      + '<input type="file" id="checkout-receipt-file" accept="image/jpeg,image/png,image/webp,image/gif">'
-      + '<span class="rc-drop__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>'
-      + '<span class="rc-drop__title">' + (receiptBusy ? 'در حال آپلود…' : 'انتخاب تصویر رسید') + '</span>'
-      + '<span class="rc-drop__hint">JPG، PNG، WebP یا GIF — حداکثر ۵ مگابایت</span>'
-      + '</label>'
-      + '<div class="rc-error" id="checkout-receipt-error"></div>';
-  }
-  function receiptHtml() {
-    var shown = receiptMeta || receiptFile;
-    if (!shown) return receiptDropHtml();
-    var src = receiptPreview || receiptMeta.url || '';
-    var name = receiptMeta ? receiptMeta.name : (receiptFile ? receiptFile.name : '');
-    var size = receiptMeta ? receiptMeta.size : (receiptFile ? receiptFile.size : 0);
-    return '<div class="rc-head">تصویر رسید واریز</div>'
-      + '<div class="rc-preview">'
-      + '<img class="rc-preview__img" src="' + escHtml(src) + '" alt="پیش‌نمایش رسید واریز">'
-      + '<div class="rc-preview__meta">'
-      + '<div class="rc-preview__name">' + escHtml(name) + '</div>'
-      + '<div class="rc-preview__size">' + fmtBytes(size) + (receiptMeta ? ' — آپلود شد' : ' — در حال آپلود…') + '</div>'
-      + '<div class="rc-preview__actions">'
-      + '<label class="rc-btn" style="cursor:pointer">تغییر تصویر<input type="file" id="checkout-receipt-file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none"></label>'
-      + '<button type="button" class="rc-btn rc-btn--danger" data-receipt-remove>حذف تصویر</button>'
-      + '</div></div></div>'
-      + '<div class="rc-error" id="checkout-receipt-error"></div>';
-  }
-  function uploadReceipt(file) {
-    receiptFile = file;
-    receiptMeta = null;
-    if (receiptPreview) { try { URL.revokeObjectURL(receiptPreview); } catch (e) {} }
-    try { receiptPreview = URL.createObjectURL(file); } catch (e) { receiptPreview = ''; }
-    receiptBusy = true;
-    receiptError('');
-    renderBankCards();
-    var fd = new FormData();
-    fd.append('image', file);
-    fetch('api/orders/card-receipt', { method: 'POST', body: fd })
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, body: j }; }); })
-      .then(function (res) {
-        receiptBusy = false;
-        if (!res.ok) throw new Error((res.body && res.body.error) || 'آپلود تصویر ناموفق بود.');
-        receiptMeta = { url: res.body.url, name: res.body.name || file.name, size: res.body.size || file.size };
-        renderBankCards();
-      })
-      .catch(function (err) {
-        receiptBusy = false;
-        clearReceipt();
-        renderBankCards();
-        receiptError((err && err.message) || 'آپلود تصویر ناموفق بود.');
-      });
-  }
-  function onReceiptPicked(input) {
-    var f = input.files && input.files[0];
-    input.value = '';
-    if (!f) return;
-    if (!/^image\/(jpeg|png|webp|gif)$/.test(f.type)) { receiptError('فقط تصویر (JPG، PNG، WebP یا GIF) مجاز است.'); return; }
-    if (f.size > RECEIPT_MAX_BYTES) { receiptError('حجم تصویر نباید بیشتر از ۵ مگابایت باشد.'); return; }
-    uploadReceipt(f);
-  }
-  function bindReceipt(host) {
-    var input = host.querySelector('#checkout-receipt-file');
-    if (input) input.addEventListener('change', function () { onReceiptPicked(this); });
-    var rm = host.querySelector('[data-receipt-remove]');
-    if (rm) rm.addEventListener('click', function (e) {
-      e.preventDefault(); e.stopPropagation();
-      clearReceipt(); receiptError(''); renderBankCards();
-    });
-  }
-
-  function renderBankCards() {
-    var host = bankCardsHost();
-    if (!host) return;
-    var checked = document.querySelector('input[name="payment"]:checked');
-    var on = checked && checked.value === 'card';
-    host.hidden = !on;
-    if (!on) { host.innerHTML = ''; return; }
-    if (!bankCards.length) {
-      host.innerHTML = '<div class="bc-head">انتخاب کارت بانکی</div>'
-        + '<div class="bc-empty">در حال حاضر کارت بانکی فعالی ثبت نشده است. لطفاً با پشتیبانی فروشگاه تماس بگیرید.</div>';
-      return;
-    }
-    if (!bankCards.some(function (c) { return String(c.id) === String(selectedCardId); })) selectedCardId = null;
-    var picked = bankCards.filter(function (c) { return String(c.id) === String(selectedCardId); })[0];
-    host.innerHTML = '<div class="bc-head">انتخاب کارت بانکی <small>مبلغ را به شماره کارت زیر واریز کنید</small></div>'
-      + '<div class="bc-grid" role="radiogroup" aria-label="انتخاب کارت بانکی">'
-      + bankCards.map(function (c) {
-        var num = c.cardNumberFormatted || c.cardNumber || '';
-        var logo = c.logo
-          ? '<img src="' + String(c.logo).replace(/"/g, '&quot;') + '" alt="">'
-          : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>';
-        return '<label class="bc-item' + (String(c.id) === String(selectedCardId) ? ' is-active' : '') + '">'
-          + '<input type="radio" name="bankcard" value="' + c.id + '"' + (String(c.id) === String(selectedCardId) ? ' checked' : '') + '>'
-          + '<div class="bc-card">'
-          + '<div class="bc-top"><span class="bc-bank"><span class="bc-bank__logo">' + logo + '</span>' + escHtml(c.bankName) + '</span><span class="bc-chip"></span></div>'
-          + '<div class="bc-num">' + escHtml(num) + '</div>'
-          + '<div class="bc-foot"><span class="bc-holder">' + (c.cardHolder ? '<b>به نام</b>' + escHtml(c.cardHolder) : '') + '</span>'
-          + '<button type="button" class="bc-copy" data-copy="' + escHtml(c.cardNumber || '') + '">کپی شماره</button></div>'
-          + '</div></label>';
-      }).join('')
-      + '</div>'
-      + (picked && picked.note ? '<div class="bc-note">' + escHtml(picked.note) + '</div>' : '')
-      + receiptHtml();
-    $$('input[name="bankcard"]', host).forEach(function (r) {
-      r.addEventListener('change', function () { selectedCardId = r.value; bankCardError(''); renderBankCards(); });
-    });
-    bindReceipt(host);
-    $$('.bc-copy', host).forEach(function (b) {
-      b.addEventListener('click', function (e) {
-        e.preventDefault(); e.stopPropagation();
-        var n = b.getAttribute('data-copy');
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(n).then(function () {
-            b.textContent = 'کپی شد';
-            setTimeout(function () { b.textContent = 'کپی شماره'; }, 1600);
-          }, function () {});
-        }
-      });
-    });
-  }
-  function loadBankCards() {
-    return fetch('api/bank-cards').then(function (r) { return r.json(); }).then(function (list) {
-      bankCards = Array.isArray(list) ? list : [];
-      renderBankCards();
-    }).catch(function () { bankCards = []; renderBankCards(); });
-  }
-  function firstEnabledPayment() {    if (StoreSettings.payOnline) return 'online';
+  function firstEnabledPayment() {
+    if (StoreSettings.payOnline) return 'online';
     if (StoreSettings.payCod) return 'cod';
     if (StoreSettings.payCard) return 'card';
     return 'online';
@@ -388,8 +215,6 @@
       if (lab) lab.classList.toggle('is-active', input.checked);
     });
     // Shipping labels respect cost + threshold (dynamic methods already rendered above).
-    // applyPaymentToggles() may check a radio programmatically (no change event).
-    renderBankCards();
   }
 
   function render() {
@@ -497,7 +322,15 @@
     var el = $('#checkout-summary-items');
     if (!el) return;
     el.innerHTML = cart.map(function(item) {
-      return '<div style="display:flex;gap:var(--space-3);padding:var(--space-2) 0;font-size:var(--font-size-sm)"><div style="width:48px;height:48px;background:var(--color-gray-100);border-radius:var(--radius-md);overflow:hidden;flex-shrink:0"><img src="'+item.image+'" alt="'+item.name+'" style="width:100%;height:100%;object-fit:contain"></div><div style="flex:1"><div style="font-weight:var(--font-weight-medium)">'+item.name+'</div><div style="color:var(--text-muted)">'+Format.toPersianNumber(item.quantity)+' عدد</div></div><div style="font-weight:var(--font-weight-semibold)">'+Format.priceWithCurrency(item.price * item.quantity)+'</div></div>';
+      var optionsHtml = '';
+      if (item.options && item.options.length) {
+        optionsHtml = '<div style="margin-top:4px;font-size:var(--font-size-xs);color:var(--text-muted)">' +
+          item.options.map(function(opt) {
+            return '<span>• ' + opt.title + ': ' + Format.price(opt.price) + ' تومان</span>';
+          }).join('<br>') +
+        '</div>';
+      }
+      return '<div style="display:flex;gap:var(--space-3);padding:var(--space-2) 0;font-size:var(--font-size-sm)"><div style="width:48px;height:48px;background:var(--color-gray-100);border-radius:var(--radius-md);overflow:hidden;flex-shrink:0"><img src="'+item.image+'" alt="'+item.name+'" style="width:100%;height:100%;object-fit:contain"></div><div style="flex:1"><div style="font-weight:var(--font-weight-medium)">'+item.name+'</div>' + optionsHtml + '<div style="color:var(--text-muted)">'+Format.toPersianNumber(item.quantity)+' عدد</div></div><div style="font-weight:var(--font-weight-semibold)">'+Format.priceWithCurrency(item.price * item.quantity)+'</div></div>';
     }).join('');
 
     var sumEl = $('#checkout-summary-total');
@@ -751,7 +584,7 @@
 
   function init() {
     render();
-    loadStoreSettings().then(function () { applyPaymentToggles(); loadBankCards(); renderSummary(); });
+    loadStoreSettings().then(function () { applyPaymentToggles(); renderSummary(); });
     var applyBtn = document.getElementById('checkout-discount-apply');
     if (applyBtn) applyBtn.addEventListener('click', applyDiscountCode);
     var rmBtn = document.getElementById('checkout-discount-remove');
@@ -760,47 +593,16 @@
     document.addEventListener('change', function (e) {
       var t = e.target;
       if (t && t.name === 'shipping') { selectedShippingId = t.value; selectedShipping = t.value; applyPaymentToggles(); renderSummary(); }
-      // Payment options are also injected dynamically (ensureCardOption), so
-      // this must be delegated rather than bound per-input.
-      if (t && t.name === 'payment') renderBankCards();
     });
     // Payment options
     $$('.payment-option input').forEach(function(input) {
-      input.addEventListener('change', function() { renderBankCards(); });
+      input.addEventListener('change', function() { /* just UI */ });
     });
 
     var form = $('#checkout-form');
     if (form) form.addEventListener('submit', function(e) {
       e.preventDefault();
       var btn = form.querySelector('button[type="submit"]');
-      // کارت به کارت: exactly one bank card must be chosen.
-      var paySel = document.querySelector('input[name="payment"]:checked');
-      if (paySel && paySel.value === 'card') {
-        if (!bankCards.length) {
-          App.showToast('در حال حاضر کارت بانکی فعالی برای پرداخت وجود ندارد.', 'error');
-          if (btn) { btn.textContent = 'پرداخت و ثبت سفارش'; btn.disabled = false; }
-          return;
-        }
-        if (!selectedCardId) {
-          App.showToast('کارت بانکی مورد نظر برای واریز وجه را انتخاب کنید.', 'error');
-          if (btn) { btn.textContent = 'پرداخت و ثبت سفارش'; btn.disabled = false; }
-          return;
-        }
-        // Don't drop a receipt that is still being uploaded.
-        if (receiptBusy) {
-          App.showToast('در حال بارگذاری تصویر رسید، لطفاً کمی صبر کنید.', 'error');
-          if (btn) { btn.textContent = 'پرداخت و ثبت سفارش'; btn.disabled = false; }
-          return;
-        }
-        // کارت به کارت: block the order until the receipt image is uploaded.
-        if (!receiptMeta || !receiptMeta.url) {
-          var noReceiptMsg = 'برای پرداخت کارت به کارت، ابتدا تصویر رسید واریز را بارگذاری کنید.';
-          receiptError(noReceiptMsg);
-          App.showToast(noReceiptMsg, 'error');
-          if (btn) { btn.textContent = 'پرداخت و ثبت سفارش'; btn.disabled = false; }
-          return;
-        }
-      }
       if (btn) { btn.textContent = 'در حال پردازش...'; btn.disabled = true; }
       setTimeout(function() {
         /* Build order payload (UI unchanged) then persist via API/database */
@@ -821,7 +623,13 @@
           discountCode: appliedDiscount.code || undefined,
           itemsCount: cart.reduce(function(s, i) { return s + i.quantity; }, 0),
           items: cart.map(function(item) {
-            return { productId: item.id, name: item.name, price: item.price, quantity: item.quantity };
+            var itemData = { productId: item.id, name: item.name, price: item.price, quantity: item.quantity };
+            if (item.options && item.options.length) {
+              itemData.options = item.options.map(function(opt) {
+                return { id: opt.id, title: opt.title, price: opt.price };
+              });
+            }
+            return itemData;
           }),
           shipping: shippingCost,
           discount: 0,
@@ -834,18 +642,7 @@
           ],
           address: (function(){ var t=document.querySelector('#checkout-form textarea'); var pv=$('#province-select'), cv=$('#city-select'); var prov=pv?pv.value:''; var city=cv?cv.value:''; var addr=t?t.value.trim():''; var postalEl=document.querySelector('#checkout-form input[placeholder="XXXXXXXXXX"]'); var postal=postalEl?postalEl.value.trim():''; return (prov?' '+prov:'')+(city?'، '+city:'')+(addr?'، '+addr:'')+(postal?' — کدپستی: '+postal:'')||'آدرس ثبت‌شده در فرم'; })(),
           addressId: addressId ? (isNaN(Number(addressId)) ? addressId : Number(addressId)) : null,
-          paymentMethod: (document.querySelector('input[name="payment"]:checked') ? document.querySelector('input[name="payment"]:checked').value : firstEnabledPayment()),
-          cardId: (function () {
-            var sel = document.querySelector('input[name="payment"]:checked');
-            return (sel && sel.value === 'card' && selectedCardId != null) ? Number(selectedCardId) : null;
-          })(),
-          // رسید واریز: only attached once the server has actually stored it.
-          cardReceiptUrl: (function () {
-            var sel = document.querySelector('input[name="payment"]:checked');
-            return (sel && sel.value === 'card' && receiptMeta && receiptMeta.url) ? receiptMeta.url : null;
-          })(),
-          cardReceiptName: receiptMeta ? receiptMeta.name : undefined,
-          cardReceiptSize: receiptMeta ? receiptMeta.size : undefined
+          paymentMethod: (document.querySelector('input[name="payment"]:checked') ? document.querySelector('input[name="payment"]:checked').value : firstEnabledPayment())
         };
         App.createOrder(order).then(function(saved) {
           order = (saved && saved.id) ? saved : order;

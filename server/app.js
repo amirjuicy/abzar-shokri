@@ -139,9 +139,14 @@ function mapOrder(r, items) {
     paymentAmount: r.payment_amount ?? null, payment_amount: r.payment_amount ?? null,
     paidAt: r.paid_at ?? null, paid_at: r.paid_at ?? null,
     timeline: JSON.parse(r.timeline_json || '[]'),
-    items: (items || []).map((i) => ({
-      id: i.id, productId: i.product_id, name: i.name, price: i.price, quantity: i.quantity,
-    })),
+    items: (items || []).map((i) => {
+      let options = [];
+      try { options = JSON.parse(i.options_json || '[]'); } catch (_) { options = []; }
+      return {
+        id: i.id, productId: i.product_id, name: i.name, price: i.price, quantity: i.quantity,
+        options: options,
+      };
+    }),
   };
 }
 
@@ -408,7 +413,7 @@ api.get('/products', (req, res) => {
 const ExcelJS = require('exceljs');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits:{fileSize:5*1024*1024} });
-const EXCEL_HEADERS = ['شناسه','نام محصول','برند','دسته‌بندی','زیردسته','SKU','مدل','توضیحات کوتاه','توضیحات کامل','قیمت','قیمت فروش','تخفیف','موجودی','وضعیت موجودی','حداقل سفارش','حداکثر سفارش','وزن','ابعاد','تولیدکننده','کشور سازنده','گارانتی','اقلام همراه','اصالت','ویژگی‌ها','تصاویر','واریانت‌ها','عنوان SEO','توضیحات SEO','کلمات کلیدی SEO','تصویر OG'];
+const EXCEL_HEADERS = ['شناسه','نام محصول','برند','دسته‌بندی','زیردسته','SKU','مدل','توضیحات کوتاه','توضیحات کامل','قیمت','قیمت عمده','قیمت فروش','تخفیف','موجودی','وضعیت موجودی','حداقل سفارش','حداکثر سفارش','وزن','ابعاد','تولیدکننده','کشور سازنده','گارانتی','اقلام همراه','اصالت','ویژگی‌ها','تصاویر','واریانت‌ها','عنوان SEO','توضیحات SEO','کلمات کلیدی SEO','تصویر OG'];
 function featuresToStr(j){ try{ const a=JSON.parse(j||'[]'); if(!Array.isArray(a)||!a.length) return ''; return a.map(f=>{ if(typeof f==='string') return f; const k=f.title||f.key||f.name||''; const v=f.value||f.val||''; return k? (v? `${k}: ${v}`:k):v; }).filter(Boolean).join(' | ');}catch(_){return '';} }
 function strToFeatures(s){ if(!s) return '[]'; const parts=String(s).split('|').map(x=>x.trim()).filter(Boolean); const arr=parts.map(p=>{ const idx=p.indexOf(':'); if(idx>-1) return {title:p.slice(0,idx).trim(), value:p.slice(idx+1).trim()}; return {title:p,value:''}; }); return JSON.stringify(arr); }
 function variantsToStr(j){ try{const a=JSON.parse(j||'[]'); return a.length?JSON.stringify(a):'';}catch(_){return '';} }
@@ -424,6 +429,7 @@ const EXPORT_COLUMNS = {
   short_description:{header:'توضیحات کوتاه',getter:r=>r.short_description||'', width:30},
   description:{header:'توضیحات کامل',getter:r=>r.description||'', width:40},
   price:{header:'قیمت',getter:r=>r.price||0, width:14, numFmt:'#,##0'},
+  wholesale_price:{header:'قیمت عمده',getter:r=>r.wholesale_price==null||r.wholesale_price===''?'':Number(r.wholesale_price), width:14, numFmt:'#,##0'},
   sale_price:{header:'قیمت فروش',getter:r=>r.sale_price==null||r.sale_price===''?'':Number(r.sale_price), width:14, numFmt:'#,##0'},
   discount:{header:'تخفیف',getter:r=>r.discount||0, width:10, numFmt:'0'},
   stock_count:{header:'موجودی',getter:r=>r.stock_count||0, width:10, numFmt:'0'},
@@ -538,7 +544,7 @@ api.post('/products/import/excel', requireAdmin, upload.single('file'), async (r
         const setIf = (excelHeader, col, transform)=>{ const v=get(excelHeader); if(String(v).trim()!==''){ fields[col]= transform?transform(v):String(v).trim(); } };
         setIf('نام محصول','name'); setIf('برند','brand'); setIf('دسته‌بندی','category'); setIf('زیردسته','subcategory');
         setIf('SKU','sku'); setIf('مدل','model'); setIf('توضیحات کوتاه','short_description'); setIf('توضیحات کامل','description');
-        setIf('قیمت','price',v=>Math.round(Number(v)||0)); setIf('قیمت فروش','sale_price',v=>String(v).trim()===''?null:Math.round(Number(v)||0));
+        setIf('قیمت','price',v=>Math.round(Number(v)||0)); setIf('قیمت عمده','wholesale_price',v=>String(v).trim()===''?null:Math.round(Number(v)||0)); setIf('قیمت فروش','sale_price',v=>String(v).trim()===''?null:Math.round(Number(v)||0));
         setIf('تخفیف','discount',v=>Math.round(Number(v)||0)); setIf('موجودی','stock_count',v=>Math.round(Number(v)||0));
         setIf('وضعیت موجودی','in_stock',v=> String(v).includes('ناموجود')?0:1);
         setIf('حداقل سفارش','min_order',v=>Math.round(Number(v)||1)); setIf('حداکثر سفارش','max_order',v=>Math.round(Number(v)||0));
@@ -553,7 +559,7 @@ api.post('/products/import/excel', requireAdmin, upload.single('file'), async (r
         try{ db.prepare(`UPDATE products SET ${setClause}, updated_at=datetime('now') WHERE id=@id`).run({...fields, id:cur.id}); updated++; }catch(e){ errors.push({row:r, error:e.message}); }
       } else {
         if(!name){ errors.push({row:r, error:'نام محصول الزامی است'}); continue; }
-        const p={ name, sku: sku||null, brand:String(get('برند')||''), category:String(get('دسته‌بندی')||''), subcategory:String(get('زیردسته')||''), model:String(get('مدل')||''), short_description:String(get('توضیحات کوتاه')||''), description:String(get('توضیحات کامل')||''), price:Math.round(Number(get('قیمت'))||0), sale_price:String(get('قیمت فروش')).trim()===''?null:Math.round(Number(get('قیمت فروش'))||0), discount:Math.round(Number(get('تخفیف'))||0), stock_count:Math.round(Number(get('موجودی'))||0), in_stock:String(get('وضعیت موجودی')).includes('ناموجود')?0:1, min_order:Math.round(Number(get('حداقل سفارش'))||1), max_order:Math.round(Number(get('حداکثر سفارش'))||0), weight:Number(get('وزن'))||0, dimensions:String(get('ابعاد')||''), manufacturer:String(get('تولیدکننده')||''), country:String(get('کشور سازنده')||''), warranty:String(get('گارانتی')||''), included_items:String(get('اقلام همراه')||''), authenticity:String(get('اصالت')||''), features_json:strToFeatures(get('ویژگی‌ها')), gallery_json:JSON.stringify(String(get('تصاویر')||'').split(',').map(s=>s.trim()).filter(Boolean)), images_json:JSON.stringify(String(get('تصاویر')||'').split(',').map(s=>s.trim()).filter(Boolean)), variants_json:strToVariants(get('واریانت‌ها')), seo_title:String(get('عنوان SEO')||''), seo_description:String(get('توضیحات SEO')||''), seo_keywords:String(get('کلمات کلیدی SEO')||''), og_image:String(get('تصویر OG')||''), slug: String(name).trim().toLowerCase().replace(/[\s_]+/g,'-').replace(/[^a-z0-9\u0600-\u06FF-]+/g,'').replace(/-+/g,'-')||('product-'+Date.now()+r) };
+        const p={ name, sku: sku||null, brand:String(get('برند')||''), category:String(get('دسته‌بندی')||''), subcategory:String(get('زیردسته')||''), model:String(get('مدل')||''), short_description:String(get('توضیحات کوتاه')||''), description:String(get('توضیحات کامل')||''), price:Math.round(Number(get('قیمت'))||0), wholesale_price:String(get('قیمت عمده')).trim()===''?null:Math.round(Number(get('قیمت عمده'))||0), sale_price:String(get('قیمت فروش')).trim()===''?null:Math.round(Number(get('قیمت فروش'))||0), discount:Math.round(Number(get('تخفیف'))||0), stock_count:Math.round(Number(get('موجودی'))||0), in_stock:String(get('وضعیت موجودی')).includes('ناموجود')?0:1, min_order:Math.round(Number(get('حداقل سفارش'))||1), max_order:Math.round(Number(get('حداکثر سفارش'))||0), weight:Number(get('وزن'))||0, dimensions:String(get('ابعاد')||''), manufacturer:String(get('تولیدکننده')||''), country:String(get('کشور سازنده')||''), warranty:String(get('گارانتی')||''), included_items:String(get('اقلام همراه')||''), authenticity:String(get('اصالت')||''), features_json:strToFeatures(get('ویژگی‌ها')), gallery_json:JSON.stringify(String(get('تصاویر')||'').split(',').map(s=>s.trim()).filter(Boolean)), images_json:JSON.stringify(String(get('تصاویر')||'').split(',').map(s=>s.trim()).filter(Boolean)), variants_json:strToVariants(get('واریانت‌ها')), seo_title:String(get('عنوان SEO')||''), seo_description:String(get('توضیحات SEO')||''), seo_keywords:String(get('کلمات کلیدی SEO')||''), og_image:String(get('تصویر OG')||''), slug: String(name).trim().toLowerCase().replace(/[\s_]+/g,'-').replace(/[^a-z0-9\u0600-\u06FF-]+/g,'').replace(/-+/g,'-')||('product-'+Date.now()+r) };
         // handle duplicate sku
         try{ const cols=Object.keys(p); db.prepare(`INSERT INTO products (${cols.join(',')}) VALUES (${cols.map(c=>'@'+c).join(',')})`).run(p); created++; }catch(e){ errors.push({row:r, error:e.message}); }
       }
@@ -573,6 +579,81 @@ api.post('/products/import/preview', requireAdmin, upload.single('file'), async 
     res.json({headers:headerRow, preview, totalRows: ws.rowCount-1});
   }catch(e){ res.status(500).json({error:e.message}); }
 });
+api.get('/products/:id/options', (req, res) => {
+  const productId = Number(req.params.id);
+  if (!Number.isInteger(productId) || productId <= 0) return res.status(400).json({ error: 'Invalid product id' });
+  const product = db.prepare('SELECT id FROM products WHERE id = ?').get(productId);
+  if (!product) return res.status(404).json({ error: 'Product not found' });
+  const rows = db.prepare('SELECT * FROM product_options WHERE product_id = ? AND is_active = 1 ORDER BY sort_order, id').all(productId);
+  res.json(rows.map(mapProductOption));
+});
+
+api.get('/admin/products/:id/options', requireAdmin, (req, res) => {
+  const productId = Number(req.params.id);
+  if (!Number.isInteger(productId) || productId <= 0) return res.status(400).json({ error: 'Invalid product id' });
+  const product = db.prepare('SELECT id FROM products WHERE id = ?').get(productId);
+  if (!product) return res.status(404).json({ error: 'Product not found' });
+  const rows = db.prepare('SELECT * FROM product_options WHERE product_id = ? ORDER BY sort_order, id').all(productId);
+  res.json(rows.map(mapProductOption));
+});
+
+api.post('/admin/products/:id/options', requireAdmin, (req, res) => {
+  const productId = Number(req.params.id);
+  if (!Number.isInteger(productId) || productId <= 0) return res.status(400).json({ error: 'Invalid product id' });
+  const product = db.prepare('SELECT id FROM products WHERE id = ?').get(productId);
+  if (!product) return res.status(404).json({ error: 'Product not found' });
+  const { values, error } = optionInput(req.body || {}, true);
+  if (error) return res.status(400).json({ error });
+  if (!values.title) return res.status(400).json({ error: 'title is required' });
+  try {
+    const info = db.prepare(`INSERT INTO product_options (product_id, title, description, price, discount_percent, discount_price, sort_order, is_active, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`)
+      .run(productId, values.title, values.description || '', values.price ?? 0, values.discount_percent ?? 0, values.discount_price ?? null, values.sort_order ?? 0, values.is_active ?? 1);
+    res.status(201).json(mapProductOption(db.prepare('SELECT * FROM product_options WHERE id = ?').get(info.lastInsertRowid)));
+  } catch (e) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+api.put('/admin/products/:id/options/:optionId', requireAdmin, (req, res) => {
+  const productId = Number(req.params.id);
+  const optionId = Number(req.params.optionId);
+  if (!Number.isInteger(productId) || productId <= 0) return res.status(400).json({ error: 'Invalid product id' });
+  if (!Number.isInteger(optionId) || optionId <= 0) return res.status(400).json({ error: 'Invalid option id' });
+  const cur = db.prepare('SELECT * FROM product_options WHERE id = ? AND product_id = ?').get(optionId, productId);
+  if (!cur) return res.status(404).json({ error: 'Option not found' });
+  const { values, error } = optionInput(req.body || {}, false);
+  if (error) return res.status(400).json({ error });
+  const merged = {
+    title: values.title ?? cur.title,
+    description: values.description ?? cur.description,
+    price: values.price !== undefined ? values.price : cur.price,
+    discount_percent: values.discount_percent !== undefined ? values.discount_percent : cur.discount_percent,
+    discount_price: values.discount_price !== undefined ? values.discount_price : cur.discount_price,
+    sort_order: values.sort_order !== undefined ? values.sort_order : cur.sort_order,
+    is_active: values.is_active !== undefined ? values.is_active : cur.is_active,
+  };
+  try {
+    db.prepare(`UPDATE product_options SET title=@title, description=@description, price=@price, discount_percent=@discount_percent,
+      discount_price=@discount_price, sort_order=@sort_order, is_active=@is_active, updated_at=datetime('now') WHERE id=@id`)
+      .run({ ...merged, id: optionId });
+    res.json(mapProductOption(db.prepare('SELECT * FROM product_options WHERE id = ?').get(optionId)));
+  } catch (e) {
+    throw e;
+  }
+});
+
+api.delete('/admin/products/:id/options/:optionId', requireAdmin, (req, res) => {
+  const productId = Number(req.params.id);
+  const optionId = Number(req.params.optionId);
+  if (!Number.isInteger(productId) || productId <= 0) return res.status(400).json({ error: 'Invalid product id' });
+  if (!Number.isInteger(optionId) || optionId <= 0) return res.status(400).json({ error: 'Invalid option id' });
+  const info = db.prepare('DELETE FROM product_options WHERE id = ? AND product_id = ?').run(optionId, productId);
+  if (!info.changes) return res.status(404).json({ error: 'Option not found' });
+  res.json({ ok: true });
+});
+
+// ── Products (public detail) ──
 api.get('/products/:idOrSlug', (req, res) => {
   const key = req.params.idOrSlug;
   const row = db.prepare('SELECT * FROM products WHERE id = ? OR slug = ?').get(key, key);
@@ -614,8 +695,8 @@ function productInput(b, isCreate) {
   if (b.oldPrice !== undefined) out.old_price = b.oldPrice==null?null:Math.max(0, Math.round(Number(b.oldPrice)||0));
   if (b.discount !== undefined) out.discount = Math.max(0, Math.round(Number(b.discount)||0));
   if (b.discountEndsAt !== undefined) out.discount_ends_at = b.discountEndsAt?String(b.discountEndsAt):null;
-  if (b.wholesalePrice !== undefined) out.wholesale_price = Math.max(0, Math.round(Number(b.wholesalePrice) || 0));
-  if (b.wholesale_price !== undefined) out.wholesale_price = Math.max(0, Math.round(Number(b.wholesale_price) || 0));
+  if (b.wholesalePrice !== undefined) out.wholesale_price = (b.wholesalePrice == null || b.wholesalePrice === '') ? null : Math.max(0, Math.round(Number(b.wholesalePrice) || 0));
+  if (b.wholesale_price !== undefined) out.wholesale_price = (b.wholesale_price == null || b.wholesale_price === '') ? null : Math.max(0, Math.round(Number(b.wholesale_price) || 0));
   if (b.sku !== undefined) out.sku = String(b.sku || '').trim() || null;
   if (b.shortDescription !== undefined) out.short_description = String(b.shortDescription || '');
   if (b.desc !== undefined) out.short_description = String(b.desc || '');
@@ -687,7 +768,8 @@ api.post('/products', requireAdmin, (req, res) => {
     if(row.price==null) row.price=0; if(row.is_active==null) row.is_active=1; if(row.in_stock==null) row.in_stock=1; if(row.stock_count==null) row.stock_count=50;
     const keys=Object.keys(row).filter(k=>row[k]!==null);
     const placeholders=keys.map(k=>'@'+k).join(',');
-    const info=db.prepare(`INSERT INTO products (${keys.join(',')}) VALUES (${placeholders})`).run(row);
+    const params={}; keys.forEach(k=> params[k]=row[k]);
+    const info=db.prepare(`INSERT INTO products (${keys.join(',')}) VALUES (${placeholders})`).run(params);
     res.status(201).json(mapProduct(db.prepare('SELECT * FROM products WHERE id = ?').get(info.lastInsertRowid)));
   } catch (e) {
     if (String(e.message).includes('UNIQUE')) return res.status(409).json({ error: 'SKU or slug already exists' });
@@ -703,7 +785,7 @@ api.put('/products/:id', requireAdmin, (req, res) => {
   if (values.slug === '') values.slug = cur.slug;
   if (values.name === '') return res.status(400).json({ error: 'name is required' });
   const merged = {
-    name: values.name ?? cur.name, slug: values.slug || slugify(values.name ?? cur.name),
+    name: values.name ?? cur.name, slug: values.slug !== undefined ? (values.slug || cur.slug) : (values.name !== undefined ? slugify(values.name) : cur.slug),
     brand: values.brand ?? cur.brand, brand_name: values.brand_name ?? cur.brand_name,
     brand_id: values.brand_id ?? cur.brand_id,
     category: values.category ?? cur.category, category_slug: values.category_slug ?? cur.category_slug,
@@ -717,6 +799,7 @@ api.put('/products/:id', requireAdmin, (req, res) => {
     image: values.image ?? cur.image, images_json: values.images_json ?? cur.images_json,
     price: values.price ?? cur.price,
     wholesale_price: values.wholesale_price !== undefined ? values.wholesale_price : cur.wholesale_price,
+    old_price: values.old_price !== undefined ? values.old_price : cur.old_price,
     is_active: values.is_active !== undefined ? values.is_active : (cur.is_active == null ? 1 : cur.is_active),
     in_stock: values.in_stock ?? cur.in_stock,
     stock_count: values.stock_count ?? cur.stock_count ?? (cur.in_stock ? 50 : 0),
@@ -749,6 +832,39 @@ api.delete('/products/:id', requireAdmin, (req, res) => {
   if (!info.changes) return res.status(404).json({ error: 'Product not found' });
   res.json({ ok: true });
 });
+
+// ── Product Options (add-on extras) ──
+function mapProductOption(r) {
+  if (!r) return r;
+  return {
+    id: r.id,
+    productId: r.product_id,
+    title: r.title,
+    description: r.description,
+    price: Number(r.price) || 0,
+    discountPercent: Number(r.discount_percent) || 0,
+    discountPrice: r.discount_price != null ? Number(r.discount_price) : null,
+    sortOrder: Number(r.sort_order) || 0,
+    isActive: !!r.is_active,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+function optionInput(b, isCreate) {
+  const out = {};
+  if (b.title !== undefined) out.title = String(b.title).trim();
+  if (b.description !== undefined) out.description = String(b.description || '');
+  if (b.price !== undefined) out.price = Math.max(0, Math.round(Number(b.price) || 0));
+  if (b.discountPercent !== undefined) out.discount_percent = Math.max(0, Math.min(100, Math.round(Number(b.discountPercent) || 0)));
+  if (b.discountPrice !== undefined) out.discount_price = b.discountPrice == null ? null : Math.max(0, Math.round(Number(b.discountPrice) || 0));
+  if (b.sortOrder !== undefined) out.sort_order = Math.max(0, Math.round(Number(b.sortOrder) || 0));
+  if (b.isActive !== undefined) out.is_active = b.isActive ? 1 : 0;
+  if (isCreate) {
+    if (!out.title) return { error: 'title is required' };
+  }
+  return { values: out };
+}
 
 // ── Customer auth (token-based, admin auth untouched) ──
 const crypto = require('crypto');
@@ -2332,7 +2448,7 @@ const LEGACY_SHIPPING_COST = 35000;
 api.post('/orders', orderLimiter, (req, res) => {
   const b = req.body || {};
   if (!Array.isArray(b.items) || !b.items.length) {
-    return res.status(400).json({ error: 'non-empty items[] are required' });
+    return res.status(400).json({ error: 'سبد خرید شما خالی است' });
   }
   // Link each order to the authenticated user when a token is provided.
   const auth = getAuthUser(req);
@@ -2380,8 +2496,11 @@ api.post('/orders', orderLimiter, (req, res) => {
     addressId = null;
   }
   // Never trust frontend pricing: recalculate everything from the database.
-  // Aggregate quantities per product so duplicate lines can't bypass stock checks.
+  // Aggregate quantities per product so duplicate lines can't bypass stock checks,
+  // but keep each distinct add-on selection as its own priced line so different
+  // option selections for the same product are never merged into one price.
   const qtyByProduct = new Map();
+  const groups = new Map(); // groupKey (product + sorted option ids) -> { productId, quantity, options }
   for (const it of b.items) {
     const productId = Number(it.productId ?? it.id);
     const quantity = Math.round(Number(it.quantity ?? 1));
@@ -2391,11 +2510,16 @@ api.post('/orders', orderLimiter, (req, res) => {
     if (!Number.isFinite(quantity) || quantity <= 0) {
       return res.status(400).json({ error: 'Invalid quantity' });
     }
+    const rawOpts = (it.options && Array.isArray(it.options)) ? it.options : [];
+    const optIds = rawOpts.map((o) => Number(o && o.id))
+      .filter((n) => Number.isInteger(n) && n > 0).sort((a, b) => a - b);
+    const groupKey = productId + '|opt:' + optIds.join(',');
     qtyByProduct.set(productId, (qtyByProduct.get(productId) || 0) + quantity);
+    if (!groups.has(groupKey)) groups.set(groupKey, { productId, quantity: 0, options: rawOpts });
+    groups.get(groupKey).quantity += quantity;
   }
   const prodStmt = db.prepare('SELECT id, name, price, wholesale_price, in_stock, stock_count FROM products WHERE id = ?');
-  const serverItems = [];
-  let subtotal = 0;
+  const prodCache = new Map();
   for (const [productId, quantity] of qtyByProduct) {
     const p = prodStmt.get(productId);
     if (!p) return res.status(400).json({ error: 'Product not found: ' + productId });
@@ -2405,12 +2529,45 @@ api.post('/orders', orderLimiter, (req, res) => {
     if (!ps.allowOos && (!p.in_stock || stockCount < quantity)) {
       return res.status(409).json({ error: 'Product unavailable or insufficient stock: ' + p.name });
     }
+    prodCache.set(productId, p);
+  }
+  const serverItems = [];
+  let subtotal = 0;
+  for (const g of groups.values()) {
+    const productId = g.productId;
+    const quantity = g.quantity;
+    const p = prodCache.get(productId);
     // Pricing mode may be requested by the client, but the unit price itself
     // always comes from the database (wholesale only when the DB defines one).
     const wantsWholesale = b.items.find((x) => Number(x.productId ?? x.id) === productId)?.pricingMode === 'wholesale';
-    const unitPrice = (wantsWholesale && p.wholesale_price != null) ? p.wholesale_price : p.price;
+    const baseUnitPrice = (wantsWholesale && p.wholesale_price != null) ? p.wholesale_price : p.price;
+    // Validate options against database
+    let optionsPrice = 0;
+    const opts = g.options || [];
+    const validatedOpts = [];
+    for (const opt of opts) {
+      const optId = Number(opt.id);
+      if (!Number.isInteger(optId) || optId <= 0) {
+        return res.status(400).json({ error: 'Invalid option id: ' + optId });
+      }
+      const dbOpt = db.prepare('SELECT id, product_id, title, price, discount_price, is_active FROM product_options WHERE id = ?').get(optId);
+      if (!dbOpt) {
+        return res.status(400).json({ error: 'Option not found: ' + optId });
+      }
+      if (dbOpt.product_id !== productId) {
+        return res.status(400).json({ error: 'Option does not belong to product: ' + optId });
+      }
+      if (!dbOpt.is_active) {
+        return res.status(400).json({ error: 'Option is not available: ' + dbOpt.title });
+      }
+      // Use database price (discounted if available)
+      const optPrice = dbOpt.discount_price != null ? Number(dbOpt.discount_price) : Number(dbOpt.price);
+      optionsPrice += optPrice;
+      validatedOpts.push({ id: dbOpt.id, title: dbOpt.title, price: optPrice });
+    }
+    const unitPrice = baseUnitPrice + optionsPrice;
     subtotal += unitPrice * quantity;
-    serverItems.push({ productId: p.id, name: p.name, price: unitPrice, quantity });
+    serverItems.push({ productId: p.id, name: p.name, price: unitPrice, quantity, basePrice: baseUnitPrice, options: validatedOpts });
   }
   // Shipping/discount are server-controlled. Free-shipping threshold from
   // settings is enforced: subtotal >= freeFrom => shipping is 0.
@@ -2459,7 +2616,7 @@ api.post('/orders', orderLimiter, (req, res) => {
   const serverTimeline = JSON.stringify([{ status: initialStatus, date: nowIso }]);
   try {
     db.exec('BEGIN IMMEDIATE');
-    const ins = db.prepare('INSERT INTO order_items (order_id, product_id, name, price, quantity) VALUES (?, ?, ?, ?, ?)');
+    const ins = db.prepare('INSERT INTO order_items (order_id, product_id, name, price, quantity, options_json) VALUES (?, ?, ?, ?, ?, ?)');
     const dec = db.prepare('UPDATE products SET stock_count = stock_count - ?, in_stock = CASE WHEN stock_count - ? > 0 THEN 1 ELSE 0 END WHERE id = ? AND stock_count >= ?');
     db.prepare(`INSERT INTO orders
       (id, user_id, date, status, status_text, total, items_count, shipping, discount, discount_code,
@@ -2470,7 +2627,8 @@ api.post('/orders', orderLimiter, (req, res) => {
         addressText, addressId, paymentMethod, paymentStatus,
         serverTimeline);
     for (const it of serverItems) {
-      ins.run(id, it.productId, it.name, it.price, it.quantity);
+      const optionsJson = JSON.stringify(it.options || []);
+      ins.run(id, it.productId, it.name, it.price, it.quantity, optionsJson);
       if (ps.allowOos) {
         // OOS purchases allowed: decrement without the stock guard (stock
         // may go negative); flag out-of-stock state when depleted.
@@ -2771,13 +2929,27 @@ function normalizeCartItems(items) {
     const qty = Math.max(0, Math.round(Number(it.quantity) || 0));
     if (qty <= 0) continue;
     const pricingMode = it.pricingMode === 'wholesale' ? 'wholesale' : 'retail';
-    const key = productId + '_' + pricingMode;
-    const ex = out.find((x) => x.key === key);
-    if (ex) { ex.quantity += qty; continue; }
     const p = db.prepare('SELECT id, name, price, wholesale_price, brand_name, image, slug FROM products WHERE id = ?').get(productId);
     if (!p) continue;
     // Never trust client-supplied price/name: always use database values.
-    const price = (pricingMode === 'wholesale' && p.wholesale_price != null) ? p.wholesale_price : p.price;
+    const basePrice = (pricingMode === 'wholesale' && p.wholesale_price != null) ? p.wholesale_price : p.price;
+    // Preserve each distinct add-on selection as its own line: keep only
+    // options that exist, belong to this product, and are active, priced
+    // from the database (discounted when available). Lines without options
+    // keep the legacy `id_mode` key.
+    const validOpts = [];
+    for (const o of (Array.isArray(it.options) ? it.options : [])) {
+      const optId = Number(o && o.id);
+      if (!Number.isInteger(optId) || optId <= 0) continue;
+      const dbOpt = db.prepare('SELECT id, product_id, title, price, discount_price, is_active FROM product_options WHERE id = ?').get(optId);
+      if (!dbOpt || dbOpt.product_id !== productId || !dbOpt.is_active) continue;
+      validOpts.push({ id: dbOpt.id, title: dbOpt.title, price: dbOpt.discount_price != null ? Number(dbOpt.discount_price) : Number(dbOpt.price) });
+    }
+    validOpts.sort((a, b) => a.id - b.id);
+    const key = validOpts.length ? `${productId}_${pricingMode}_opt${validOpts.map((o) => o.id).join('_')}` : `${productId}_${pricingMode}`;
+    const ex = out.find((x) => x.key === key);
+    if (ex) { ex.quantity += qty; continue; }
+    const price = basePrice + validOpts.reduce((s, o) => s + Number(o.price), 0);
     out.push({
       key, id: productId,
       name: p.name,
@@ -2786,6 +2958,7 @@ function normalizeCartItems(items) {
       brandName: p.brand_name || '',
       image: p.image || '',
       slug: p.slug || '',
+      options: validOpts,
     });
   }
   return out;

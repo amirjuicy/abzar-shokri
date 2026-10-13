@@ -196,12 +196,21 @@
     if (!container) return;
     container.innerHTML = cart.map(function(item) {
       var modeLabel = item.pricingMode === 'wholesale' ? '<span class="cart-item-row__mode">عمده</span>' : '';
+      var optionsHtml = '';
+      if (item.options && item.options.length) {
+        optionsHtml = '<div class="cart-item-row__options" style="margin-top:4px;font-size:var(--font-size-xs);color:var(--text-muted)">' +
+          item.options.map(function(opt) {
+            return '<span>• ' + opt.title + ': ' + Format.price(opt.price) + ' تومان</span>';
+          }).join('<br>') +
+        '</div>';
+      }
       return '<div class="cart-item-row">\
         <div class="cart-item-row__image"><img src="' + item.image + '" alt="' + item.name + '" loading="lazy" class="cart-item__img"></div>\
         <div class="cart-item-row__info">\
           <div class="cart-item-row__details">\
             <span class="cart-item-row__brand">' + item.brandName + '</span>\
             <a href="/product/' + item.slug + '" class="cart-item-row__title">' + item.name + '</a>' + modeLabel + '\
+            ' + optionsHtml + '\
           </div>\
           <div class="cart-item-row__bottom">\
             <span class="cart-item-row__price">' + Format.priceWithCurrency(item.price) + '</span>\

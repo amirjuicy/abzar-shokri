@@ -211,8 +211,16 @@
   function fillDetails(m, o) {
     var meta = STATUS_META[o.status];
     var items = o.items.length ? o.items.map(function (it) {
+      var optionsHtml = '';
+      if (it.options && it.options.length) {
+        optionsHtml = '<div style="margin-top:4px;font-size:11px;color:var(--text-muted)">' +
+          it.options.map(function(opt) {
+            return '<span>• ' + esc(opt.title) + ': ' + faNum(opt.price) + ' تومان</span>';
+          }).join('<br>') +
+        '</div>';
+      }
       return '<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px dashed var(--border-color-light);font-size:13px">' +
-        '<span>' + esc(it.name) + ' <span style="color:var(--text-muted)">× ' + faNum(it.quantity) + '</span></span>' +
+        '<span>' + esc(it.name) + ' <span style="color:var(--text-muted)">× ' + faNum(it.quantity) + '</span>' + optionsHtml + '</span>' +
         '<span style="font-weight:600">' + faNum(Number(it.price) * Number(it.quantity)) + '</span></div>';
     }).join('') : '<p style="font-size:13px;color:var(--text-muted)">قلم کالایی ثبت نشده است.</p>';
 

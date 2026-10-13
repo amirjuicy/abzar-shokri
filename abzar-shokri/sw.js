@@ -89,7 +89,10 @@
 // short-circuit in common.js), so /account/notifications shows an empty state
 // instead of a false "session expired" error. Bump so cache-first clients
 // holding the old common.js under the same ?v= URL drop the stale shell.
-var CACHE_NAME = 'abzar-shokri-v38';
+// v39: fixed mobile purchase bar on the product detail page (product.js
+// buyBarHTML + pages.css + icons.js). Bump so cache-first clients holding
+// the old shell drop the stale product.js/pages.css and pick the bar up.
+var CACHE_NAME = 'abzar-shokri-v39';
 var OFFLINE_URL = 'offline.html';
 
 var APP_SHELL = [
