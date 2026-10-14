@@ -297,10 +297,14 @@
 .pdp-buy-bar { display: none; }
 
 @media (max-width: 768px) {
-  /* Default bands: the bar is 8px padding + 48px control + 8px padding;
-     the nav is 56px items + 1px top border. product.js publishes the
-     measured values (--pdp-buy-bar-h, --pdp-bottom-nav-h). The nav
-     measurement already includes its own env(safe-area-inset-bottom). */
+  /* Bands: the bar is 8px padding + 48px control + 8px padding plus the
+     device safe-area inset; the mobile bottom nav is 56px items + 1px
+     border plus its own safe-area inset. product.js publishes both
+     measured values (--pdp-buy-bar-h, --pdp-bottom-nav-h) at runtime, so
+     the bar always sits directly on top of the bottom nav wherever that
+     nav is rendered, and drops to the bottom edge on the product page,
+     where the nav is intentionally absent and this bar takes its place.
+     The 0px fallbacks keep the bar flush when nothing has been measured. */
   .pdp-buy-bar {
     --pdp-buy-bar-h: 64px;
     display: flex;
@@ -309,22 +313,23 @@
     position: fixed;
     left: 0;
     right: 0;
-    bottom: var(--pdp-bottom-nav-h, 57px);
+    bottom: var(--pdp-bottom-nav-h, 0px);
     z-index: calc(var(--z-sticky) + 1);
-    padding: 8px var(--space-4);
+    padding: 8px var(--space-4) calc(8px + env(safe-area-inset-bottom, 0px));
     background: var(--bg-surface);
     border-top: var(--border-width) solid var(--border-color-light);
     box-shadow: var(--shadow-sm);
   }
 
   /* Reserve the bar band in the document flow so page content is never
-     hidden behind it. 76px is the existing mobile bottom-nav reserve set
-     in header.css; the bar's own band (--pdp-buy-bar-h) is added on top. */
-  body.has-pdp-buy-bar { padding-bottom: calc(76px + var(--pdp-buy-bar-h, 64px) + env(safe-area-inset-bottom, 0px)); }
+     hidden behind it. --pdp-buy-bar-h is the bar's measured height and
+     already contains its own safe-area padding, so only the nav band and
+     a small breathing room are added separately. */
+  body.has-pdp-buy-bar { padding-bottom: calc(var(--pdp-bottom-nav-h, 0px) + var(--pdp-buy-bar-h, 64px) + var(--space-2)); }
 
   /* The chat FAB / panel sit bottom-left and would overlap the bar. */
-  body.has-pdp-buy-bar .chat-fab { bottom: calc(132px + var(--pdp-buy-bar-h, 64px)); }
-  body.has-pdp-buy-bar .chat-panel { bottom: calc(140px + var(--pdp-buy-bar-h, 64px)); max-height: calc(100vh - 260px); }
+  body.has-pdp-buy-bar .chat-fab { bottom: calc(56px + var(--pdp-bottom-nav-h, 0px) + var(--pdp-buy-bar-h, 64px)); }
+  body.has-pdp-buy-bar .chat-panel { bottom: calc(64px + var(--pdp-bottom-nav-h, 0px) + var(--pdp-buy-bar-h, 64px)); max-height: calc(100vh - 300px); }
 
   /* Pricing column (right) — stacks the discount line over the price. */
   .pdp-buy-bar__price {

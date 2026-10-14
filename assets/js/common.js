@@ -2053,6 +2053,14 @@ el.innerHTML = '\
   /* ── Render Overlays ──────────────────────────────────────── */
 function renderOverlays(el) {
     var chatHtml = buildChatHtml();
+    var bottomNavHtml = (storeFile().toLowerCase() === 'product.html') ? '' : '\
+    <nav class="mobile-bottom-nav"><div class="mobile-bottom-nav__items">\
+    <a href="/" class="mobile-bottom-nav__item mobile-bottom-nav__item--home">' + Icons.home + '<span>خانه</span></a>\
+    <a href="/categories" class="mobile-bottom-nav__item">' + Icons.layers + '<span>دسته‌بندی‌ها</span></a>\
+    <a href="/cart" class="mobile-bottom-nav__item" id="mobile-bottom-cart">' + Icons.cart + '<span class="mobile-bottom-nav__badge" id="mobile-bottom-cart-badge" style="display:none">0</span><span>سبد خرید</span></a>\
+    <a href="/account/wishlist" class="mobile-bottom-nav__item" data-nav="wishlist">' + Icons.heart + '<span>علاقه‌مندی‌ها</span></a>\
+    <a href="/account" class="mobile-bottom-nav__item" data-nav="profile">' + Icons.user + '<span>پروفایل من</span></a>\
+    </div></nav>';
     el.innerHTML = '\
     <div class="mobile-menu">\
     <div class="mobile-menu__header"><span style="font-weight:700;font-size:var(--font-size-lg)">منو</span><button class="drawer__close" aria-label="بستن منو">' + Icons.close + '</button></div>\
@@ -2073,14 +2081,7 @@ function renderOverlays(el) {
     </nav></div>\
     <div class="toast-container"></div>\
     ' + chatHtml + '\
-    <nav class="mobile-bottom-nav"><div class="mobile-bottom-nav__items">\
-    <a href="/" class="mobile-bottom-nav__item mobile-bottom-nav__item--home">' + Icons.home + '<span>خانه</span></a>\
-    <a href="/categories" class="mobile-bottom-nav__item">' + Icons.layers + '<span>دسته‌بندی‌ها</span></a>\
-    <a href="/cart" class="mobile-bottom-nav__item" id="mobile-bottom-cart">' + Icons.cart + '<span class="mobile-bottom-nav__badge" id="mobile-bottom-cart-badge" style="display:none">0</span><span>سبد خرید</span></a>\
-    <a href="/account/wishlist" class="mobile-bottom-nav__item" data-nav="wishlist">' + Icons.heart + '<span>علاقه‌مندی‌ها</span></a>\
-    <a href="/account" class="mobile-bottom-nav__item" data-nav="profile">' + Icons.user + '<span>پروفایل من</span></a>\
-    </div></nav>';
-
+    ' + bottomNavHtml + '';
     var homeLink = el.querySelector('.mobile-menu__link');
     if (homeLink) {
       var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';

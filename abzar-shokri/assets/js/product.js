@@ -1013,11 +1013,16 @@
       document.body.classList.add('has-pdp-buy-bar');
       var barH = Math.round(bar.getBoundingClientRect().height);
       if (barH > 0) document.documentElement.style.setProperty('--pdp-buy-bar-h', barH + 'px');
-      /* The nav is display:none on desktop (height 0) — keep the CSS default
-         so the value is still correct the first time the viewport is mobile. */
+      /* The nav band is always published — including 0. The product page
+         does not render the mobile bottom nav (this bar takes its place),
+         so leaving a stale CSS fallback in charge would float the bar a
+         full nav-height above the bottom edge. It is measured rather than
+         hard-coded so the bar still lands directly above the nav wherever
+         that nav is present (its height already includes the safe-area
+         inset). The resize handler re-measures on desktop↔mobile flips. */
       var nav = $('.mobile-bottom-nav');
       var navH = nav ? Math.round(nav.getBoundingClientRect().height) : 0;
-      if (navH > 0) document.documentElement.style.setProperty('--pdp-bottom-nav-h', navH + 'px');
+      document.documentElement.style.setProperty('--pdp-bottom-nav-h', navH + 'px');
       /* render() can run again on live-catalog refresh — bind resize once. */
       if (buyBarSpaceBound) return;
       buyBarSpaceBound = true;

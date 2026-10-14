@@ -92,7 +92,15 @@
 // v39: fixed mobile purchase bar on the product detail page (product.js
 // buyBarHTML + pages.css + icons.js). Bump so cache-first clients holding
 // the old shell drop the stale product.js/pages.css and pick the bar up.
-var CACHE_NAME = 'abzar-shokri-v39';
+// v40: the buy bar now sits flush with the bottom edge. pages.css uses
+// bottom: var(--pdp-bottom-nav-h, 0px) + env(safe-area-inset-bottom) padding,
+// product.js always publishes --pdp-bottom-nav-h (0px when the product page
+// renders no bottom nav) and common.js drops the nav on product.html so the
+// bar can own the bottom edge. Clients pinned to the v39 cache were still
+// serving bottom: 57px and floated the bar a full nav-height above the
+// screen bottom — the exact "bar sits too high" report. Bump so cache-first
+// clients drop pages.css/product.js/common.js together and pick the fix up.
+var CACHE_NAME = 'abzar-shokri-v40';
 var OFFLINE_URL = 'offline.html';
 
 var APP_SHELL = [

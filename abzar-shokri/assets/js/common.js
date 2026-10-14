@@ -1961,13 +1961,14 @@ el.innerHTML = '\
     </nav></div>\
     <div class="toast-container"></div>\
     ' + chatHtml + '\
+    ' + (storeFile().toLowerCase() === 'product.html' ? '' : '\
     <nav class="mobile-bottom-nav"><div class="mobile-bottom-nav__items">\
     <a href="/" class="mobile-bottom-nav__item mobile-bottom-nav__item--home">' + Icons.home + '<span>خانه</span></a>\
     <a href="/categories" class="mobile-bottom-nav__item">' + Icons.layers + '<span>دسته‌بندی‌ها</span></a>\
     <a href="/cart" class="mobile-bottom-nav__item" id="mobile-bottom-cart">' + Icons.cart + '<span class="mobile-bottom-nav__badge" id="mobile-bottom-cart-badge" style="display:none">0</span><span>سبد خرید</span></a>\
     <a href="/account/wishlist" class="mobile-bottom-nav__item" data-nav="wishlist">' + Icons.heart + '<span>علاقه‌مندی‌ها</span></a>\
     <a href="/account" class="mobile-bottom-nav__item" data-nav="profile">' + Icons.user + '<span>پروفایل من</span></a>\
-    </div></nav>';
+    </div></nav>') + '';
 
     var homeLink = el.querySelector('.mobile-menu__link');
     if (homeLink) {
