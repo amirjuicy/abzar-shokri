@@ -324,14 +324,27 @@
     '</div>';
   }
 
+  function buyBarSavings(p) {
+    if (!p.oldPrice || p.oldPrice <= App.getProductPrice(p, INITIAL_PRICING_MODE)) return 0;
+    return p.oldPrice - App.getProductPrice(p, INITIAL_PRICING_MODE);
+  }
+
   function buyBarHTML(p, mode) {
     /* RTL flex row: the price block comes first so it lands on the right
-       and the 48px add-to-cart control lands on the left. */
+       and the 48px add-to-cart control lands on the left. The optional
+       notice strip mirrors Digikala's «ارزان‌تر بخرید» banner. */
+    var savings = buyBarSavings(p);
     return '<div class="pdp-buy-bar" id="pdp-buy-bar" role="region" aria-label="افزودن محصول به سبد خرید">' +
+      (savings > 0 ?
+        '<div class="pdp-buy-bar__notice"><span class="pdp-buy-bar__notice-icon">' + Icons.infoCircle + '</span>' +
+        '<span>این کالا را «' + Format.price(savings) + ' تومان» ارزان‌تر بخرید</span></div>'
+      : '') +
+      '<div class="pdp-buy-bar__row">' +
       buyBarPriceHTML(p, mode) +
       '<div class="pdp-buy-bar__cart" id="pdp-buy-bar-cart">' +
         /* Out of stock keeps a static disabled control, like the buy box. */
         (p.inStock ? '' : '<button class="dk-buybox__add-btn dk-buybox__add-btn--disabled" disabled>ناموجود</button>') +
+      '</div>' +
       '</div>' +
     '</div>';
   }
@@ -401,9 +414,13 @@
           '</button>' +
         '</div>' +
 
-        /* Main image */
+        /* Main image (Digikala-style count badge + progress) */
         '<div class="pdp-main-image" id="gallery-main">' +
           imgTag(mainImg, p.name) +
+          '<div class="pdp-gallery-count" id="pdp-gallery-count" aria-hidden="true">' +
+            '<span class="pdp-gallery-count__num">' + Format.toPersianNumber(activeGalleryIndex + 1) + ' / ' + Format.toPersianNumber(images.length) + '</span>' +
+            '<span class="pdp-gallery-count__bar"><span class="pdp-gallery-count__fill" id="pdp-gallery-fill"></span></span>' +
+          '</div>' +
         '</div>' +
 
       '</div>' +
@@ -500,19 +517,23 @@
       '<div class="dk-buybox-wrap">' +
       '<div class="dk-buybox" data-testid="buy-box">' +
 
-        /* Seller Header */
+        /* Seller Header (Digikala: title + other-sellers link) */
         '<div class="dk-buybox__seller-header">' +
           '<h3 class="dk-buybox__seller-title">فروشنده</h3>' +
+          '<span class="dk-buybox__other-sellers">فروش در ابزار شکری ' + Icons.chevronLeft + '</span>' +
         '</div>' +
 
-        /* Seller Store */
+        /* Seller Store (official chip + satisfaction badge) */
         '<div class="dk-buybox__store">' +
           '<div class="dk-buybox__store-inner">' +
             '<div class="dk-buybox__store-badge">' + Icons.store + '</div>' +
             '<div class="dk-buybox__store-info">' +
-              '<div class="dk-buybox__store-name">ابزار شکری</div>' +
+              '<div class="dk-buybox__store-name">ابزار شکری' +
+                '<span class="dk-buybox__chip dk-buybox__chip--official">رسمی</span>' +
+                '<span class="dk-buybox__chip dk-buybox__chip--selected">منتخب</span>' +
+              '</div>' +
               '<div class="dk-buybox__store-stats">' +
-                '<span class="dk-buybox__store-stat"><span style="color:var(--color-success)">۱۰۰٪</span> رضایت از کالا</span>' +
+                '<span class="dk-buybox__satisfaction">رضایت از کالا <span class="dk-buybox__satisfaction-value">۱۰۰٪</span></span>' +
                 '<span class="dk-buybox__store-divider"></span>' +
                 '<span class="dk-buybox__store-stat">عملکرد <span style="color:var(--color-success)">عالی</span></span>' +
               '</div>' +
@@ -549,17 +570,35 @@
           '<span class="dk-buybox__guarantee-text">گارانتی اصالت کالا</span>' +
         '</div>' +
 
-        /* Delivery Methods */
+        /* Cheaper-price banner (mirrors reference lowerPriceBg) */
+        (p.oldPrice && p.oldPrice > p.price ?
+          '<div class="dk-buybox__lower-price">' +
+            '<span class="dk-buybox__lower-price-icon">' + Icons.infoCircle + '</span>' +
+            '<span>این کالا را «' + Format.price(p.oldPrice - p.price) + ' تومان» ارزان‌تر بخرید</span>' +
+          '</div>'
+        : '') +
+
+        /* Delivery Methods (two rows like the reference) */
         '<div class="dk-buybox__delivery">' +
           '<div class="dk-buybox__delivery-header">' +
             '<div class="dk-buybox__delivery-icon">' + Icons.truck + '</div>' +
             '<span class="dk-buybox__delivery-title">روش‌ها و هزینه‌های تحویل</span>' +
             '<div class="dk-buybox__delivery-chevron">' + Icons.chevronLeft + '</div>' +
           '</div>' +
+          '<ul class="dk-buybox__delivery-list">' +
+            '<li class="dk-buybox__delivery-row"><span class="dk-buybox__delivery-dot"></span><span class="dk-buybox__delivery-name">تحویل عادی ابزار شکری</span><span class="dk-buybox__delivery-sep">•</span><span class="dk-buybox__delivery-note">وابسته به سبد</span></li>' +
+            '<li class="dk-buybox__delivery-row"><span class="dk-buybox__delivery-dot dk-buybox__delivery-dot--fast"></span><span class="dk-buybox__delivery-name">تحویل سریع امروز</span><span class="dk-buybox__delivery-sep">•</span><span class="dk-buybox__delivery-note">وابسته به سبد</span></li>' +
+          '</ul>' +
           '<div class="dk-buybox__delivery-info">' +
             '<p>هزینه ارسال بر اساس آدرس و مبلغ سفارش در مرحله تسویه‌حساب محاسبه می‌شود.</p>' +
-            '<p>برای سفارش‌های بالاتر از حد مشخص، ارسال رایگان است.</p>' +
           '</div>' +
+        '</div>' +
+
+        /* Plus-members row */
+        '<div class="dk-buybox__plus">' +
+          '<div class="dk-buybox__plus-icon">' + Icons.star + '</div>' +
+          '<div class="dk-buybox__plus-info"><span class="dk-buybox__plus-title">ویژه خریدهای عمده</span>' +
+          '<p class="dk-buybox__plus-desc">ارسال سریع و رایگان برای سفارش‌های بالای ۵۰۰ هزار تومان</p></div>' +
         '</div>' +
 
         /* Better Price */
@@ -578,6 +617,34 @@
         '</a>' +
 
       '</div>' +
+
+      /* Payment/delivery services (static info, no backend) */
+      '<div class="dk-services">' +
+        '<h3 class="dk-services__title">خدمات پرداخت و ارسال</h3>' +
+        '<div class="dk-services__row">' +
+          '<div class="dk-service-card"><div class="dk-service-card__icon">' + Icons.cart + '</div>' +
+            '<div class="dk-service-card__body"><div class="dk-service-card__title">خرید عمده با فاکتور رسمی</div>' +
+            '<div class="dk-service-card__desc">برای اصناف و پیمانکاران، با تسویه اعتباری</div></div></div>' +
+          '<div class="dk-service-card"><div class="dk-service-card__icon">' + Icons.truck + '</div>' +
+            '<div class="dk-service-card__body"><div class="dk-service-card__title">ارسال رایگان سفارش‌های بزرگ</div>' +
+            '<div class="dk-service-card__desc">۴ ارسال رایگان • پشتیبانی اختصاصی</div></div></div>' +
+        '</div>' +
+      '</div>' +
+
+      /* Rules (static info, mirrors reference conditions block) */
+      '<div class="dk-rules">' +
+        '<h3 class="dk-rules__title">شرایط و قوانین</h3>' +
+        '<div class="dk-rules__item"><span class="dk-rules__icon">' + Icons.infoCircle + '</span>' +
+          '<div><div class="dk-rules__name">شرایط بازگشت کالا</div>' +
+          '<p class="dk-rules__desc">امکان برگشت کالا در گروه ابزارآلات با دلیل «انصراف از خرید» تنها در صورتی مورد قبول است که پلمب کالا باز نشده باشد.</p></div></div>' +
+        '<div class="dk-rules__item"><span class="dk-rules__icon">' + Icons.shieldCheck + '</span>' +
+          '<div><div class="dk-rules__name">گزارش مشخصات کالا یا موارد قانونی</div></div></div>' +
+        '<div class="dk-rules__item"><span class="dk-rules__icon">' + Icons.store + '</span>' +
+          '<div><div class="dk-rules__name">روش قیمت‌گذاری و نظارت بر قیمت</div></div></div>' +
+      '</div>' +
+
+      '<div class="pdp-product-code">شناسه این کالا <span class="pdp-product-code__pill">DKP-' + (10000000 + p.id) + '</span></div>' +
+
       '</div>' +
 
       /* ── Features ── */
@@ -1295,19 +1362,45 @@
     });
   }
 
+  function paintGalleryCount() {
+    var images = product.images && product.images.length ? product.images : [product.image];
+    var numEl = document.querySelector('#pdp-gallery-count .pdp-gallery-count__num');
+    if (numEl) numEl.textContent = Format.toPersianNumber(activeGalleryIndex + 1) + ' / ' + Format.toPersianNumber(images.length);
+    var fill = $('#pdp-gallery-fill');
+    if (fill && images.length > 1) fill.style.width = Math.round(((activeGalleryIndex + 1) / images.length) * 100) + '%';
+  }
+
   function bindGallery() {
+    paintGalleryCount();
     document.addEventListener('click', function (e) {
       var thumb = e.target.closest('.pdp-thumb');
-      if (!thumb) return;
-      var idx = parseInt(thumb.dataset.index);
-      if (isNaN(idx)) return;
-      activeGalleryIndex = idx;
-      var images = product.images && product.images.length ? product.images : [product.image];
-      var imgSrc = images[idx] || images[0] || product.image;
-      var mainEl = $('#gallery-main');
-      if (mainEl) mainEl.innerHTML = imgTag(imgSrc, product.name);
-      $$('.pdp-thumb').forEach(function (t) { t.classList.remove('is-active'); });
-      thumb.classList.add('is-active');
+      if (thumb) {
+        var idx = parseInt(thumb.dataset.index);
+        if (isNaN(idx)) return;
+        activeGalleryIndex = idx;
+        var images = product.images && product.images.length ? product.images : [product.image];
+        var imgSrc = images[idx] || images[0] || product.image;
+        var mainEl = $('#gallery-main');
+        if (mainEl) {
+          mainEl.innerHTML = imgTag(imgSrc, product.name) +
+            '<div class="pdp-gallery-count" id="pdp-gallery-count" aria-hidden="true">' +
+              '<span class="pdp-gallery-count__num"></span>' +
+              '<span class="pdp-gallery-count__bar"><span class="pdp-gallery-count__fill" id="pdp-gallery-fill"></span></span>' +
+            '</div>';
+        }
+        $$('.pdp-thumb').forEach(function (t) { t.classList.remove('is-active'); });
+        thumb.classList.add('is-active');
+        paintGalleryCount();
+        return;
+      }
+      /* Digikala-style option pills: keep the checkbox logic, mirror selection. */
+      var optLabel = e.target.closest('.pdp-option');
+      if (optLabel) {
+        setTimeout(function () {
+          var box = optLabel.querySelector('.pdp-option__checkbox');
+          optLabel.classList.toggle('is-selected', !!(box && box.checked));
+        }, 0);
+      }
     });
   }
 
