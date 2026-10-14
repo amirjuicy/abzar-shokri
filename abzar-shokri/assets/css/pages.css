@@ -1108,6 +1108,53 @@
   background: #fff; border-radius: 999px;
 }
 
+/* Main image is tappable (opens the viewer); badge never swallows taps */
+#product-detail-content .pdp-main-image { cursor: zoom-in; }
+#product-detail-content .pdp-gallery-count { pointer-events: none; }
+
+/* ── PDP image viewer (lightbox) ───────────────────────────────
+   z-modal (500) clears the sticky mobile header (200), tabs nav (50)
+   and bottom buy bar (201). Rendered into #site-overlays so it is
+   outside the page flow; only #pdp-viewer id is ever created. */
+.pdp-viewer {
+  position: fixed; inset: 0; z-index: var(--z-modal);
+  display: flex; align-items: center; justify-content: center;
+  overscroll-behavior: contain; touch-action: pan-y;
+}
+.pdp-viewer__backdrop {
+  position: absolute; inset: 0; background: rgba(12,12,12,.85);
+}
+.pdp-viewer__figure {
+  position: relative; z-index: 1; margin: 0;
+  max-width: min(92vw, 720px); max-height: 82vh;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.pdp-viewer__img {
+  /* Explicit box so small-intrinsic SVGs scale UP to a real viewer size. */
+  width: min(92vw, 720px); height: min(68vh, 560px);
+  object-fit: contain; border-radius: 12px; background: #fff;
+}
+.pdp-viewer__count {
+  color: #fff; font-size: 13px; font-weight: 600; direction: ltr;
+  background: rgba(255,255,255,.16); border-radius: 999px; padding: 2px 12px;
+}
+.pdp-viewer__close {
+  position: absolute; z-index: 2; top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px;
+  width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.14); color: #fff; border: none; border-radius: 50%; cursor: pointer;
+}
+.pdp-viewer__close svg { width: 22px; height: 22px; }
+.pdp-viewer__close:hover { background: rgba(255,255,255,.28); }
+.pdp-viewer__nav {
+  position: absolute; z-index: 2; top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.14); color: #fff; border: none; border-radius: 50%; cursor: pointer;
+}
+.pdp-viewer__nav svg { width: 24px; height: 24px; }
+.pdp-viewer__nav:hover { background: rgba(255,255,255,.28); }
+.pdp-viewer__nav--prev { right: 8px; }
+.pdp-viewer__nav--next { left: 8px; }
+
 /* Thumbs: JS toggles .is-active (legacy CSS used .is-selected) */
 #product-detail-content .pdp-thumb.is-active {
   border-color: var(--color-primary);

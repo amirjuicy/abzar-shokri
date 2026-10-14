@@ -414,8 +414,8 @@
           '</button>' +
         '</div>' +
 
-        /* Main image (Digikala-style count badge + progress) */
-        '<div class="pdp-main-image" id="gallery-main">' +
+        /* Main image (Digikala-style count badge + progress; tappable → viewer) */
+        '<div class="pdp-main-image" id="gallery-main" role="button" tabindex="0" data-gallery-open aria-label="نمایش بزرگ‌تر تصویر محصول">' +
           imgTag(mainImg, p.name) +
           '<div class="pdp-gallery-count" id="pdp-gallery-count" aria-hidden="true">' +
             '<span class="pdp-gallery-count__num">' + Format.toPersianNumber(activeGalleryIndex + 1) + ' / ' + Format.toPersianNumber(images.length) + '</span>' +
@@ -837,9 +837,9 @@
         localStorage.setItem(cartKey, JSON.stringify(App.getCart()));
         document.dispatchEvent(new CustomEvent('as_cart_change'));
 
-        var modeLabel = mode === 'wholesale' ? ' (عمده)' : '';
-        var optLabel = options.length ? ' + ' + options.length + ' گزینه' : '';
-        App.showToast(p.name + modeLabel + optLabel + ' به سبد خرید اضافه شد');
+        /* No add-to-cart toast here: the product-detail UI (desktop buy box +
+           mobile purchase bar) reports the add by swapping the button for the
+           quantity stepper instead. */
 
         // --- Transform the add-to-cart button into quantity controls in-place ---
         ProductDetail.transformButtonToQtyControls();
@@ -971,10 +971,10 @@
         var cartKey = 'as_user_' + (App.getCurrentUser() ? App.getCurrentUser().id : 'guest_' + localStorage.getItem('as_guest_session')) + '_cart';
         localStorage.setItem(cartKey, JSON.stringify(App.getCart()));
         document.dispatchEvent(new CustomEvent('as_cart_change'));
-        
-        var modeLabel = mode === 'wholesale' ? ' (عمده)' : '';
-        var optLabel = options.length ? ' + ' + options.length + ' گزینه' : '';
-        App.showToast(p.name + modeLabel + optLabel + ' به سبد خرید اضافه شد');
+
+        /* No add-to-cart toast: the responsive product-detail UI confirms the
+           add in place (the button turns into the quantity stepper). The cart
+           itself is untouched — quantity/badges/drawer all update as before. */
       },
 
       /* ── Wishlist toggle ──────────────────────────────── */
@@ -1370,27 +1370,124 @@
     if (fill && images.length > 1) fill.style.width = Math.round(((activeGalleryIndex + 1) / images.length) * 100) + '%';
   }
 
+  /* Single place that swaps the main image + thumb state + count badge. */
+  function setGalleryIndex(idx) {
+    var images = product.images && product.images.length ? product.images : [product.image];
+    if (isNaN(idx) || idx < 0 || idx >= images.length) return;
+    activeGalleryIndex = idx;
+    var mainEl = $('#gallery-main');
+    if (mainEl) {
+      mainEl.innerHTML = imgTag(images[idx] || images[0] || product.image, product.name) +
+        '<div class="pdp-gallery-count" id="pdp-gallery-count" aria-hidden="true">' +
+          '<span class="pdp-gallery-count__num"></span>' +
+          '<span class="pdp-gallery-count__bar"><span class="pdp-gallery-count__fill" id="pdp-gallery-fill"></span></span>' +
+        '</div>';
+    }
+    $$('.pdp-thumb').forEach(function (t) {
+      t.classList.toggle('is-active', parseInt(t.dataset.index) === idx);
+    });
+    paintGalleryCount();
+  }
+
+  /* ── Minimal image viewer (lightbox) ──────────────────────────
+     No viewer existed: tapping the main image did nothing. The overlay
+     renders into #site-overlays (fallback: body) at z-modal (500), above
+     the sticky mobile header (200), tabs nav (50) and buy bar (201).
+     Body scroll is locked while open and restored on close. */
+  var galleryViewerIndex = 0;
+  var galleryViewerScroll = '';
+
+  function galleryImageList() {
+    return product.images && product.images.length ? product.images : [product.image];
+  }
+
+  function openGalleryViewer() {
+    if (!product || $('#pdp-viewer')) return;
+    galleryViewerIndex = activeGalleryIndex;
+    var images = galleryImageList();
+    var host = $('#site-overlays') || document.body;
+    var wrap = document.createElement('div');
+    wrap.id = 'pdp-viewer';
+    wrap.className = 'pdp-viewer';
+    wrap.setAttribute('role', 'dialog');
+    wrap.setAttribute('aria-modal', 'true');
+    wrap.setAttribute('aria-label', 'نمایش بزرگ تصویر محصول');
+    wrap.innerHTML =
+      '<div class="pdp-viewer__backdrop" data-viewer-close></div>' +
+      '<button type="button" class="pdp-viewer__close" aria-label="بستن نمایش تصویر">' + Icons.close + '</button>' +
+      '<figure class="pdp-viewer__figure">' +
+        '<img class="pdp-viewer__img" src="' + (images[galleryViewerIndex] || '') + '" alt="' + product.name + '">' +
+        '<figcaption class="pdp-viewer__count"></figcaption>' +
+      '</figure>' +
+      (images.length > 1 ?
+        '<button type="button" class="pdp-viewer__nav pdp-viewer__nav--prev" data-dir="-1" aria-label="تصویر قبلی">' + Icons.chevronRight + '</button>' +
+        '<button type="button" class="pdp-viewer__nav pdp-viewer__nav--next" data-dir="1" aria-label="تصویر بعدی">' + Icons.chevronLeft + '</button>'
+      : '');
+    host.appendChild(wrap);
+    galleryViewerScroll = document.body.style.overflow || '';
+    document.body.style.overflow = 'hidden';
+    try { document.documentElement.style.overflow = 'hidden'; } catch (e) {}
+    paintGalleryViewer();
+    var closeBtn = wrap.querySelector('.pdp-viewer__close');
+    if (closeBtn) { try { closeBtn.focus({ preventScroll: true }); } catch (e) {} }
+  }
+
+  function paintGalleryViewer() {
+    var wrap = $('#pdp-viewer');
+    if (!wrap) return;
+    var images = galleryImageList();
+    var img = wrap.querySelector('.pdp-viewer__img');
+    if (img) {
+      img.src = images[galleryViewerIndex] || '';
+      img.alt = product ? product.name : '';
+    }
+    var num = wrap.querySelector('.pdp-viewer__count');
+    if (num) num.textContent = Format.toPersianNumber(galleryViewerIndex + 1) + ' / ' + Format.toPersianNumber(images.length);
+  }
+
+  function stepGalleryViewer(dir) {
+    var images = galleryImageList();
+    if (images.length < 2) return;
+    galleryViewerIndex = (galleryViewerIndex + dir + images.length) % images.length;
+    paintGalleryViewer();
+  }
+
+  function closeGalleryViewer() {
+    var wrap = $('#pdp-viewer');
+    if (!wrap) return;
+    /* Keep the page gallery in sync with where the viewer left off. */
+    setGalleryIndex(galleryViewerIndex);
+    wrap.remove();
+    document.body.style.overflow = galleryViewerScroll;
+    try { document.documentElement.style.overflow = ''; } catch (e) {}
+  }
+
   function bindGallery() {
     paintGalleryCount();
     document.addEventListener('click', function (e) {
+      /* Viewer controls first (viewer lives outside #product-detail-content). */
+      var viewer = e.target.closest('#pdp-viewer');
+      if (viewer) {
+        if (e.target.closest('[data-viewer-close]') || e.target.closest('.pdp-viewer__close')) {
+          closeGalleryViewer();
+          return;
+        }
+        var nav = e.target.closest('.pdp-viewer__nav');
+        if (nav) {
+          stepGalleryViewer(parseInt(nav.dataset.dir) === -1 ? -1 : 1);
+          return;
+        }
+        return;
+      }
       var thumb = e.target.closest('.pdp-thumb');
       if (thumb) {
-        var idx = parseInt(thumb.dataset.index);
-        if (isNaN(idx)) return;
-        activeGalleryIndex = idx;
-        var images = product.images && product.images.length ? product.images : [product.image];
-        var imgSrc = images[idx] || images[0] || product.image;
-        var mainEl = $('#gallery-main');
-        if (mainEl) {
-          mainEl.innerHTML = imgTag(imgSrc, product.name) +
-            '<div class="pdp-gallery-count" id="pdp-gallery-count" aria-hidden="true">' +
-              '<span class="pdp-gallery-count__num"></span>' +
-              '<span class="pdp-gallery-count__bar"><span class="pdp-gallery-count__fill" id="pdp-gallery-fill"></span></span>' +
-            '</div>';
-        }
-        $$('.pdp-thumb').forEach(function (t) { t.classList.remove('is-active'); });
-        thumb.classList.add('is-active');
-        paintGalleryCount();
+        setGalleryIndex(parseInt(thumb.dataset.index));
+        return;
+      }
+      /* Tapping the main image opens the viewer (badge has
+         pointer-events:none in CSS so taps land here). */
+      if (e.target.closest('[data-gallery-open]')) {
+        openGalleryViewer();
         return;
       }
       /* Digikala-style option pills: keep the checkbox logic, mirror selection. */
@@ -1400,6 +1497,24 @@
           var box = optLabel.querySelector('.pdp-option__checkbox');
           optLabel.classList.toggle('is-selected', !!(box && box.checked));
         }, 0);
+      }
+    });
+    /* Keyboard: Enter/Space on the main image; Escape/arrows in the viewer. */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && $('#pdp-viewer')) {
+        e.preventDefault();
+        closeGalleryViewer();
+        return;
+      }
+      if (!$('#pdp-viewer')) return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); stepGalleryViewer(1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); stepGalleryViewer(-1); }
+    });
+    document.addEventListener('keydown', function (e) {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.closest &&
+          e.target.closest('[data-gallery-open]') && !$('#pdp-viewer')) {
+        e.preventDefault();
+        openGalleryViewer();
       }
     });
   }

@@ -100,7 +100,17 @@
 // serving bottom: 57px and floated the bar a full nav-height above the
 // screen bottom — the exact "bar sits too high" report. Bump so cache-first
 // clients drop pages.css/product.js/common.js together and pick the fix up.
-var CACHE_NAME = 'abzar-shokri-v40';
+// v41: product detail no longer announces add/remove to cart — the buy box and
+// the mobile purchase bar confirm in place (button ↔ quantity stepper), so
+// product.js dropped its «به سبد خرید اضافه شد» toast and common.js gates the
+// add/remove toasts off on product.html. Bump so cache-first clients holding
+// the old common.js/product.js drop the stale shell and pick the change up.
+// v42: add-to-cart feedback on the responsive product page — updateCartUI() now
+// reacts to as_cart_change (so the compact PDP header badge updates the moment
+// the button is tapped) and briefly bounces that header cart icon; header.css
+// gained the scoped keyframes. Both files are precached cache-first below, so
+// bump to drop the stale shell.
+var CACHE_NAME = 'abzar-shokri-v42';
 var OFFLINE_URL = 'offline.html';
 
 var APP_SHELL = [

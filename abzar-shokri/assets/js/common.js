@@ -1022,12 +1022,17 @@
     saveCart(state.cart); updateCartUI();
     var modeLabel = pricingMode === 'wholesale' ? ' (عمده)' : '';
     var optLabel = opts.length ? ' + ' + opts.length + ' گزینه' : '';
-    showToast(p.name + modeLabel + optLabel + ' به سبد خرید اضافه شد');
+    /* Product detail: the responsive buy box / mobile purchase bar already
+       confirms the add in place, so no toast there. Every other page keeps it. */
+    if (!isProductPage()) showToast(p.name + modeLabel + optLabel + ' به سبد خرید اضافه شد');
   }
 
   function removeFromCart(key) {
     state.cart = state.cart.filter(function (x) { return x.key !== key; });
-    saveCart(state.cart); updateCartUI(); showToast('محصول از سبد خرید حذف شد', 'info');
+    saveCart(state.cart); updateCartUI();
+    /* Product detail: removing (qty stepper down to 0) is silent there too.
+       Cart page / drawer / account cart keep the confirmation toast. */
+    if (!isProductPage()) showToast('محصول از سبد خرید حذف شد', 'info');
   }
 
   function updateCartQty(key, delta) {
@@ -1056,6 +1061,37 @@
   function getCartTotal() { return state.cart.reduce(function (s, i) { return s + i.price * i.quantity; }, 0); }
   function getCartCount() { return state.cart.reduce(function (s, i) { return s + i.quantity; }, 0); }
 
+  /* Last cart quantity pushed into the badges — lets updateCartUI() notice
+     that the cart grew (first item, extra unit, or another product). */
+  var lastRenderedCartCount = null;
+
+  /* Brief scale/bounce on the compact product-page header cart icon so the
+     user can see where "افزودن به سبد خرید" landed. Scoped in CSS to
+     .mobile-header--pdp, so desktop and every other page stay untouched.
+     Cleanup rides on the CSS animationend event (no timers), and the
+     handler is bound once per element so rapid taps never stack it. */
+  function bumpPdpCartIcon() {
+    var icon = document.querySelector('.mobile-header--pdp .mobile-header-pdp__cart');
+    /* Hidden (desktop layout renders the compact header but never shows it):
+       no animation can run there, so skip — otherwise the class would stick
+       with no animationend to clear it. */
+    if (!icon || !icon.getClientRects().length) return;
+    try {
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    } catch (e) {}
+    if (!icon.__cartBumpBound) {
+      icon.__cartBumpBound = true;
+      icon.addEventListener('animationend', function (e) {
+        if (e.target !== icon) return;
+        icon.classList.remove('is-bumped');
+      });
+    }
+    /* Remove, force a reflow, re-add: back-to-back adds restart the keyframes. */
+    icon.classList.remove('is-bumped');
+    void icon.offsetWidth;
+    icon.classList.add('is-bumped');
+  }
+
   function updateCartUI() {
     var badges = $$('.header-action__badge');
     var count = getCartCount();
@@ -1070,6 +1106,9 @@
       bb.textContent = count;
       bb.style.display = count > 0 ? 'flex' : 'none';
     }
+    /* Badge above already carries the new quantity; only then bounce the icon. */
+    if (lastRenderedCartCount !== null && count > lastRenderedCartCount) bumpPdpCartIcon();
+    lastRenderedCartCount = count;
     renderCartDrawer();
   }
 
@@ -2091,6 +2130,17 @@ el.innerHTML = '\
     }
 
     bindCartPopovers(document);
+
+    /* The responsive product page writes the cart itself and only announces
+       it with as_cart_change, so re-sync every badge/drawer from that same
+       cart state through the existing updateCartUI(). Guarded: re-binding
+       can never attach a second listener. */
+    if (!document.__cartUiBound) {
+      document.__cartUiBound = true;
+      document.addEventListener('as_cart_change', function () {
+        try { updateCartUI(); } catch (e) {}
+      });
+    }
 
     /* Account dropdown (logged-in top bar): hover on desktop, click on touch */
     bindAccountDropdown(document);
