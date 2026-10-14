@@ -1318,6 +1318,82 @@
   line-height: 1;
 }
 
+/* ── Mobile Product-Page Header (compact, product.html only) ──
+   Mirrors the reference layout: [close] [flex spacer] [search/cart/more].
+   DOM order follows the reference; in RTL the close button sits at the
+   inline-start (right) side, matching the reference rendering. Scoped to
+   .mobile-header--pdp so no other page or the desktop header is affected. */
+.mobile-header--pdp {
+  padding: 4px 8px;
+  background-color: var(--color-white);
+  border-bottom: 1px solid var(--border-color-light);
+}
+.mobile-header-pdp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+.mobile-header-pdp__group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.mobile-header-pdp__spacer {
+  flex: 1 1 auto;
+  min-width: 0;
+  align-self: stretch;
+}
+.mobile-header-pdp__btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  flex: 0 0 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.mobile-header-pdp__btn:active {
+  background-color: #F0F0F0;
+}
+.mobile-header-pdp__btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.mobile-header-pdp__btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+/* Cart quantity badge: reference-style red pill hanging off the corner.
+   Uses .header-action__badge so the existing updateCartUI() keeps it live. */
+.mobile-header--pdp .mobile-header-pdp__cart .header-action__badge {
+  top: auto;
+  left: auto;
+  bottom: -2px;
+  right: -8px;
+  min-width: 18px;
+  height: 16px;
+  padding: 0 4px;
+  color: var(--color-white);
+  background-color: var(--color-danger);
+  border: 2px solid var(--color-white);
+  border-radius: 6px;
+  font-size: 11px;
+}
+
 /* Mobile header cart button with price */
 .mobile-header .header-action--cart {
   width: auto;

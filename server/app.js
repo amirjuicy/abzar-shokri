@@ -5072,6 +5072,8 @@ const ROOT = path.join(__dirname, '..');
   app.get('/forgot-password', serveClean('forgot-password.html'));
   app.get('/offline', serveClean('offline.html'));
   app.get('/cart', serveClean('account-cart.html'));
+  /* Alias for the mobile product-page header cart link (/checkout/cart/). */
+  app.get('/checkout/cart', serveClean('account-cart.html'));
   app.get('/account', serveClean('account.html'));
   app.get('/account/orders', serveClean('account-orders.html'));
   app.get('/account/orders/:ref', serveClean('account-order-detail.html'));

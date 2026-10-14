@@ -3041,3 +3041,5 @@
 {"timestamp":"2026-10-14T07:58:18.140Z","level":"info","message":"request","requestId":"9f94cbbb-0f33-4fa4-bc01-ba47aae0ca91","meta":{"requestId":"9f94cbbb-0f33-4fa4-bc01-ba47aae0ca91","method":"GET","path":"/assets/images/products/milwaukee-m18-fuel.svg","statusCode":200,"status":200,"durationMs":1,"duration":1}}
 {"timestamp":"2026-10-14T07:58:18.141Z","level":"info","message":"request","requestId":"330ed36c-e24d-4f74-bf5e-7c1ebe6d3662","meta":{"requestId":"330ed36c-e24d-4f74-bf5e-7c1ebe6d3662","method":"GET","path":"/assets/images/products/dewalt-dcd771.svg","statusCode":200,"status":200,"durationMs":3,"duration":3}}
 {"timestamp":"2026-10-14T07:58:22.591Z","level":"info","message":"request","requestId":"7c9c0eb5-e9a8-4106-972a-cd4d694f035f","meta":{"requestId":"7c9c0eb5-e9a8-4106-972a-cd4d694f035f","method":"GET","path":"/manifest.webmanifest","statusCode":200,"status":200,"durationMs":1,"duration":1}}
+{"timestamp":"2026-10-14T08:53:24.771Z","level":"info","message":"server started","meta":{"port":3000}}
+{"timestamp":"2026-10-14T08:53:33.411Z","level":"info","message":"server started","meta":{"port":3000}}

@@ -1579,7 +1579,31 @@ el.innerHTML = '\
   }
 
   /* ── Render Mobile Header ─────────────────────────────────── */
+  /* Product-detail pages (product.html, incl. clean /product/:ref URLs)
+     use a compact header (close / search / cart / more) instead of the
+     standard promo bar + hamburger + search input + account + notif bar. */
+  function isProductPage() {
+    try { return storeFile().toLowerCase() === 'product.html'; } catch (e) { return false; }
+  }
+  function renderMobileHeaderPdp(el) {
+    el.classList.add('mobile-header--pdp');
+    el.classList.remove('is-account-header');
+    el.innerHTML = '\
+    <div class="mobile-header-pdp">\
+    <div class="mobile-header-pdp__group">\
+    <button type="button" class="mobile-header-pdp__btn" data-pdp-action="back" aria-label="بستن و بازگشت به صفحه قبل">' + Icons.close + '</button>\
+    </div>\
+    <div class="mobile-header-pdp__spacer" aria-hidden="true"></div>\
+    <div class="mobile-header-pdp__group">\
+    <button type="button" class="mobile-header-pdp__btn" data-pdp-action="search" aria-label="جستجو">' + Icons.search + '</button>\
+    <a class="mobile-header-pdp__btn mobile-header-pdp__cart" href="/checkout/cart/" aria-label="سبد خرید">' + Icons.cart + '<span class="header-action__badge" style="display:none">0</span></a>\
+    <button type="button" class="mobile-header-pdp__btn" data-pdp-action="more" aria-label="گزینه‌های بیشتر" aria-haspopup="true" aria-expanded="false">' + Icons.moreVert + '</button>\
+    </div>\
+    </div>';
+  }
   function renderMobileHeader(el) {
+    if (isProductPage()) { renderMobileHeaderPdp(el); return; }
+    el.classList.remove('mobile-header--pdp');
     var authHtml = mobileAuthHTML();
     var hideSearch = isAccountPage();
     var mobileSearchHtml = hideSearch ? '' : '<div class="mobile-header__search-wrap"><input type="text" class="mobile-header__search-input" placeholder=" " autocomplete="off" aria-label="جستجو در ابزار شکری"><span class="mobile-header__search-ph" aria-hidden="true"><span class="mobile-header__search-ph--muted">جستجو در</span><span class="mobile-header__search-ph--brand">ابزار شکری</span></span><button class="mobile-header__search-icon" type="button">' + Icons.search + '</button><div class="search-dropdown search-dropdown--mobile"></div></div>';
@@ -2088,6 +2112,36 @@ el.innerHTML = '\
 
     var menuBtn = $('.mobile-header__menu-btn');
     if (menuBtn) menuBtn.addEventListener('click', toggleMobileMenu);
+
+    /* Compact product-page header controls (rendered only on product.html) */
+    $$('#mobile-header [data-pdp-action]').forEach(function (btn) {
+      if (btn.__pdpBound) return;
+      btn.__pdpBound = true;
+      btn.addEventListener('click', function () {
+        var action = btn.getAttribute('data-pdp-action');
+        if (action === 'back') {
+          /* Back when there is useful (same-origin) history, else fall back to listing. */
+          try {
+            var ref = document.referrer || '';
+            var sameOrigin = ref && (ref.indexOf(window.location.origin + '/') === 0);
+            if (sameOrigin && window.history && window.history.length > 1) window.history.back();
+            else window.location.href = '/shop';
+          } catch (e) { window.location.href = '/shop'; }
+        } else if (action === 'search') {
+          /* The site's search interface lives on the shop page (#shop-search, ?q=). */
+          window.location.href = '/shop';
+        } else if (action === 'more') {
+          toggleMobileMenu();
+          try { btn.setAttribute('aria-expanded', state.mobileMenuOpen ? 'true' : 'false'); } catch (e) {}
+        }
+      });
+    });
+    /* Keep the "more" button's aria state in sync when the menu is closed elsewhere */
+    document.addEventListener('click', function (e) {
+      if (e.target && e.target.closest && e.target.closest('#mobile-header [data-pdp-action="more"]')) return;
+      var moreBtn = document.querySelector('#mobile-header [data-pdp-action="more"]');
+      if (moreBtn && !state.mobileMenuOpen) moreBtn.setAttribute('aria-expanded', 'false');
+    });
 
     /* Nav categories button → toggle category dropdown */
     $$('.nav-categories-btn').forEach(function (btn) {
