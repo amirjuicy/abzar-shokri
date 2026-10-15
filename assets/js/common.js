@@ -3846,11 +3846,14 @@ function renderOverlays(el) {
       top = Math.min(top, Math.max(8, window.innerHeight - minHeight - gap));
       below = window.innerHeight - top - gap;
     }
+    /* Match the province-menu reference cap (pages.css/account.css:
+       max-height:min(446.5px,50vh)) so tall viewports don't stretch the menu. */
+    var refCap = Math.min(446.5, window.innerHeight * 0.5);
     menu.style.position = 'fixed';
     menu.style.left = Math.max(8, rect.left) + 'px';
     menu.style.top = top + 'px';
     menu.style.width = Math.min(rect.width, window.innerWidth - 16) + 'px';
-    menu.style.maxHeight = Math.max(0, below) + 'px';
+    menu.style.maxHeight = Math.max(0, Math.min(below, refCap)) + 'px';
     menu.style.overflowY = 'auto';
     menu.style.overscrollBehavior = 'contain';
     menu.style.touchAction = 'pan-y';
@@ -3858,11 +3861,13 @@ function renderOverlays(el) {
   }
 
   function openSelectDropdown(sel, trigger) {
+    if (sel.disabled) return;
     closeSelectDropdown();
     var rect = trigger.getBoundingClientRect();
     if (!rect.width && !rect.height) return;
     var menu = document.createElement('ul');
     menu.className = 'addr-province-menu';
+    menu.setAttribute('role', 'listbox');
     var any = false, selected = null, i;
     for (i = 0; i < sel.options.length; i++) {
       var o = sel.options[i];
@@ -3873,6 +3878,8 @@ function renderOverlays(el) {
       li.textContent = o.text;
       li.setAttribute('data-value', o.value);
       li.setAttribute('tabindex', '-1');
+      li.setAttribute('role', 'option');
+      if (o.selected) li.setAttribute('aria-selected', 'true');
       li.addEventListener('click', (function (value) {
         return function () {
           sel.value = value;
@@ -3928,10 +3935,26 @@ function renderOverlays(el) {
     if (!sel || sel.nodeType !== 1 || sel.nodeName !== 'SELECT') return;
     if (sel.dataset && sel.dataset.enhancedSelect === '1') return;
     if (sel.closest && (sel.closest('.addr-province-dd') || sel.closest('.addr-city-dd'))) return;
+    /* Never wrap hidden/disabled-helper selects (e.g. display:none helpers):
+       the overlay trigger would otherwise add a visible focusable button. */
+    if (sel.disabled) return;
+    try {
+      var cs = window.getComputedStyle ? window.getComputedStyle(sel) : null;
+      if ((cs && cs.display === 'none') || sel.hidden || sel.type === 'hidden') return;
+    } catch (e) {}
     if (sel.dataset) sel.dataset.enhancedSelect = '1';
     var wrapper = document.createElement('span');
     wrapper.className = 'addr-province-dd';
-    wrapper.style.display = 'inline-block';
+    /* .input selects are full-width block controls (contact/account forms);
+       .shop-sort and other inline selects keep their shrink-to-fit width so
+       toolbar layout is preserved. Lets the shared .addr-province-dd block
+       rule apply for the full-width case instead of overriding it. */
+    if (sel.classList.contains('input')) {
+      wrapper.style.display = 'block';
+      wrapper.style.width = '100%';
+    } else {
+      wrapper.style.display = 'inline-block';
+    }
     if (sel.parentNode) sel.parentNode.insertBefore(wrapper, sel);
     wrapper.appendChild(sel);
     if (!sel.classList.contains('input') && !sel.classList.contains('shop-sort')) {
@@ -3950,9 +3973,9 @@ function renderOverlays(el) {
       else openSelectDropdown(sel, trigger);
     });
     trigger.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
-        if (__selectDropInstance && __selectDropTrigger === trigger) closeSelectDropdown();
+        if ((e.key === 'Enter' || e.key === ' ') && __selectDropInstance && __selectDropTrigger === trigger) closeSelectDropdown();
         else openSelectDropdown(sel, trigger);
       } else if (e.key === 'Escape') {
         closeSelectDropdown();
