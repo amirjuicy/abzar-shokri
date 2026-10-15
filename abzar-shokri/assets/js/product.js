@@ -746,14 +746,14 @@
     function cartControlHTML(item, isBar) {
       if (item && item.quantity > 0) {
         var countId = isBar ? 'pdp-buy-bar-qty' : 'product-qty';
-        /* Digikala-style in-cart control requested by the user. */
-        return '<div class="flex items-center w-full justify-center">' +
-          '<div class="qty-selector qty-selector--buybox" style="width:240px;max-width:240px;height:54px;"  role="group" aria-label="تعداد محصول در سبد خرید">' +
+        /* Digikala-style in-cart control requested by the user. Direct child
+           of the cart container (same box as the add button) so both states
+           share the container dimensions via CSS. */
+        return '<div class="qty-selector qty-selector--buybox" role="group" aria-label="تعداد محصول در سبد خرید">' +
             '<button type="button" class="qty-selector__btn qty-selector__btn--minus" onclick="ProductDetail.updateCartQty(-1)" aria-label="کاهش تعداد">' + Icons.minus + '</button>' +
             '<span class="qty-selector__value" id="' + countId + '">' + Format.toPersianNumber(item.quantity) + '</span>' +
             '<button type="button" class="qty-selector__btn qty-selector__btn--plus" onclick="ProductDetail.updateCartQty(1)" aria-label="افزایش تعداد">' + Icons.plus + '</button>' +
-          '</div>' +
-        '</div>';
+          '</div>';
       }
       /* Add to cart button */
       return '<button class="dk-buybox__add-btn"' + (isBar ? ' id="pdp-buy-bar-add"' : ' id="product-add-to-cart"') + ' onclick="ProductDetail.addToCartWithOptions()">' +

@@ -245,6 +245,10 @@
 .dk-buybox__add-btn:hover { background: var(--color-primary-light); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 .dk-buybox__add-btn:active { transform: scale(0.98); }
 .dk-buybox__add-btn--disabled { background: var(--color-gray-300); color: var(--color-gray-500); cursor: not-allowed; box-shadow: none; }
+/* Buy-box stepper shares the add button's box (240x54) now that the inline
+   dimensions are gone from product.js cartControlHTML. Scoped to
+   #product-cart-control so cart/drawer steppers are untouched. */
+#product-cart-control .qty-selector--buybox { width: 240px; max-width: 240px; height: 54px; box-sizing: border-box; }
 
 /* Guarantee */
 .dk-buybox__guarantee { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid #ecedef; }
@@ -353,12 +357,15 @@
   .pdp-buy-bar__price .priceChanger { flex: 0 0 auto; width: auto; margin-top: 0; gap: var(--mobile-gap-sm); }
   .pdp-buy-bar__price .priceChanger > span { flex: 0 0 auto; min-height: 22px; padding: 1px 6px; font-size: 11px; border-radius: var(--radius-sm); }
 
-  /* Cart control (left) — 48px tall, same button language as the buy box. */
-  .pdp-buy-bar__cart { flex: 0 0 45%; display: flex; }
-  .pdp-buy-bar__cart .dk-buybox__add-btn { width: 100%; min-width: 0; height: 48px; border-radius: var(--radius-lg); }
-  .pdp-buy-bar__cart .qty-selector--buybox { width: 100%; height: 48px; }
-  .pdp-buy-bar__cart .qty-selector--buybox .qty-selector__btn,
-  .pdp-buy-bar__cart .qty-selector--buybox .qty-selector__value { height: 48px; line-height: 48px; }
+  /* Cart control (left) — one 48px box for both states. The add button
+     (#pdp-buy-bar-add) and the quantity stepper share the full 45% column,
+     48px height and centered alignment, so swapping controls never shifts
+     the bar layout. */
+  .pdp-buy-bar__cart { flex: 0 0 45%; display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 48px; }
+  .pdp-buy-bar__cart .dk-buybox__add-btn { width: 100%; min-width: 0; max-width: 100%; height: 48px; min-height: 48px; border-radius: var(--radius-lg); }
+  .pdp-buy-bar__cart .qty-selector--buybox { width: 100%; max-width: 100%; height: 48px; min-height: 48px; margin: 0; box-sizing: border-box; justify-content: space-between; align-items: center; }
+  .pdp-buy-bar__cart .qty-selector--buybox .qty-selector__btn { width: 40px; height: 40px; margin: 4px; flex-shrink: 0; }
+  .pdp-buy-bar__cart .qty-selector--buybox .qty-selector__value { height: 40px; line-height: 40px; margin: 0; flex: 1 1 auto; min-width: 0; }
 }
 
 /* ── Product Tabs ──────────────────────────────────────────── */
@@ -1022,6 +1029,7 @@
   .dk-buybox__cart { justify-content: center; }
   .dk-buybox__add-btn { width: 100%; max-width: 240px; min-width: 0; }
   .qty-selector--buybox { width: 100%; max-width: 240px; }
+  #product-cart-control .qty-selector--buybox { width: 100%; max-width: 240px; }
 }
 
 /* Profile/account mobile fix — prevents horizontal overflow at 320-430px */

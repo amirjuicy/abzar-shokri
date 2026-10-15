@@ -1689,7 +1689,7 @@ el.innerHTML = '\
     <div class="mobile-header-pdp__spacer" aria-hidden="true"></div>\
     <div class="mobile-header-pdp__group">\
     <button type="button" class="mobile-header-pdp__btn" data-pdp-action="search" aria-label="جستجو">' + Icons.search + '</button>\
-    <a class="mobile-header-pdp__btn mobile-header-pdp__cart" href="/checkout/cart/" aria-label="سبد خرید">' + Icons.cart + '<span class="header-action__badge" style="display:none">0</span></a>\
+    <a class="mobile-header-pdp__btn mobile-header-pdp__cart" href="/cart" aria-label="سبد خرید">' + Icons.cart + '<span class="header-action__badge" style="display:none">0</span></a>\
     <button type="button" class="mobile-header-pdp__btn" data-pdp-action="more" aria-label="گزینه‌های بیشتر" aria-haspopup="true" aria-expanded="false">' + Icons.moreVert + '</button>\
     </div>\
     </div>';
