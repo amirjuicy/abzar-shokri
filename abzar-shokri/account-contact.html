@@ -6,43 +6,43 @@
   <title>تماس با پشتیبانی</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="assets/css/design-system.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="assets/css/header.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="assets/css/footer.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="assets/css/desktop.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="assets/css/pages.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="assets/css/account.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="assets/css/account-contact.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 
   <!-- PWA -->
@@ -57,7 +57,7 @@
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="assets/css/pwa.css">
 </head>
 <body>
@@ -366,9 +366,12 @@
     }
 
     /* ── Tickets panel: auth prompt / list / detail ───────────── */
-    function renderTickets() {
-      if (!App.isLoggedIn()) {
-        body.innerHTML = '\
+    /* The login prompt is the single intended UI for "not authenticated as a
+       customer": localStorage may claim logged-in (admin token mirrored by
+       login(), legacy token-less session, dead token) while /api/tickets
+       answers 401. Never surface the raw English server error. */
+    function authPromptHtml() {
+      return '\
           <div class="ac-auth-prompt">\
             <span class="ac-auth-prompt__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>\
             <h3 class="ac-auth-prompt__title">برای ثبت تیکت وارد شوید</h3>\
@@ -378,6 +381,13 @@
               <a href="/register" class="btn btn-secondary btn-sm">ثبت‌نام</a>\
             </div>\
           </div>';
+    }
+    function isAuthError(err) {
+      return !!err && (err.status === 401 || err.status === 403);
+    }
+    function renderTickets() {
+      if (!App.isLoggedIn()) {
+        body.innerHTML = authPromptHtml();
         return;
       }
       if (view.mode === 'detail' && view.ticketId != null) {
@@ -464,10 +474,19 @@
           btn.disabled = true;
           App.apiRequest('POST', '/tickets/' + encodeURIComponent(t.id) + '/reply', { message: text })
             .then(function () { ta.value = ''; renderTicketDetail(t.id); loadTickets(); })
-            .catch(function (err) { App.showToast((err && err.message) || 'ارسال پاسخ ناموفق بود.', 'danger'); })
+            .catch(function (err) {
+              if (isAuthError(err)) {
+                App.showToast('ابتدا وارد حساب خود شوید.', 'danger');
+                renderTickets();
+              } else {
+                App.showToast((err && err.message) || 'ارسال پاسخ ناموفق بود.', 'danger');
+              }
+            })
             .finally(function () { btn.disabled = false; });
         });
       }).catch(function (err) {
+        if (!document.body.contains(body)) return;
+        if (isAuthError(err)) { body.innerHTML = authPromptHtml(); return; }
         body.innerHTML = '<p style="font-size:13px;color:var(--color-danger);text-align:center;padding:18px 0">' + esc((err && err.message) || 'بارگذاری تیکت ناموفق بود.') + '</p>';
       });
     }
@@ -481,6 +500,7 @@
         renderTickets();
       }).catch(function (err) {
         if (!document.body.contains(body)) return;
+        if (isAuthError(err)) { body.innerHTML = authPromptHtml(); return; }
         body.innerHTML = '<p style="font-size:13px;color:var(--color-danger);text-align:center;padding:18px 0">' + esc((err && err.message) || 'بارگذاری تیکت‌ها ناموفق بود.') + '</p>';
       });
     }
@@ -516,7 +536,12 @@
           loadTickets();
         })
         .catch(function (err) {
-          App.showToast((err && err.message) || 'ثبت تیکت ناموفق بود.', 'danger');
+          if (isAuthError(err)) {
+            App.showToast('ابتدا وارد حساب خود شوید.', 'danger');
+            renderTickets();
+          } else {
+            App.showToast((err && err.message) || 'ثبت تیکت ناموفق بود.', 'danger');
+          }
         })
         .finally(function () { btn.disabled = false; });
     });

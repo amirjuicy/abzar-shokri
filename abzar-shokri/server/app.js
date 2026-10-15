@@ -4971,6 +4971,7 @@ const ROOT = path.join(__dirname, '..');
     '/account-addresses.html': '/account/addresses',
     '/account-wishlist.html': '/account/wishlist',
     '/account-notifications.html': '/account/notifications',
+    '/account-contact.html': '/account/contact',
     '/checkout.html': '/checkout',
     '/checkout-step1.html': '/checkout/step1',
     '/checkout-step2.html': '/checkout/step2',
@@ -5053,6 +5054,7 @@ const ROOT = path.join(__dirname, '..');
   app.get('/account/addresses', serveClean('account-addresses.html'));
   app.get('/account/wishlist', serveClean('account-wishlist.html'));
   app.get('/account/notifications', serveClean('account-notifications.html'));
+  app.get('/account/contact', serveClean('account-contact.html'));
   app.get('/checkout', serveClean('checkout.html'));
   app.get('/checkout/step1', serveClean('checkout-step1.html'));
   app.get('/checkout/step2', serveClean('checkout-step2.html'));

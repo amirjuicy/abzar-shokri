@@ -2017,3 +2017,26 @@ button.header-account-dropdown__item:hover {
 }
 
 /* root already patched via abzar-shokri copy */
+
+/* ── First-paint layout reservation (anti-flicker) ───────────────────
+   The header shells render synchronously before first paint via
+   common.js renderCriticalShell(), but when scripts are still in flight
+   the empty placeholders must already reserve header space so the page
+   below never jumps on hydration. Desktop reserves through body
+   padding (the fixed header is out of flow); mobile reserves through
+   the sticky bar's own min-height. */
+@media (min-width: 769px) {
+  /* The rendered header always includes the promo topbar, so an empty
+     shell still needs the full 150px — otherwise body padding snaps
+     115px → 150px the moment the header hydrates. */
+  body:has(#site-header:empty) {
+    padding-top: 150px;
+  }
+}
+@media (max-width: 768px) {
+  #mobile-header:empty {
+    display: block;
+    min-height: 72px;
+    visibility: hidden;
+  }
+}

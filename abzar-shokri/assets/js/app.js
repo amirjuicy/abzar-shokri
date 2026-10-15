@@ -469,14 +469,26 @@
   }
 
   /* ── Init ─────────────────────────────────────────────────── */
-  function init() {
-    renderCategories();
-    renderBestSellers();
-    renderNewProducts();
-    renderSpecialOffers();
-    renderRecommendations();
-    renderBrands();
-    renderArticles();
+  /* Grids ship pre-rendered (baked) in the homepage HTML. Re-rendering
+     them synchronously with fallback data and AGAIN when the live API
+     resolves flashes the product cards twice per load. Fill only empty
+     grids on the first pass; refresh everything once live data arrives. */
+  function renderGrids(onlyEmpty) {
+    function fill(id, fn) {
+      var g = document.getElementById(id);
+      if (!g) return;
+      if (onlyEmpty && g.children.length) return;
+      fn();
+    }
+    fill('categories-grid', renderCategories);
+    fill('bestsellers-grid', renderBestSellers);
+    fill('new-products-grid', renderNewProducts);
+    fill('special-offers-grid', renderSpecialOffers);
+    fill('rec-carousel', renderRecommendations);
+    fill('brands-grid', renderBrands);
+    fill('articles-grid', renderArticles);
+  }
+  function initStaticBits() {
     startCountdown();
     initHeroSlideshow();
     bindMobileShortcuts();
@@ -491,15 +503,19 @@
   /* ── Boot (catalog comes from /api; static AppData is fallback) ── */
   /* No window.App definition — all shared APIs come from common.js */
   function boot() {
-    init();
+    renderGrids(true);
+    initStaticBits();
     try {
       if (AppData.catalogReady && typeof AppData.catalogReady.then === 'function') {
-        AppData.catalogReady.then(function () {
-          init();
+        /* catalogReady resolves true only when the live API actually
+           replaced the fallback data — re-render grids just in that case
+           so a failed/slow API never flashes identical markup. */
+        AppData.catalogReady.then(function (live) {
+          if (live) renderGrids(false);
           if (window.App && typeof App.updateWishlistUI === 'function') App.updateWishlistUI();
         });
       }
-      document.addEventListener('abzar:catalog-updated', init);
+      document.addEventListener('abzar:catalog-updated', function () { renderGrids(false); });
     } catch (e) {}
   }
   if (document.readyState === 'loading') {

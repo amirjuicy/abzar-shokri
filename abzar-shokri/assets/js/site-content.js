@@ -5,16 +5,32 @@
   'use strict';
   if(location.protocol==='file:') return;
   var __heroBox=document.querySelector('.hero__slides');
-  if(__heroBox){ __heroBox.setAttribute('data-hero-loading','1'); __heroBox.innerHTML='<div class="hero__loading" style="padding:48px;text-align:center">'+'در حال بارگذاری…'+'</div>'; }
+  /* Never wipe baked hero slides for a loading placeholder: pages ship
+     with real pre-rendered slides, and replacing them with "loading…"
+     guarantees a visible flash on every homepage refresh. Only mark the
+     loading state when the container is actually empty; keep baked slides
+     (and dots) until the live API response arrives. */
+  var __heroHadBaked=!!(__heroBox && __heroBox.querySelector('.hero__slide'));
+  if(__heroBox && !__heroHadBaked){ __heroBox.setAttribute('data-hero-loading','1'); __heroBox.innerHTML='<div class="hero__loading" style="padding:48px;text-align:center">'+'در حال بارگذاری…'+'</div>'; }
   var __heroRenderGen=0;
   var __heroDots=document.querySelector('.hero__dots');
-  if(__heroDots){ __heroDots.innerHTML=''; }
+  var __dotsHadBaked=!!(__heroDots && __heroDots.querySelector('.hero__dot'));
+  if(__heroDots && !__dotsHadBaked){ __heroDots.innerHTML=''; }
   function isMobileViewport(){ return window.innerWidth <= 767; }
   function renderHeroSlides(slides){
     var myGen=++__heroRenderGen;
     var container=document.querySelector('.hero__slides');
     if(!container) return;
-    if(!slides || !slides.length){ var __c=document.querySelector('.hero__slides'); if(__c){ __c.innerHTML=''; __c.removeAttribute('data-hero-loading'); } var __d=document.querySelector('.hero__dots'); if(__d){ __d.innerHTML=''; } return; }
+    /* A failed/empty API response must keep the baked fallback instead of
+       blanking the hero into an incorrect empty state. */
+    if(!slides || !slides.length){
+      var __c=document.querySelector('.hero__slides');
+      if(__c && !__c.querySelector('.hero__slide')){ __c.innerHTML=''; __c.removeAttribute('data-hero-loading'); }
+      else if(__c){ __c.removeAttribute('data-hero-loading'); }
+      var __d=document.querySelector('.hero__dots');
+      if(__d && !__d.querySelector('.hero__dot')){ __d.innerHTML=''; }
+      return;
+    }
     /* Preserve the currently visible index across re-renders (e.g. resize)
        so a mid-cycle re-render never flashes slide 1 over another slide. */
     var keepIdx=0;

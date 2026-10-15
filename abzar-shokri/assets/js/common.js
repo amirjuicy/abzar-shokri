@@ -774,14 +774,21 @@
     activePage: ''
   };
 
-  /* ── Initial Site Loader ───────────────────────────────────── */
+  /* ── Initial Site Loader ─────────────────────────────────────
+     The loader must never hide a fast page behind an arbitrary delay:
+     it is mounted only when the load actually takes long (grace period),
+     and it leaves the moment loading finishes — no minimum display time.
+     Fast refreshes and navigations therefore paint content immediately
+     with no blank-screen flash. */
   var siteLoaderState = {
     loader: null,
     previousBodyOverflow: '',
     inertElements: [],
     hasFinished: false,
     mountTime: 0,
-    minDisplayDuration: 1500
+    mountTimer: null,
+    minDisplayDuration: 0,
+    gracePeriodMs: 600
   };
 
   function mountSiteLoader() {
@@ -835,6 +842,10 @@
   }
 
   function finishSiteLoader() {
+    if (siteLoaderState.mountTimer) {
+      try { clearTimeout(siteLoaderState.mountTimer); } catch (e) {}
+      siteLoaderState.mountTimer = null;
+    }
     var loader = siteLoaderState.loader;
     if (!loader || siteLoaderState.hasFinished) return;
 
@@ -872,6 +883,10 @@
   }
 
   function watchForSiteLoaderCompletion() {
+    if (siteLoaderState.mountTimer) {
+      try { clearTimeout(siteLoaderState.mountTimer); } catch (e) {}
+      siteLoaderState.mountTimer = null;
+    }
     if (!siteLoaderState.loader) return;
     if (document.readyState === 'complete') {
       requestAnimationFrame(finishSiteLoader);
@@ -880,7 +895,24 @@
     }
   }
 
-  mountSiteLoader();
+  /* Mount the loader only when the page is genuinely slow: if everything
+     (including this script) settles within the grace period, no overlay
+     ever appears and no blank-screen flash exists. */
+  function scheduleSiteLoader() {
+    if (document.readyState === 'complete') return;
+    try {
+      siteLoaderState.mountTimer = setTimeout(function () {
+        siteLoaderState.mountTimer = null;
+        if (siteLoaderState.hasFinished) return;
+        if (document.readyState === 'complete') return;
+        try { mountSiteLoader(); } catch (e) {}
+        watchForSiteLoaderCompletion();
+      }, siteLoaderState.gracePeriodMs);
+    } catch (e) {}
+    watchForSiteLoaderCompletion();
+  }
+
+  scheduleSiteLoader();
 
   /* ── Top progress bar (brand-color, RTL right→left) ─────────
      Injected once per page; animates on every in-site navigation.
@@ -1151,6 +1183,10 @@
     $$('.product-card__action-btn[data-wishlist]').forEach(function (btn) {
       var id = parseInt(btn.dataset.wishlist);
       var active = state.wishlist.includes(id);
+      /* Avoid rewriting identical markup (a needless re-render flash on
+         every catalog refresh); only touch nodes whose state changed. */
+      if (btn.classList.contains('is-active') === active && btn._asWishInit) return;
+      btn._asWishInit = true;
       btn.classList.toggle('is-active', active);
       btn.innerHTML = active ? Icons.heartFill : Icons.heart;
     });
@@ -1431,10 +1467,21 @@
   }
 
   /* Re-render ONLY the auth area so login/logout updates the top bar
-     without breaking search input, cart drawer or the rest of header. */
+     without breaking search input, cart drawer or the rest of header.
+     Idempotent: when the auth state is unchanged since the last render,
+     the DOM is left untouched so polling (fetchMe/401) can never cause
+     a visible re-render flash or steal focus. */
+  function currentAuthKey() {
+    try { var u = getCurrentUser(); return u ? ('in:' + u.id) : 'out'; } catch (e) { return 'out'; }
+  }
   function refreshHeaderAuth() {
+    var authKey = currentAuthKey();
     var actions = document.querySelector('.site-header .header-actions');
     if (actions) {
+      if (actions.getAttribute('data-auth-key') === authKey) {
+        try { updateCartUI(); } catch (e) {}
+        try { refreshAddressBars(); } catch (e) {}
+      } else {
       var cartCount = 0;
       try { cartCount = getCartCount(); } catch (e) {}
       var cartBadge = actions.querySelector('.header-action__badge');
@@ -1443,6 +1490,7 @@
         + '<span class="header-divider" aria-hidden="true"></span>'
         + notifBellHTML()
         + '' + cartPopoverHTML() + '';
+      actions.setAttribute('data-auth-key', authKey);
       bindCartPopovers(actions);
       bindAccountDropdown(actions);
       bindNotifBells(actions);
@@ -1453,17 +1501,20 @@
       if (cartBadge && cartCountText && !isNaN(parseInt(cartCountText, 10))) {
         /* updateCartUI already synced from state; nothing extra needed */
       }
+      }
     }
     var mobileHeader = document.getElementById('mobile-header');
     if (mobileHeader) {
       var wrap = mobileHeader.querySelector('.container');
       if (wrap) {
+        if (mobileHeader.getAttribute('data-auth-key') === authKey) return;
         var links = wrap.querySelectorAll(':scope > a.header-action');
         if (links.length) {
           var tmp = document.createElement('div');
           tmp.innerHTML = mobileAuthHTML();
           var fresh = tmp.firstChild;
           if (fresh) links[0].replaceWith(fresh);
+          mobileHeader.setAttribute('data-auth-key', authKey);
         }
       }
     }
@@ -1587,6 +1638,7 @@
     var _addrText='لطفاً آدرس خود را ثبت کنید'; try{ if(isLoggedIn()) _addrText=getAddressTitle(getUserData('addresses',[])); }catch(e){} var _addrEsc=_addrText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     var searchHtml = hideSearch ? '' : '<div class="header-search"><div class="search-input-wrapper"><span class="search-input__icon" aria-hidden="true">' + Icons.search.replace('width="20" height="20"', 'width="20" height="20"') + '</span><input type="text" class="search-input" placeholder="جستجو" autocomplete="off"><span class="search-input__shortcut" aria-hidden="true">Ctrl+K</span></div><div class="search-dropdown"></div></div>';
     var storeName = getCachedStoreName() || 'ابزار شکری';
+    var _authKey = currentAuthKey();
 
 el.innerHTML = '\
     <header class="site-header">\
@@ -1594,7 +1646,7 @@ el.innerHTML = '\
     <div class="header-main"><div class="container">\
     <a href="/" class="header-logo"><span class="header-logo__icon">' + Icons.flash.replace('width="24" height="24"', 'width="24" height="24"') + '</span><span class="header-logo__text"><span class="header-logo__title">' + storeName + '</span><span class="header-logo__subtitle">فروشگاه تخصصی ابزارآلات</span></span></a>\
     ' + searchHtml + '\
-    <div class="header-actions">\
+    <div class="header-actions" data-auth-key="' + _authKey + '">\
     ' + authHtml + '\
     <span class="header-divider" aria-hidden="true"></span>\
     ' + notifBellHTML() + '\
@@ -1625,6 +1677,8 @@ el.innerHTML = '\
     try { return storeFile().toLowerCase() === 'product.html'; } catch (e) { return false; }
   }
   function renderMobileHeaderPdp(el) {
+    /* Idempotent: static markup — a second pass must not rebuild it. */
+    if (el.classList.contains('mobile-header--pdp') && el.querySelector('.mobile-header-pdp')) return;
     el.classList.add('mobile-header--pdp');
     el.classList.remove('is-account-header');
     el.innerHTML = '\
@@ -1643,6 +1697,10 @@ el.innerHTML = '\
   function renderMobileHeader(el) {
     if (isProductPage()) { renderMobileHeaderPdp(el); return; }
     el.classList.remove('mobile-header--pdp');
+    var _mAuthKey = currentAuthKey();
+    /* Idempotent: re-running with the same auth state must not rebuild
+       the DOM (would flash the mobile bar and drop search focus). */
+    if (el.getAttribute('data-auth-key') === _mAuthKey && el.querySelector('.mobile-header__search-wrap, .mobile-header-pdp, .container')) return;
     var authHtml = mobileAuthHTML();
     var hideSearch = isAccountPage();
     var mobileSearchHtml = hideSearch ? '' : '<div class="mobile-header__search-wrap"><input type="text" class="mobile-header__search-input" placeholder=" " autocomplete="off" aria-label="جستجو در ابزار شکری"><span class="mobile-header__search-ph" aria-hidden="true"><span class="mobile-header__search-ph--muted">جستجو در</span><span class="mobile-header__search-ph--brand">ابزار شکری</span></span><button class="mobile-header__search-icon" type="button">' + Icons.search + '</button><div class="search-dropdown search-dropdown--mobile"></div></div>';
@@ -1657,6 +1715,7 @@ el.innerHTML = '\
     ' + cartPopoverHTML() + '\
     </div>';
     if (hideSearch) el.classList.add('is-account-header');
+    el.setAttribute('data-auth-key', _mAuthKey);
   }
 
   /* ── Render Footer ────────────────────────────────────────── */
@@ -2003,6 +2062,9 @@ el.innerHTML = '\
 
   /* ── Render Overlays ──────────────────────────────────────── */
   function renderOverlays(el) {
+    /* Idempotent: overlays are static markup — rebuilding them on every
+       init would flash the bottom nav / chat widget and duplicate state. */
+    if (el.innerHTML.trim()) return;
     var chatHtml = buildChatHtml();
     el.innerHTML = '\
     <div class="mobile-menu">\
@@ -2064,6 +2126,11 @@ el.innerHTML = '\
 
   /* ── Bind Events ──────────────────────────────────────────── */
   function bindEvents() {
+    /* Singleton: document-level listeners must not be stacked when init
+       runs on top of the synchronous critical render. Element-level binds
+       below already guard per-node (__accountBound & co). */
+    if (bindEvents._done) return;
+    bindEvents._done = true;
     var headerSearchInput = $('.header-search input');
     if (headerSearchInput) {
       headerSearchInput.addEventListener('focus', function () {
@@ -2478,6 +2545,10 @@ el.innerHTML = '\
      One message visible at a time, next every 30s, fade/slide via
      CSS (.promo-topbar__msg.is-active). No manual controls. */
   function initPromoTopbar() {
+    /* Singleton: init runs on top of the synchronous critical render, so a
+       second call must not stack another 30s rotation timer. */
+    if (initPromoTopbar._done) return;
+    initPromoTopbar._done = true;
     var viewports = document.querySelectorAll('.promo-topbar__viewport');
     if (!viewports.length) return;
     var ROTATE_MS = 30000;
@@ -2499,6 +2570,13 @@ el.innerHTML = '\
   function renderMegaMenu() {
     var dd = document.getElementById('categories-dropdown');
     if (!dd || typeof AppData === 'undefined' || !AppData.categories) return;
+    /* Idempotent: rebuilding identical markup would flash/reset the open
+       panel and hover state on every catalog refresh. */
+    try {
+      var sig = AppData.categories.map(function (c) { return c.slug + ':' + ((c.subcategories || []).length); }).join('|');
+      if (dd._asMegaSig === sig && dd.innerHTML.trim()) return;
+      dd._asMegaSig = sig;
+    } catch (e) {}
     /* Build Digikala-style two-panel mega menu: left = category list, right = subcategories */
     var leftPanel = AppData.categories.map(function(cat, idx) {
       var catIcon = getCategoryIcon(cat.icon) || Icons.package;
@@ -3750,6 +3828,50 @@ el.innerHTML = '\
     }
     window.addEventListener('resize', applyViewport);
   })();
+
+  /* ── Critical shell (synchronous, pre-paint) ──────────────────
+     Empty #site-header / #mobile-header shells (every page except the
+     homepage ships them empty) plus the baked homepage header must reach
+     their correct final state BEFORE the first paint — otherwise every
+     refresh and every cross-page navigation flashes a blank header, a
+     body padding jump (115px → 150px) and, on the homepage, a stale
+     logged-in menu that is corrected a moment later. Scripts load at the
+     end of <body>, so the shell DOM already exists here while the parser
+     is still running: render synchronously instead of waiting for
+     DOMContentLoaded. All renders below are idempotent, so the deferred
+     init() simply no-ops over them. No page hiding, no delays. */
+  function syncScrollClass() {
+    try {
+      var scrolled = window.scrollY > 10;
+      var dh = document.querySelector('.site-header');
+      var mh = document.querySelector('.mobile-header');
+      if (dh) dh.classList.toggle('is-scrolled', scrolled);
+      if (mh) mh.classList.toggle('is-scrolled', scrolled);
+    } catch (e) {}
+  }
+  function renderCriticalShell() {
+    if (renderCriticalShell._done) return;
+    renderCriticalShell._done = true;
+    try { getGuestSession(); } catch (e) {}
+    try { refreshState(); } catch (e) {}
+    try { var h = $('#site-header'); if (h) renderHeader(h); } catch (e) {}
+    try { var m = $('#mobile-header'); if (m) renderMobileHeader(m); } catch (e) {}
+    /* Correct a stale baked auth area (e.g. a baked-in logged-in menu
+       served to a logged-out visitor) before first paint. */
+    try { refreshHeaderAuth(); } catch (e) {}
+    try { var o = $('#site-overlays'); if (o) renderOverlays(o); } catch (e) {}
+    try { renderMegaMenu(); } catch (e) {}
+    try {
+      if (typeof AppData !== 'undefined' && AppData.catalogReady && AppData.catalogReady.then) {
+        AppData.catalogReady.then(function () { try { renderMegaMenu(); } catch (e) {} });
+      }
+    } catch (e) {}
+    try { syncScrollClass(); } catch (e) {}
+    try { bindEvents(); } catch (e) {}
+    try { updateCartUI(); } catch (e) {}
+    try { initPromoTopbar(); } catch (e) {}
+  }
+  try { renderCriticalShell(); } catch (e) {}
 
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
   watchForSiteLoaderCompletion();
