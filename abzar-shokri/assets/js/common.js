@@ -1358,10 +1358,76 @@
     state.mobileMenuOpen = !state.mobileMenuOpen;
     var menu = $('.mobile-menu');
     var overlay = $('.drawer-overlay');
-    if (menu) menu.classList.toggle('is-active', state.mobileMenuOpen);
+    if (menu) {
+      menu.style.transform = '';
+      menu.classList.toggle('is-active', state.mobileMenuOpen);
+    }
     if (overlay) overlay.classList.toggle('is-active', state.mobileMenuOpen);
     document.body.style.overflow = state.mobileMenuOpen ? 'hidden' : '';
     document.documentElement.style.overflow = state.mobileMenuOpen ? 'hidden' : '';
+  }
+
+  /* ── Mobile menu backdrop tap + swipe to close ────────── */
+  function bindMobileMenuSwipe() {
+    var menu = $('.mobile-menu');
+    if (!menu || menu.__swipeBound) return;
+    menu.__swipeBound = true;
+    var startX = 0, startY = 0, lastX = 0;
+    var dragging = false, horizontal = null;
+    menu.addEventListener('touchstart', function (e) {
+      if (!state.mobileMenuOpen || e.touches.length !== 1) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      lastX = 0;
+      dragging = true;
+      horizontal = null;
+      menu.style.transition = 'none';
+    }, { passive: true });
+    menu.addEventListener('touchmove', function (e) {
+      if (!dragging || !state.mobileMenuOpen) return;
+      var t = e.touches[0];
+      var dx = t.clientX - startX;
+      var dy = t.clientY - startY;
+      if (horizontal === null) {
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+        horizontal = Math.abs(dx) > Math.abs(dy) * 1.25;
+        if (!horizontal) {
+          dragging = false;
+          menu.style.transition = '';
+          return;
+        }
+      }
+      if (!horizontal) return;
+      if (dx < 0) dx = 0;
+      if (dx > menu.offsetWidth) dx = menu.offsetWidth;
+      lastX = dx;
+      menu.style.transform = 'translateX(' + dx + 'px)';
+      e.preventDefault();
+    }, { passive: false });
+    menu.addEventListener('touchend', function () {
+      if (!dragging) {
+        dragging = false;
+        menu.style.transition = '';
+        return;
+      }
+      dragging = false;
+      menu.style.transition = '';
+      var threshold = Math.max(56, Math.round(menu.offsetWidth * 0.22));
+      if (horizontal && lastX > threshold) {
+        toggleMobileMenu();
+      } else {
+        menu.style.transform = '';
+      }
+      horizontal = null;
+      lastX = 0;
+    });
+    menu.addEventListener('touchcancel', function () {
+      dragging = false;
+      horizontal = null;
+      lastX = 0;
+      menu.style.transition = '';
+      menu.style.transform = '';
+    });
   }
 
   /* ── Cart Drawer (removed; replaced by cart popover) ────────── */
@@ -2067,6 +2133,7 @@ el.innerHTML = '\
     if (el.innerHTML.trim()) return;
     var chatHtml = buildChatHtml();
     el.innerHTML = '\
+    <div class="drawer-overlay"></div>\
     <div class="mobile-menu">\
     <div class="mobile-menu__header"><span style="font-weight:700;font-size:var(--font-size-lg)">منو</span><button class="drawer__close" aria-label="بستن منو">' + Icons.close + '</button></div>\
     <nav class="mobile-menu__nav">\
@@ -2295,6 +2362,15 @@ el.innerHTML = '\
 
     var mobileMenuClose = $('.mobile-menu .drawer__close');
     if (mobileMenuClose) mobileMenuClose.addEventListener('click', toggleMobileMenu);
+
+    var mobileMenuOverlay = $('.drawer-overlay');
+    if (mobileMenuOverlay && !mobileMenuOverlay.__backdropBound) {
+      mobileMenuOverlay.__backdropBound = true;
+      mobileMenuOverlay.addEventListener('click', function () {
+        if (state.mobileMenuOpen) toggleMobileMenu();
+      });
+    }
+    bindMobileMenuSwipe();
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') { closeSearchDropdown(); if (state.mobileMenuOpen) toggleMobileMenu(); closeAllCartPopovers(); var dd = document.querySelector('.categories-dropdown'); if (dd) dd.classList.remove('is-active'); }

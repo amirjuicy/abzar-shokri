@@ -1384,10 +1384,12 @@
     align-items: flex-start;
   }
 
-  /* ── Gallery Column (right side in RTL) ─────────────────── */
+  /* ── Gallery Column (right side in RTL) ───────────────────
+     Digikala proportion: gallery ≈ 38% of container, capped so the
+     main image never outgrows the info column. */
   .pdp-layout__gallery {
-    flex: 0 0 350px;
-    max-width: 350px;
+    flex: 0 0 min(38%, 500px);
+    max-width: min(38%, 500px);
     position: sticky;
     top: 110px;
     align-self: flex-start;
@@ -1449,7 +1451,7 @@
   }
 
   .pdp-specs__grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 8px;
   }
 
@@ -1479,14 +1481,38 @@
     padding: 8px 0;
   }
 
-  /* ── Buy Box (sticky within info column) ────────────────── */
+  /* ── Buy Box (sticky within info column) ──────────────────
+     Digikala: full-width buy box below the specs strip, not a
+     narrow column beside it. Price and add-to-cart side-by-side. */
   .dk-buybox-wrap {
     position: sticky;
     top: 110px;
     width: 100%;
-    max-width: 340px;
-    margin: 0 auto 12px 0;
+    max-width: 100%;
+    margin: 0 0 12px 0;
     row-gap: 8px;
+  }
+
+  /* Digikala: price right / cart left on one row (desktop) */
+  .dk-buybox__price-cart {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .dk-buybox__price {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .dk-buybox__price-top {
+    justify-content: flex-start;
+  }
+
+  .dk-buybox__cart {
+    flex: 0 0 auto;
+    margin-top: 0;
   }
 
   /* ── Features ───────────────────────────────────────────── */
@@ -1519,22 +1545,18 @@
       max-width: 1336px;
     }
 
-    /* ── PDP: buy box beside specs grid ─────────────────── */
+    /* ── PDP: Digikala layout — specs full-width, buy box below ── */
     .pdp-layout__info {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 340px;
-      gap: 20px 24px;
-      align-items: start;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
     .pdp-layout__info > * { min-width: 0; }
-    .pdp-layout__info > .pdp-title-section { grid-column: 1 / -1; grid-row: 1; }
-    .pdp-layout__info > .pdp-rating-row { grid-column: 1 / -1; grid-row: 2; }
-    .pdp-layout__info > .pdp-specs { grid-column: 1; grid-row: 3; }
-    .pdp-layout__info > .pdp-delivery-info { grid-column: 1; grid-row: 4; }
-    .pdp-layout__info > .pdp-insurance { grid-column: 1; grid-row: 5; }
-    .pdp-layout__info > .pdp-return-notice { grid-column: 1; grid-row: 6; }
-    .pdp-layout__info > .dk-buybox-wrap { grid-column: 2; grid-row: 3 / span 4; align-self: start; }
-    .pdp-layout__info > .pdp-features { grid-column: 1 / -1; grid-row: 7; }
+    .pdp-layout__info > .pdp-specs { order: 3; }
+    .pdp-layout__info > .pdp-delivery-info { order: 4; }
+    .pdp-layout__info > .pdp-return-notice { order: 5; }
+    .pdp-layout__info > .dk-buybox-wrap { order: 6; }
+    .pdp-layout__info > .pdp-features { order: 7; }
   }
 
 } /* end @media (min-width: 769px) */
