@@ -61,6 +61,8 @@
   overflow: hidden;
   border-radius: 0;
   margin: 0;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .hero__slides {

@@ -37,6 +37,13 @@ body.auth-standalone {
     radial-gradient(480px 300px at 12% 110%, rgba(0, 0, 0, 0.04), transparent 70%),
     var(--color-gray-100, #f5f5f5);
   min-height: 100dvh;
+  /* The shared header.css reserves 115px + promo-bar height of body padding
+     (and 76px bottom padding on mobile) for the storefront chrome that auth
+     pages hide via display:none. Auth pages must reset that reservation —
+     same convention as body:has(.account-layout) in account.css — otherwise
+     the auth box starts 155px below the viewport top and overflows the fold. */
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 body.auth-standalone main {
@@ -48,7 +55,10 @@ body.auth-standalone .auth-page {
   min-height: 100dvh;
   width: 100%;
   display: flex;
-  align-items: center;
+  /* Vertical centering comes from margin-block:auto on .auth-box below:
+     auto margins center the box when it fits, and top-align it (so the page
+     can scroll) when the box is taller than the viewport — align-items:center
+     would clip the overflowing top off-screen. */
   justify-content: center;
   padding: 40px 16px;
   background: transparent;
@@ -72,6 +82,10 @@ body.auth-standalone .auth-box {
   position: relative;
   width: 100%;
   max-width: 430px;
+  /* Auto block margins: vertical centering that never clips — when the box
+     is taller than the viewport the margins collapse to 0, the box stays at
+     the top and the page scrolls to reveal all of it. */
+  margin-block: auto;
   background: #fff;
   border: 1px solid #ececec; border-radius: var(--radius-2xl);
   box-shadow:

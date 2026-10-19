@@ -102,6 +102,25 @@
     for (var j = 1; j <= 3; j++) {
       var p = document.getElementById('home-promo-' + j);
       if (p && content['promo.topbar.' + j] != null) p.value = content['promo.topbar.' + j];
+      // Fill image paths from content
+      var hid = document.getElementById('home-promo-' + j + '-image');
+      if (hid && content['promo.topbar.' + j + '.image'] != null) hid.value = content['promo.topbar.' + j + '.image'];
+    }
+    // Fill top bar height
+    var tbHeight = document.getElementById('home-topbar-height');
+    if (tbHeight && content['promo.topbar.height'] != null) tbHeight.value = content['promo.topbar.height'];
+    // Fill image dimensions
+    var imgHeight = document.getElementById('home-topbar-img-height');
+    var imgWidth = document.getElementById('home-topbar-img-width');
+    if (imgHeight && content['promo.topbar.img_height'] != null) imgHeight.value = content['promo.topbar.img_height'];
+    if (imgWidth && content['promo.topbar.img_width'] != null) imgWidth.value = content['promo.topbar.img_width'];
+    // Update dimension display
+    var dimsDisplay = document.getElementById('home-topbar-dims-display');
+    if (dimsDisplay) {
+      var imgW = imgWidth ? imgWidth.value : '20';
+      var imgH = imgHeight ? imgHeight.value : '20';
+      var barH = tbHeight ? tbHeight.value : '35';
+      dimsDisplay.textContent = 'عرض: ' + imgW + 'px × ارتفاع: ' + imgH + 'px (ارتفاع نوار: ' + barH + 'px)';
     }
     var tb = document.getElementById('home-topbar-enabled');
     if (tb) tb.checked = String(content['home.topbar.enabled'] || '1') === '1';
@@ -120,14 +139,96 @@
   document.addEventListener('input', function(e){
     var id=e.target.id||''; var m=id.match(/^home-hero-(\d)-image$/); if(m){ var pv=document.getElementById('home-hero-'+m[1]+'-preview'); if(pv) pv.src=e.target.value.trim(); }
   });
+
+  // live preview when promo topbar image hidden field changes (via media gallery)
+  document.addEventListener('input', function(e){
+    var id=e.target.id||''; 
+    // Handle image selection from media gallery for promo topbar
+    var m = id.match(/^home-promo-(\d)-image$/);
+    if (m) {
+      var hiddenInput = document.getElementById('home-promo-' + m[1] + '-image');
+      var preview = document.getElementById('home-promo-' + m[1] + '-preview');
+      var clearBtn = document.querySelector('[data-promo-clear-image="' + m[1] + '"]');
+      if (hiddenInput && preview) {
+        var val = hiddenInput.value.trim();
+        preview.src = val ? val : '';
+        preview.style.display = val ? 'block' : 'none';
+        if (clearBtn) clearBtn.style.display = val ? 'inline-block' : 'none';
+        // Update the preview message text based on image presence
+        var msgSpan = document.getElementById('home-topbar-preview-msg');
+        if (msgSpan && val) {
+          // Show first msg that has an image, or default
+          var allImgs = document.querySelectorAll('[id^="home-promo-"][id$="-image"]');
+          var hasAnyImg = Array.from(allImgs).some(i => document.getElementById(i.getAttribute('id').replace('-image','-preview')).src);
+          msgSpan.textContent = hasAnyImg ? msgSpan.getAttribute('data-default') || 'ارسال رایگان برای سفارش‌های بالای ۵۰۰ هزار تومان' : '';
+        }
+      }
+    }
+    // Handle height/width input changes - update preview
+    m = id.match(/^home-(topbar-height|topbar-img-height|topbar-img-width)$/);
+    if (m) {
+      var preview = document.getElementById('home-topbar-preview');
+      if (preview) {
+        var height = document.getElementById('home-topbar-height') ? document.getElementById('home-topbar-height').value : '';
+        var imgHeight = document.getElementById('home-topbar-img-height') ? document.getElementById('home-topbar-img-height').value : '';
+        var imgWidth = document.getElementById('home-topbar-img-width') ? document.getElementById('home-topbar-img-width').value : '';
+        if (height || imgHeight || imgWidth) {
+          preview.style.height = height ? height + 'px' : '35px';
+          if (imgHeight) preview.querySelector('.promo-topbar__viewport').style.height = imgHeight + 'px';
+          // Update dimension display
+          var dimsDisplay = document.getElementById('home-topbar-dims-display');
+          if (dimsDisplay) {
+            var w = imgWidth || '?';
+            var h = imgHeight || '?';
+            dimsDisplay.textContent = 'عرض: ' + w + 'px × ارتفاع: ' + h + 'px (ارتفاع نوار: ' + (height || '35') + 'px)';
+          }
+        }
+      }
+    }
+  });
+
+  // Handle clear image button clicks
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest ? e.target.closest('[data-promo-clear-image]') : null;
+    if (!btn) return;
+    var imgNum = btn.getAttribute('data-promo-clear-image');
+    var hiddenInput = document.getElementById('home-promo-' + imgNum + '-image');
+    var preview = document.getElementById('home-promo-' + imgNum + '-preview');
+    var selectBtn = document.querySelector('[data-media-target="home-promo-' + imgNum + '-image"]');
+    if (hiddenInput) hiddenInput.value = '';
+    if (preview) {
+      preview.src = '';
+      preview.style.display = 'none';
+    }
+    if (selectBtn) selectBtn.style.display = 'inline-block';
+    // Update dimension display
+    var dimsDisplay = document.getElementById('home-topbar-dims-display');
+    if (dimsDisplay) {
+      var imgH = document.getElementById('home-topbar-img-height') ? document.getElementById('home-topbar-img-height').value : '';
+      var imgW = document.getElementById('home-topbar-img-width') ? document.getElementById('home-topbar-img-width').value : '';
+      var barH = document.getElementById('home-topbar-height') ? document.getElementById('home-topbar-height').value : '';
+      dimsDisplay.textContent = 'عرض: ' + (imgW || '20') + 'px × ارتفاع: ' + (imgH || '20') + 'px (ارتفاع نوار: ' + (barH || '35') + 'px)';
+    }
+  });
   function collectBanners() {
     var out = {};
     for (var j = 1; j <= 3; j++) {
       var p = document.getElementById('home-promo-' + j);
       if (p) out['promo.topbar.' + j] = p.value.trim();
+      // Collect image paths from hidden inputs
+      var hid = document.getElementById('home-promo-' + j + '-image');
+      if (hid) out['promo.topbar.' + j + '.image'] = hid.value.trim();
     }
     var tb = document.getElementById('home-topbar-enabled');
     out['home.topbar.enabled'] = tb && tb.checked ? '1' : '0';
+    // Collect top bar height
+    var h = document.getElementById('home-topbar-height');
+    if (h) out['home.topbar.height'] = h.value.trim() || '35';
+    // Collect image dimensions
+    var imgH = document.getElementById('home-topbar-img-height');
+    var imgW = document.getElementById('home-topbar-img-width');
+    if (imgH) out['promo.topbar.img_height'] = imgH.value.trim() || '20';
+    if (imgW) out['promo.topbar.img_width'] = imgW.value.trim() || '20';
     return out;
   }
 

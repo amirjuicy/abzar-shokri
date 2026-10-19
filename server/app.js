@@ -15,7 +15,7 @@ try { db.exec('PRAGMA journal_mode = WAL'); } catch (_) {}
 
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { requestIdMiddleware, requestLogger, logError } = require('./logger');
+const { requestIdMiddleware, requestLogger, logError, redactUrl } = require('./logger');
 
 const app = express();
 app.use(requestIdMiddleware);
@@ -32,7 +32,7 @@ app.use((req,res,next)=>{
         const duration = req._startAt ? Date.now()-req._startAt : undefined;
         const errName = body?.errorName || body?.name || 'Error';
         const errMsg = (body?.error||JSON.stringify(body)).toString().slice(0,2000);
-        logError('api 5xx', { requestId:req.requestId, method:req.method, path:req.originalUrl, status:res.statusCode, statusCode:res.statusCode, ...(userId?{userId}:{}), errorName: errName, error: errMsg, message: errMsg, stack: body?.stack ? String(body.stack).slice(0,4000) : undefined, durationMs: duration, duration });
+        logError('api 5xx', { requestId:req.requestId, method:req.method, path:redactUrl(req.originalUrl), status:res.statusCode, statusCode:res.statusCode, ...(userId?{userId}:{}), errorName: errName, error: errMsg, message: errMsg, stack: body?.stack ? String(body.stack).slice(0,4000) : undefined, durationMs: duration, duration });
       }catch(_){}
     }
     return origJson(body);
@@ -61,6 +61,8 @@ const authLimiter = rateLimit({ windowMs: 15*60*1000, max: 20, standardHeaders:t
 const generalLimiter = rateLimit({ windowMs: 60*1000, max: 120, standardHeaders:true, legacyHeaders:false, message:{error:'Too many requests'} });
 const orderLimiter = rateLimit({ windowMs: 15*60*1000, max: 10, standardHeaders:true, legacyHeaders:false, message:{error:'Too many requests, please try again later'} });
 const reviewLimiter = rateLimit({ windowMs: 15*60*1000, max: 20, standardHeaders:true, legacyHeaders:false, message:{error:'Too many requests, please try again later'} });
+const paymentCallbackLimiter = rateLimit({ windowMs: 15*60*1000, max: 30, standardHeaders:true, legacyHeaders:false, message:{error:'Too many requests, please try again later'} });
+const discountValidateLimiter = rateLimit({ windowMs: 15*60*1000, max: 30, standardHeaders:true, legacyHeaders:false, message:{error:'Too many requests, please try again later'} });
 app.use('/api/auth/', authLimiter);
 app.use('/api/admin/login', authLimiter);
 app.use('/api', generalLimiter);
@@ -412,7 +414,7 @@ api.get('/products', (req, res) => {
 
 const ExcelJS = require('exceljs');
 const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage(), limits:{fileSize:5*1024*1024} });
+const upload = multer({ storage: multer.memoryStorage(), limits:{fileSize:5*1024*1024}, fileFilter:(req,file,cb)=>{ const allowed = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.ms-excel','application/octet-stream']; if(allowed.includes(file.mimetype)) return cb(null,true); cb(new Error('Only Excel files are allowed')); } });
 const EXCEL_HEADERS = ['شناسه','نام محصول','برند','دسته‌بندی','زیردسته','SKU','مدل','توضیحات کوتاه','توضیحات کامل','قیمت','قیمت عمده','قیمت فروش','تخفیف','موجودی','وضعیت موجودی','حداقل سفارش','حداکثر سفارش','وزن','ابعاد','تولیدکننده','کشور سازنده','گارانتی','اقلام همراه','اصالت','ویژگی‌ها','تصاویر','واریانت‌ها','عنوان SEO','توضیحات SEO','کلمات کلیدی SEO','تصویر OG'];
 function featuresToStr(j){ try{ const a=JSON.parse(j||'[]'); if(!Array.isArray(a)||!a.length) return ''; return a.map(f=>{ if(typeof f==='string') return f; const k=f.title||f.key||f.name||''; const v=f.value||f.val||''; return k? (v? `${k}: ${v}`:k):v; }).filter(Boolean).join(' | ');}catch(_){return '';} }
 function strToFeatures(s){ if(!s) return '[]'; const parts=String(s).split('|').map(x=>x.trim()).filter(Boolean); const arr=parts.map(p=>{ const idx=p.indexOf(':'); if(idx>-1) return {title:p.slice(0,idx).trim(), value:p.slice(idx+1).trim()}; return {title:p,value:''}; }); return JSON.stringify(arr); }
@@ -485,7 +487,7 @@ api.get('/products/export/excel', requireAdmin, async (req,res)=>{
     ws.getRow(1).alignment={horizontal:'center', vertical:'middle', wrapText:true};
     ws.getRow(1).eachCell(c=>{ if(c.value!=null){ c.fill={type:'pattern', pattern:'solid', fgColor:{argb:'FF1E3A5F'}}; c.border={top:{style:'thin',color:{argb:'FFB0B0B0'}},bottom:{style:'thin',color:{argb:'FFB0B0B0'}},left:{style:'thin',color:{argb:'FFB0B0B0'}},right:{style:'thin',color:{argb:'FFB0B0B0'}}}; }});
     for(const r of rows){
-      const vals=cols.map(k=>{ try{return EXPORT_COLUMNS[k].getter(r);}catch(_){return '';} });
+      const vals=cols.map(k=>{ try{ const v=EXPORT_COLUMNS[k].getter(r); return (typeof v === 'string' && /^[=+@-]/.test(v)) ? ("'" + v) : v; }catch(_){return '';} });
       const row=ws.addRow(vals);
       row.alignment={vertical:'middle', wrapText:false};
       // numeric formatting
@@ -900,9 +902,17 @@ api.post('/auth/register', (req, res) => {
   if (!firstName || !lastName || !mobile) {
     return res.status(400).json({ error: 'firstName, lastName, mobile are required' });
   }
-  if (!password || String(password).length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  if (!password || String(password).length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
   }
+  const _mobileValue = String(mobile).trim();
+  if (!/^09\d{9}$/.test(_mobileValue)) {
+    return res.status(400).json({ error: 'Invalid mobile number' });
+  }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
+    return res.status(400).json({ error: 'Invalid email' });
+  }
+
   try {
     const uid = 'u_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     const joinDate = new Date().toLocaleDateString('fa-IR');
@@ -937,12 +947,13 @@ api.post('/auth/login', (req, res) => {
     }
   } catch (_) {}
   const row = db.prepare('SELECT * FROM users WHERE mobile = ? OR email = ?').get(idf, idf);
-  if (!row) return res.status(401).json({ error: 'کاربری با این مشخصات یافت نشد.' });
+  if (!row) return res.status(401).json({ error: 'اطلاعات ورود اشتباه است.' });
   if (Number(row.is_blocked) === 1) return res.status(403).json({ error: 'حساب کاربری شما مسدود شده است.' });
-  if (row.password_hash) {
-    if (!password || !bcrypt.compareSync(String(password), row.password_hash)) {
-      return res.status(401).json({ error: 'رمز عبور اشتباه است.' });
-    }
+  if (!row.password_hash || !String(row.password_hash).trim()) {
+    return res.status(401).json({ error: 'اطلاعات ورود اشتباه است.' });
+  }
+  if (!password || !bcrypt.compareSync(String(password), row.password_hash)) {
+    return res.status(401).json({ error: 'اطلاعات ورود اشتباه است.' });
   }
   const token = issueToken(row.id);
   res.json({ user: mapUser(row), token, isAdmin: false });
@@ -1601,8 +1612,14 @@ api.post('/admin/users/:id/password', requireAdmin, (req, res) => {
   const id = Number(req.params.id);
   const { newPassword } = req.body || {};
   if (!newPassword || String(newPassword).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
-  const cur = db.prepare('SELECT id FROM admin_users WHERE id = ?').get(id);
-  if (!cur) return res.status(404).json({ error: 'Admin not found' });
+  const target = db.prepare('SELECT id, role FROM admin_users WHERE id = ?').get(id);
+  if (!target) return res.status(404).json({ error: 'Admin not found' });
+  const RANK = { superadmin: 4, admin: 3, manager: 2, editor: 1, support: 0, viewer: 0 };
+  const requesterRank = RANK[String(req.admin.role || '').toLowerCase()] || 0;
+  const targetRank = RANK[String(target.role || '').toLowerCase()] || 0;
+  if (id !== req.admin.id && targetRank >= requesterRank) {
+    return res.status(403).json({ error: 'Cannot reset password for equal or higher privilege admin' });
+  }
   db.prepare('UPDATE admin_users SET password_hash = ? WHERE id = ?').run(bcrypt.hashSync(String(newPassword), 10), id);
   if (id !== req.admin.id) db.prepare('DELETE FROM admin_sessions WHERE admin_id = ?').run(id);
   res.json({ ok: true });
@@ -1622,6 +1639,8 @@ api.post('/admin/password', requireAdmin, (req, res) => {
   }
   db.prepare('UPDATE admin_users SET password_hash = ? WHERE id = ?')
     .run(bcrypt.hashSync(String(newPassword), 10), req.admin.id);
+  const curToken = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+  db.prepare('DELETE FROM admin_sessions WHERE admin_id = ? AND token <> ?').run(req.admin.id, curToken);
   res.json({ ok: true });
 });
 
@@ -1737,13 +1756,16 @@ api.post('/users', requireAdmin, (req, res) => {
   if (!firstName || !lastName || !mobile) {
     return res.status(400).json({ error: 'firstName, lastName, mobile are required' });
   }
+  if (!password || String(password).length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
   try {
     const uid = id || ('u_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7));
     const joinDate = new Date().toLocaleDateString('fa-IR');
     db.prepare(`INSERT INTO users (id, first_name, last_name, mobile, email, password_hash, join_date)
       VALUES (?, ?, ?, ?, ?, ?, ?)`)
       .run(uid, firstName, lastName, mobile, email || null,
-        password ? bcrypt.hashSync(password, 10) : null, joinDate);
+        bcrypt.hashSync(String(password), 10), joinDate);
     res.status(201).json({ id: uid, firstName, lastName, mobile, email: email || '', joinDate });
   } catch (e) {
     if (String(e.message).includes('UNIQUE')) return res.status(409).json({ error: 'Mobile or email already exists' });
@@ -2111,7 +2133,7 @@ api.delete('/admin/discounts/:id', requireAdmin, (req, res) => {
 });
 // Public preview: validates code against a client-claimed subtotal for display only.
 // Order creation re-validates against the server-computed subtotal — never trusted.
-api.post('/discounts/validate', (req, res) => {
+api.post('/discounts/validate', discountValidateLimiter, (req, res) => {
   const r = validateDiscountCode(req.body?.code ?? req.body?.discountCode, req.body?.subtotal);
   if (!r.ok) return res.status(r.status || 400).json({ ok: false, error: r.error });
   res.json({ ok: true, code: r.row.code, type: r.row.type, value: Number(r.row.value) || 0, discount: r.discount });
@@ -2367,10 +2389,11 @@ api.get('/admin/transactions/:orderId', requireAdmin, (req, res) => {
 });
 
 api.get('/users/:userId/orders', (req, res) => {
+  let admin = null; try { admin = getAdminAuth(req); } catch (_) { admin = null; }
   const auth = getAuthUser(req);
-  // Authenticated users may only list their own orders; unauthenticated
-  // legacy access still allowed for backward compat when ids match locally.
-  if (auth && auth.row.id !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
+  if (!admin) {
+    if (!auth || auth.row.id !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
+  }
   const orders = db.prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC').all(req.params.userId);
   const itemsStmt = db.prepare('SELECT * FROM order_items WHERE order_id = ?');
   res.json(orders.map((o) => mapOrder(o, itemsStmt.all(o.id))));
@@ -2379,9 +2402,25 @@ api.get('/users/:userId/orders', (req, res) => {
 api.get('/orders/:id', (req, res) => {
   const o = db.prepare('SELECT o.*, u.first_name, u.last_name, u.mobile as user_mobile, u.email as user_email FROM orders o LEFT JOIN users u ON u.id=o.user_id WHERE o.id = ?').get(req.params.id);
   if (!o) return res.status(404).json({ error: 'Order not found' });
+  let admin = null; try { admin = getAdminAuth(req); } catch (e) {}
   const auth = getAuthUser(req);
-  let admin=null; try{ admin=getAdminAuth(req); }catch(e){}
-  if (!admin && auth && o.user_id && o.user_id !== auth.row.id) return res.status(403).json({ error: 'Forbidden' });
+  if (!admin) {
+    if (o.user_id) {
+      if (!auth || auth.row.id !== o.user_id) {
+        return res.status(auth ? 403 : 401).json({ error: 'Forbidden' });
+      }
+    } else if (auth) {
+      // Guest orders (user_id NULL) have no single owner; do not let an
+      // authenticated customer bind to someone else's guest order via IDOR.
+      return res.status(403).json({ error: 'Forbidden' });
+    } else {
+      // Anonymous access to guest orders requires the access_token.
+      const token = String(req.query.access_token || req.headers['x-access-token'] || '').trim();
+      if (!token || !o.access_token || token !== o.access_token) {
+        return res.status(401).json({ error: 'Access token required' });
+      }
+    }
+  }
   const mapped = mapOrder(o, db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(o.id));
   if (o.user_id) mapped.customer = { id: o.user_id, firstName: o.first_name || '', lastName: o.last_name || '', mobile: o.user_mobile || '', email: o.user_email || '' };
   res.json(mapped);
@@ -2463,12 +2502,12 @@ api.post('/orders', orderLimiter, (req, res) => {
       return res.status(401).json({ error: 'ثبت سفارش با حساب مدیریتی ممکن نیست. لطفاً با حساب کاربری مشتری وارد شوید و دوباره تلاش کنید.' });
     }
   }
-  let userId = (auth && auth.row.id) || b.userId || null;
-  // A stale client session (user deleted, DB restored, expired token) can send
-  // a userId that no longer exists. Verify it against users; otherwise fall
-  // back to a guest order so the INSERT never violates the users FK.
-  if (!auth && userId && !db.prepare('SELECT id FROM users WHERE id = ?').get(userId)) {
-    userId = null;
+  // Only the authenticated session may identify the buyer. Never trust the
+  // client-supplied b.userId, which could otherwise attribute a guest order to
+  // an arbitrary user account (IDOR / order spoofing).
+  let userId = (auth && auth.row.id) || null;
+  if (b.userId && auth && b.userId !== auth.row.id) {
+    return res.status(403).json({ error: 'Order user mismatch' });
   }
   // Purchase settings: guest checkout may be disabled by admin.
   const ps = getPurchaseSettings();
@@ -2595,7 +2634,10 @@ api.post('/orders', orderLimiter, (req, res) => {
   const amtErr = checkPurchaseAmount(subtotal);
   if (amtErr) return res.status(amtErr.status).json({ error: amtErr.error });
   const itemsCount = serverItems.reduce((s, i) => s + i.quantity, 0);
-  const id = b.id || ('ORD-' + Date.now().toString(36).toUpperCase().slice(-8));
+  const id = 'ORD-' + crypto.randomBytes(8).toString('hex').toUpperCase();
+  // Guest-order access token: cryptographically random, returned once at order
+  // creation, required for all subsequent anonymous access to the order.
+  const accessToken = crypto.randomBytes(32).toString('hex');
   // Server-side payment state: normalize method, derive initial payment_status.
   // No gateway yet: cod -> unpaid, online/card -> pending (awaiting payment).
   // Never trust client statusText / status / timeline / paymentStatus.
@@ -2620,12 +2662,12 @@ api.post('/orders', orderLimiter, (req, res) => {
     const dec = db.prepare('UPDATE products SET stock_count = stock_count - ?, in_stock = CASE WHEN stock_count - ? > 0 THEN 1 ELSE 0 END WHERE id = ? AND stock_count >= ?');
     db.prepare(`INSERT INTO orders
       (id, user_id, date, status, status_text, total, items_count, shipping, discount, discount_code,
-       address, address_id, payment_method, payment_status, timeline_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+       address, address_id, payment_method, payment_status, timeline_json, access_token)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .run(id, userId, b.date || '', initialStatus, initialStatusText,
         total, itemsCount, shipping, discount, discountCode,
         addressText, addressId, paymentMethod, paymentStatus,
-        serverTimeline);
+        serverTimeline, accessToken);
     for (const it of serverItems) {
       const optionsJson = JSON.stringify(it.options || []);
       ins.run(id, it.productId, it.name, it.price, it.quantity, optionsJson);
@@ -2643,18 +2685,23 @@ api.post('/orders', orderLimiter, (req, res) => {
       }
     }
     if (discountCode) {
-      db.prepare('UPDATE discount_codes SET used_count = used_count + 1, updated_at = datetime(\'now\') WHERE code = ?').run(discountCode);
+      const inc = db.prepare(`UPDATE discount_codes SET used_count = used_count + 1, updated_at = datetime('now') WHERE code = ? AND (usage_limit IS NULL OR used_count < usage_limit)`).run(discountCode);
+      if (!inc.changes) throw Object.assign(new Error('Discount usage limit reached'), { code: 'DISCOUNT_LIMIT' });
     }
     db.exec('COMMIT');
   } catch (e) {
     try { db.exec('ROLLBACK'); } catch (_) {}
     if (e.code === 'INSUFFICIENT_STOCK') return res.status(409).json({ error: e.message });
+    if (e.code === 'DISCOUNT_LIMIT') return res.status(409).json({ error: e.message });
     if (String(e.message).includes('UNIQUE')) return res.status(409).json({ error: 'Order id already exists' });
     if (String(e.message).includes('database is locked') || String(e.message).includes('busy')) return res.status(409).json({ error: 'Concurrent order conflict, please retry' });
     throw e;
   }
   const created = db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
-  res.status(201).json(mapOrder(created, db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(id)));
+  const orderResponse = mapOrder(created, db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(id));
+  // Include access_token only in the creation response — never in subsequent reads.
+  orderResponse.accessToken = accessToken;
+  res.status(201).json(orderResponse);
 });
 
 function normalizeOrderStatus(s) {
@@ -2695,8 +2742,16 @@ api.patch('/orders/:id', requireAdmin, (req, res) => {
       db.exec("ALTER TABLE orders ADD COLUMN payment_status TEXT NOT NULL DEFAULT 'unpaid'");
     }
   } catch (_) {}
-  const o = db.prepare('SELECT id, status, stock_restored, payment_method FROM orders WHERE id = ?').get(req.params.id);
+  const o = db.prepare('SELECT id, status, stock_restored, payment_method, payment_status FROM orders WHERE id = ?').get(req.params.id);
   if (!o) return res.status(404).json({ error: 'Order not found' });
+  // No gateway connected: a client-supplied (even admin) `paid` flag is not proof
+  // of payment. Manual overrides must not mark online orders paid via this route.
+  if (!PAYMENT_GATEWAY_CONNECTED && normalizePaymentMethod(o.payment_method) === 'online') {
+    const _ovr = req.body.paymentStatus ?? req.body.payment_status;
+    if (typeof _ovr === 'string' && _ovr.trim().toLowerCase() === 'paid') {
+      return res.status(409).json({ error: 'gateway-not-connected', gateway: 'not-connected' });
+    }
+  }
   let nextStatus = null;
   if (status !== undefined) {
     if (typeof status !== 'string') return res.status(400).json({ error: 'Invalid status' });
@@ -2722,6 +2777,16 @@ api.patch('/orders/:id', requireAdmin, (req, res) => {
     }
     if (nextStatus === 'approved' && current !== 'awaiting_payment_approval' && current !== 'awaiting_order_approval') {
       return res.status(409).json({ error: `Cannot transition order from '${current}'` });
+    }
+    // Online fulfillment gate: an online order must have verified payment before
+    // processing/shipping/delivery. COD and card-to-card flows above are untouched.
+    // No bypass: `paid` cannot be granted through this route while disconnected.
+    if (normalizePaymentMethod(o.payment_method) === 'online'
+      && (nextStatus === 'processing' || nextStatus === 'shipped' || nextStatus === 'delivered')) {
+      const _paySt = String(o.payment_status || 'unpaid').trim().toLowerCase();
+      if (_paySt !== 'paid') {
+        return res.status(409).json({ error: 'Online order requires verified payment before fulfillment' });
+      }
     }
   }
   // Restore stock atomically when transitioning into a cancelled status.
@@ -2755,6 +2820,10 @@ api.patch('/orders/:id', requireAdmin, (req, res) => {
       db.prepare('UPDATE orders SET stock_restored = 1 WHERE id = ?').run(req.params.id);
     }
     db.exec('COMMIT');
+    // Record manual payment overrides (requireAdmin already authorized this route).
+    if (nextPaymentStatus !== null) {
+      logPaymentEvent(req.params.id, 'admin-payment-override', `admin:${req.admin.id} ${o.payment_status || 'unpaid'} -> ${nextPaymentStatus}`);
+    }
   } catch (e) {
     try { db.exec('ROLLBACK'); } catch (_) {}
     throw e;
@@ -2772,6 +2841,8 @@ api.patch('/orders/:id', requireAdmin, (req, res) => {
 //   2. Gateway redirects user back → POST :id/payment/callback → replace the
 //      stub `success` flag with a real server-to-server verification call, then
 //      transition payment_status (pending → paid / failed) only on verified result.
+// No real gateway is configured: callbacks must never mint `paid` (see callback route).
+const PAYMENT_GATEWAY_CONNECTED = false;
 function ensurePaymentColumns() {
   try {
     const cols = db.prepare('PRAGMA table_info(orders)').all();
@@ -2780,6 +2851,9 @@ function ensurePaymentColumns() {
     if (!names.has('payment_ref_id')) db.exec('ALTER TABLE orders ADD COLUMN payment_ref_id TEXT');
     if (!names.has('payment_amount')) db.exec('ALTER TABLE orders ADD COLUMN payment_amount INTEGER');
     if (!names.has('paid_at')) db.exec('ALTER TABLE orders ADD COLUMN paid_at TEXT');
+    // Guest-order access token: cryptographically random, returned once at order
+    // creation, required for all subsequent anonymous access to the order.
+    if (!names.has('access_token')) db.exec('ALTER TABLE orders ADD COLUMN access_token TEXT');
     db.exec(`CREATE TABLE IF NOT EXISTS payment_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -2801,14 +2875,25 @@ function logPaymentEvent(orderId, event, detail) {
 }
 
 // Owner (order.user_id) or admin may access payment refs; guest orders
-// (user_id NULL, legacy backward compat) keep legacy open access.
+// (user_id NULL) require the access_token returned at order creation.
 function checkPaymentAccess(order, req) {
-  if (!order.user_id) return null;
-  const auth = getAuthUser(req);
-  const admin = getAdminAuth(req);
+  if (!order) return { code: 404, error: 'Order not found' };
+  let admin = null; try { admin = getAdminAuth(req); } catch (_) { admin = null; }
   if (admin) return null;
-  if (!auth) return { code: 401, error: 'Not authenticated' };
-  if (auth.row.id !== order.user_id) return { code: 403, error: 'Forbidden' };
+  const auth = getAuthUser(req);
+  if (order.user_id) {
+    if (!auth) return { code: 401, error: 'Not authenticated' };
+    if (auth.row.id !== order.user_id) return { code: 403, error: 'Forbidden' };
+    return null;
+  }
+  // Guest orders (user_id NULL): require the access_token returned at order creation.
+  // Never let an authenticated customer claim someone else's guest order payment.
+  if (auth) return { code: 403, error: 'Forbidden' };
+  // Anonymous access requires the correct access_token.
+  const token = String(req.query.access_token || req.body?.access_token || req.headers['x-access-token'] || '').trim();
+  if (!token || !order.access_token || token !== order.access_token) {
+    return { code: 401, error: 'Access token required' };
+  }
   return null;
 }
 
@@ -2864,10 +2949,18 @@ api.get('/orders/:id/payment/events', requireAdmin, (req, res) => {
 // Gateway callback receiver (STUB verification: trusts the `success` flag +
 // matching authority). When a real gateway is connected, replace this with a
 // server-to-server verify(authority) call and transition state only on success.
-api.post('/orders/:id/payment/callback', (req, res) => {
+//
+// SECURITY NOTE: The current STUB flow trusts the client-supplied `success` flag.
+// This is acceptable ONLY because no real gateway is connected. When a real gateway
+// is added, the `success` determination MUST be replaced with a server-to-server
+// verification call (e.g., HMAC signature check against the gateway's public key).
+// The access_token requirement prevents anonymous attackers from exploiting this.
+api.post('/orders/:id/payment/callback', paymentCallbackLimiter, (req, res) => {
   ensurePaymentColumns();
   const o = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
   if (!o) return res.status(404).json({ error: 'Order not found' });
+  const denied = checkPaymentAccess(o, req);
+  if (denied) return res.status(denied.code).json({ error: denied.error });
   const pm = normalizePaymentMethod(o.payment_method);
   if (pm !== 'online') return res.status(409).json({ error: 'Order is not an online payment' });
   const b = req.body || {};
@@ -2882,17 +2975,12 @@ api.post('/orders/:id/payment/callback', (req, res) => {
   if (o.payment_status !== 'pending') {
     return res.status(409).json({ error: `Cannot settle payment from '${o.payment_status}'` });
   }
-  const success = b.success === true || String(b.success ?? b.status ?? '').trim().toLowerCase() === 'ok';
-  if (success) {
-    const refId = String(b.refId ?? b.refID ?? b.RefID ?? '').trim() || ('STUB-REF-' + crypto.randomBytes(6).toString('hex'));
-    db.prepare(`UPDATE orders SET payment_status = 'paid', payment_ref_id = ?,
-      paid_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`)
-      .run(refId, req.params.id);
-    logPaymentEvent(o.id, 'verify-success', `refId=${refId}`);
-  } else {
-    db.prepare("UPDATE orders SET payment_status = 'failed', updated_at = datetime('now') WHERE id = ?")
-      .run(req.params.id);
-    logPaymentEvent(o.id, 'verify-failed', String(b.error ?? b.message ?? 'gateway reported failure').slice(0, 500));
+  // No gateway connected: never mint `paid` from the unverified client `success`
+  // flag. A real gateway must add server-to-server verification here first.
+  // State is left untouched so nothing downstream can treat this order as paid.
+  if (!PAYMENT_GATEWAY_CONNECTED) {
+    logPaymentEvent(o.id, 'verify-skipped', 'gateway not connected');
+    return res.status(409).json({ error: 'gateway-not-connected', gateway: 'not-connected' });
   }
   const updated = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
   res.json({ ...paymentStatePayload(updated), gateway: 'not-connected' });
@@ -4126,8 +4214,10 @@ try{ db.exec("ALTER TABLE ticket_messages ADD COLUMN file_type TEXT"); }catch(_)
 try{ db.exec("ALTER TABLE ticket_messages ADD COLUMN file_size INTEGER"); }catch(_){}
 const uploadDir=require('path').join(__dirname,'..','uploads','chat'); try{require('fs').mkdirSync(uploadDir,{recursive:true});}catch(_){}
 const allowedMime=new Set(['image/jpeg','image/png','image/webp','application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
-const multerChat=multer; const storageChat=multerChat.diskStorage({destination:(r,f,cb)=>cb(null,uploadDir), filename:(r,f,cb)=>{ const e=require('path').extname(f.originalname).toLowerCase(); cb(null,Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6)+e); }});
-const uploadChat=multerChat({storage:storageChat, limits:{fileSize:5*1024*1024}, fileFilter:(r,f,cb)=>{ if(allowedMime.has(f.mimetype)) cb(null,true); else cb(new Error('Invalid file type')); }});
+const chatExtMap = Object.freeze({ 'image/jpeg':'.jpg', 'image/png':'.png', 'image/webp':'.webp', 'application/pdf':'.pdf', 'application/msword':'.doc', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'.docx' });
+const allowedChatExt = new Set(Object.values(chatExtMap));
+const multerChat=multer; const storageChat=multerChat.diskStorage({destination:(r,f,cb)=>cb(null,uploadDir), filename:(r,f,cb)=>{ const ext = chatExtMap[f.mimetype] || ('.bin'); cb(null,Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6)+ext); }});
+const uploadChat=multerChat({storage:storageChat, limits:{fileSize:5*1024*1024}, fileFilter:(r,f,cb)=>{ if(!allowedMime.has(f.mimetype)) return cb(new Error('Invalid file type')); const origExt = require('path').extname(f.originalname || '').toLowerCase(); if(origExt && !allowedChatExt.has(origExt) && origExt !== '') return cb(new Error('Invalid file extension')); cb(null,true); }});
 api.post('/support/chat/:id/attachment', uploadChat.single('file'), (req,res)=>{
   try{ensureTicketTables();}catch(_){}
   const admin=getAdminAuth(req);
@@ -4420,6 +4510,12 @@ const CONTENT_DEFAULTS = {
   'promo.topbar.1': 'ارسال رایگان برای سفارش‌های بالای ۵۰۰ هزار تومان',
   'promo.topbar.2': '۷ روز ضمانت بازگشت کالا بدون قید و شرط',
   'promo.topbar.3': 'تضمین اصالت کالا با گارانتی معتبر',
+  'promo.topbar.1.image': '',
+  'promo.topbar.2.image': '',
+  'promo.topbar.3.image': '',
+  'promo.topbar.height': '35',
+  'promo.topbar.img_height': '20',
+  'promo.topbar.img_width': '20',
   'service.ship.title': 'ارسال رایگان',
   'service.ship.desc': 'سفارش‌های بالای ۵۰۰ هزار تومان',
   'service.return.title': '۷ روز ضمانت بازگشت',
@@ -4710,7 +4806,7 @@ function galleryFileFilter(req, file, cb) {
   if (IMAGE_EXTS.has(ext)) return cb(null, true);
   cb(new Error('Only image files are allowed'));
 }
-const galleryUpload = multer({ storage: galleryStorage, fileFilter: galleryFileFilter, limits: { files: 1 } });
+const galleryUpload = multer({ storage: galleryStorage, fileFilter: galleryFileFilter, limits: { files: 1, fileSize: 10 * 1024 * 1024 } });
 api.get('/admin/gallery', requireAdmin, (req, res) => {
   const relPath = String(req.query.path || '').replace(/^\/+/, '');
   const result = listDir(relPath);
@@ -5096,6 +5192,28 @@ const ROOT = path.join(__dirname, '..');
   app.get('/authenticity', serveClean('authenticity.html'));
   app.get('/pricing', serveClean('pricing.html'));
 })();
+// Prevent source/template/config leakage: the static root contains server code,
+// migration scripts, logs and duplicate copies of the project. Block public
+// access to those paths while keeping the storefront assets available.
+function blockSensitivePaths(req, res, next) {
+  const p = (req.path || '/');
+  // Normalize once against %2e/%2f-style evasions: decode, then map any
+  // remaining encoded dots/slashes/backslashes to their literal form.
+  let norm = '';
+  try { norm = decodeURIComponent(String(req.originalUrl || p).split('?')[0]); } catch (_) { norm = ''; }
+  norm = String(norm).replace(/%2e/gi, '.').replace(/%2f/gi, '/').replace(/%5c/gi, '/');
+  const paths = [p, norm];
+  const isData = paths.some((s) => /^\/data(\/|$)/i.test(s || ''));
+  if (isData) return res.status(404).type('text/plain').send('Not found');
+  if (paths.some((s) => /\.(db|db-wal|db-shm)$/i.test(s || ''))) return res.status(404).type('text/plain').send('Not found');
+  if (/^\/server(\/|$)/i.test(p)) return res.status(404).type('text/plain').send('Not found');
+  if (/^\/abzar-shokri(\/|$)/i.test(p)) return res.status(404).type('text/plain').send('Not found');
+  if (/^\/admin\/admin(\/|$)/i.test(p)) return res.status(404).type('text/plain').send('Not found');
+  if (/\.(env|log|sql|sqlite|sqlite-wal|sqlite-shm|bak|ps1|bat|md|txt|mjs)$/i.test(p)) return res.status(404).type('text/plain').send('Not found');
+  if (p === '/package.json' || p === '/package-lock.json') return res.status(404).type('text/plain').send('Not found');
+  next();
+}
+app.use(blockSensitivePaths);
 app.use(express.static(ROOT, { index: 'index.html' }));
 
 // eslint-disable-next-line no-unused-vars
@@ -5109,7 +5227,7 @@ app.use((err, req, res, next) => {
     try{ const a=getAuthUser(req); if(a) userId=a.row.id; }catch(_){}
     try{ const ad=getAdminAuth(req); if(ad) userId='admin:'+ad.row.id; }catch(_){}
     const duration = req._startAt ? Date.now()-req._startAt : undefined;
-    logError('unhandled 5xx', { requestId:req.requestId, method:req.method, path:req.originalUrl, status:500, statusCode:500, ...(userId?{userId}:{}), errorName: err.name||'Error', error: err.message, message: err.message, stack: err.stack?.slice(0,4000), durationMs: duration, duration });
+    logError('unhandled 5xx', { requestId:req.requestId, method:req.method, path:redactUrl(req.originalUrl), status:500, statusCode:500, ...(userId?{userId}:{}), errorName: err.name||'Error', error: err.message, message: err.message, stack: err.stack?.slice(0,4000), durationMs: duration, duration });
   }catch(_){}
   res.status(500).json({ error: 'Internal server error', requestId: req.requestId });
 });

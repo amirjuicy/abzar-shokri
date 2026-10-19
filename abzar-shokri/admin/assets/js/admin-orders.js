@@ -26,7 +26,8 @@
   };
   var APPROVAL_STATUSES = ['awaiting_payment_approval', 'awaiting_order_approval'];
 
-  var state = { orders: [], status: 'all', query: '', loading: true, error: false };
+  var PAGE_SIZE = 20;
+  var state = { orders: [], status: 'all', query: '', loading: true, error: false, page: 1 };
 
   /* ── helpers ─────────────────────────────────────────────── */
   var API = (function () {
@@ -164,12 +165,51 @@
     } else if (!rows.length) {
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-muted)">سفارشی با این مشخصات یافت نشد.</td></tr>';
     } else {
-      tbody.innerHTML = rows.map(rowHtml).join('');
+      var pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+      if (state.page > pages) state.page = pages;
+      if (state.page < 1) state.page = 1;
+      var start = (state.page - 1) * PAGE_SIZE;
+      var pageRows = rows.slice(start, start + PAGE_SIZE);
+      tbody.innerHTML = pageRows.map(rowHtml).join('');
     }
     var metaEl = document.querySelector(COUNT_SEL);
-    if (metaEl) metaEl.textContent = 'نمایش ' + faNum(rows.length) + ' از ' + faNum(state.orders.length) + ' سفارش';
+    if (metaEl) {
+      var _pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+      if (state.page > _pages) state.page = _pages;
+      if (state.page < 1) state.page = 1;
+      var _start = (state.page - 1) * PAGE_SIZE;
+      var _pageRows = rows.slice(_start, _start + PAGE_SIZE);
+      metaEl.textContent = 'نمایش ' + faNum(_pageRows.length) + ' از ' + faNum(rows.length) + ' سفارش';
+    }
     renderChips();
     bindViewButtons();
+    renderOrdersPagination();
+  }
+
+  function renderOrdersPagination() {
+    var el = document.getElementById('adm-orders-pagination');
+    if (!el) return;
+    var rows = filtered();
+    var pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    if (state.page > pages) state.page = pages;
+    if (state.page < 1) state.page = 1;
+    if (pages <= 1) { el.innerHTML = ''; return; }
+    var nums = [];
+    [1, 2, state.page - 1, state.page, state.page + 1, pages - 1, pages].forEach(function (p) {
+      if (p >= 1 && p <= pages && nums.indexOf(p) === -1) nums.push(p);
+    });
+    nums.sort(function (a, b) { return a - b; });
+    var html = '<button type="button" class="adm-pagination__btn" data-opage="prev"' + (state.page <= 1 ? ' disabled' : '') + ' aria-label="صفحه قبل">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>';
+    var prev = 0;
+    nums.forEach(function (p) {
+      if (p - prev > 1) html += '<button type="button" class="adm-pagination__btn" disabled>…</button>';
+      html += '<button type="button" class="adm-pagination__btn' + (p === state.page ? ' is-active' : '') + '" data-opage="' + p + '">' + faNum(p) + '</button>';
+      prev = p;
+    });
+    html += '<button type="button" class="adm-pagination__btn" data-opage="next"' + (state.page >= pages ? ' disabled' : '') + ' aria-label="صفحه بعد">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg></button>';
+    el.innerHTML = html;
   }
 
   function renderChips() {
@@ -312,12 +352,12 @@
     if (search) {
       var fresh = search.cloneNode(true);
       search.parentNode.replaceChild(fresh, search);
-      fresh.addEventListener('input', function () { state.query = fresh.value; render(); });
+      fresh.addEventListener('input', function () { state.query = fresh.value; state.page = 1; render(); });
     }
     Array.prototype.forEach.call(document.querySelectorAll(CHIP_SEL), function (chip) {
       var fresh = chip.cloneNode(true);
       chip.parentNode.replaceChild(fresh, chip);
-      fresh.addEventListener('click', function () { state.status = fresh.getAttribute('data-status'); render(); });
+      fresh.addEventListener('click', function () { state.status = fresh.getAttribute('data-status'); state.page = 1; render(); });
     });
   }
 
@@ -336,6 +376,7 @@
     render();
     return loadAllOrders().then(function (orders) {
       state.orders = orders;
+      state.page = 1;
       state.loading = false;
       render();
     }).catch(function () {
@@ -348,6 +389,22 @@
   document.addEventListener('DOMContentLoaded', function () {
     takeOverControls();
     bindModalClose();
+    var pag = document.getElementById('adm-orders-pagination');
+    if (pag) pag.addEventListener('click', function (e) {
+      var btn = e.target.closest ? e.target.closest('[data-opage]') : null;
+      if (!btn || btn.disabled) return;
+      var v = btn.getAttribute('data-opage');
+      var rows = filtered();
+      var pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+      if (v === 'prev') { if (state.page > 1) state.page--; else return; }
+      else if (v === 'next') { if (state.page < pages) state.page++; else return; }
+      else {
+        var n = parseInt(v, 10);
+        if (!isNaN(n) && n >= 1 && n <= pages) state.page = n;
+        else return;
+      }
+      render();
+    });
     refresh();
   });
 

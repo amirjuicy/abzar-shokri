@@ -280,6 +280,11 @@
       startTimer();
     }
 
+    /* Expose current controller methods on the persistent state so the
+       one-time listeners below always call the latest generation's logic. */
+    st.goTo = goTo; st.next = next; st.prev = prev;
+    st.startTimer = startTimer; st.stopTimer = stopTimer; st.resetTimer = resetTimer;
+
     /* Bind static listeners exactly once — re-init must not duplicate them. */
     if (!st.bound) {
       st.bound = true;
@@ -287,41 +292,136 @@
       section.addEventListener('click', function (e) {
         var t = e.target && e.target.closest ? e.target.closest('.hero__nav--prev,.hero__nav--next,.hero__dot') : null;
         if (!t || !section.contains(t)) return;
-        if (t.classList.contains('hero__nav--prev')) { e.stopPropagation(); prev(); }
-        else if (t.classList.contains('hero__nav--next')) { e.stopPropagation(); next(); }
+        if (t.classList.contains('hero__nav--prev')) { e.stopPropagation(); if (st.prev) st.prev(); }
+        else if (t.classList.contains('hero__nav--next')) { e.stopPropagation(); if (st.next) st.next(); }
         else if (t.classList.contains('hero__dot')) {
           var idx = parseInt(t.getAttribute('data-dot'), 10);
-          if (!isNaN(idx)) goTo(idx);
+          if (!isNaN(idx) && st.goTo) st.goTo(idx);
         }
       });
 
     /* Pause on hover / focus */
-    section.addEventListener('mouseenter', function() { st.paused = true; stopTimer(); });
-    section.addEventListener('mouseleave', function() { st.paused = false; startTimer(); });
-    section.addEventListener('focusin', function() { st.paused = true; stopTimer(); });
+    section.addEventListener('mouseenter', function() { st.paused = true; if (st.stopTimer) st.stopTimer(); });
+    section.addEventListener('mouseleave', function() { st.paused = false; if (st.startTimer) st.startTimer(); });
+    section.addEventListener('focusin', function() { st.paused = true; if (st.stopTimer) st.stopTimer(); });
     section.addEventListener('focusout', function(e) {
-      if (!section.contains(e.relatedTarget)) { st.paused = false; startTimer(); }
+      if (!section.contains(e.relatedTarget)) { st.paused = false; if (st.startTimer) st.startTimer(); }
     });
 
-    /* Touch swipe support */
-    var touchStartX = 0;
-    var touchEndX = 0;
-    section.addEventListener('touchstart', function(e) {
-      touchStartX = e.changedTouches[0].screenX;
+    /* Shared helpers for swipe/drag click suppression */
+    var touchStartX = 0, touchStartY = 0;
+    var touchMoved = false, touchHorizontal = false;
+
+    function suppressClicks(ms) {
+      var suppress = function (ev) { ev.preventDefault(); ev.stopPropagation(); };
+      section.addEventListener('click', suppress, true);
+      setTimeout(function () { section.removeEventListener('click', suppress, true); }, ms || 400);
+    }
+
+    /* Touch swipe support (horizontal only) */
+    section.addEventListener('touchstart', function (e) {
+      if (!e.touches || !e.touches.length) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchMoved = false;
+      touchHorizontal = false;
     }, { passive: true });
-    section.addEventListener('touchend', function(e) {
-      touchEndX = e.changedTouches[0].screenX;
-      var diff = touchStartX - touchEndX;
-      if (Math.abs(diff) > 50) {
-        if (diff > 0) next(); else prev();
+
+    section.addEventListener('touchmove', function (e) {
+      if (!e.touches || !e.touches.length) return;
+      var dx = e.touches[0].clientX - touchStartX;
+      var dy = e.touches[0].clientY - touchStartY;
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      touchMoved = true;
+      if (Math.abs(dx) > Math.abs(dy) + 6) {
+        touchHorizontal = true;
+        if (e.cancelable) e.preventDefault();
+      } else {
+        touchHorizontal = false;
+      }
+    }, { passive: false });
+
+    section.addEventListener('touchend', function (e) {
+      var t = (e.changedTouches && e.changedTouches.length) ? e.changedTouches[0] : null;
+      var endX = t ? t.clientX : touchStartX;
+      var endY = t ? t.clientY : touchStartY;
+      var dx = touchStartX - endX;
+      var dy = touchStartY - endY;
+      var wasSwipe = touchMoved && touchHorizontal && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy);
+      if (wasSwipe) {
+        if (dx > 0) { if (st.next) st.next(); } else { if (st.prev) st.prev(); }
+        suppressClicks(400);
+      }
+      touchMoved = false;
+      touchHorizontal = false;
+    }, { passive: true });
+
+    section.addEventListener('touchcancel', function () {
+      touchMoved = false;
+      touchHorizontal = false;
+    }, { passive: true });
+
+    /* Mouse click-and-drag (desktop) */
+    var mouseDown = false, mouseStartX = 0, mouseStartY = 0, mouseDragged = false;
+    function isInteractiveTarget(target) {
+      return !!(target && target.closest && target.closest('a,button,input,textarea,select,[role="button"]'));
+    }
+    section.addEventListener('pointerdown', function (e) {
+      if (e.pointerType && e.pointerType !== 'mouse') return;
+      if (e.button !== 0) return;
+      if (isInteractiveTarget(e.target)) return;
+      mouseDown = true;
+      mouseDragged = false;
+      mouseStartX = e.clientX;
+      mouseStartY = e.clientY;
+      if (section.setPointerCapture && e.pointerId !== undefined) {
+        try { section.setPointerCapture(e.pointerId); } catch (err) {}
       }
     }, { passive: true });
+
+    section.addEventListener('pointermove', function (e) {
+      if (!mouseDown) return;
+      if (e.pointerType && e.pointerType !== 'mouse') return;
+      var dx = e.clientX - mouseStartX;
+      var dy = e.clientY - mouseStartY;
+      if (!mouseDragged && Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      if (!mouseDragged) {
+        if (Math.abs(dy) > Math.abs(dx)) { mouseDown = false; return; }
+      }
+      mouseDragged = true;
+      if (e.cancelable) e.preventDefault();
+    });
+
+    section.addEventListener('pointerup', function (e) {
+      if (!mouseDown && !mouseDragged) return;
+      if (e.pointerType && e.pointerType !== 'mouse') return;
+      if (mouseDown) {
+        mouseDown = false;
+        if (section.releasePointerCapture && e.pointerId !== undefined) {
+          try { section.releasePointerCapture(e.pointerId); } catch (err) {}
+        }
+      }
+      if (!mouseDragged) return;
+      var dx = e.clientX - mouseStartX;
+      if (Math.abs(dx) > 50) {
+        if (dx < 0) { if (st.next) st.next(); } else { if (st.prev) st.prev(); }
+      }
+      suppressClicks(300);
+      mouseDragged = false;
+    });
+
+    section.addEventListener('pointercancel', function () {
+      mouseDown = false;
+      mouseDragged = false;
+    });
+
+    section.addEventListener('dragstart', function (e) { e.preventDefault(); });
 
     /* Keyboard support */
     section.setAttribute('tabindex', '0');
     section.addEventListener('keydown', function(e) {
-      if (e.key === 'ArrowLeft') { next(); e.preventDefault(); }
-      if (e.key === 'ArrowRight') { prev(); e.preventDefault(); }
+      if (e.key === 'ArrowLeft') { if (st.next) st.next(); e.preventDefault(); }
+      if (e.key === 'ArrowRight') { if (st.prev) st.prev(); e.preventDefault(); }
     });
     } /* end bind-once */
 

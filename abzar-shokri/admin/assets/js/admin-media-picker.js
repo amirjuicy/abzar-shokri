@@ -54,18 +54,15 @@
       if (closeBtn) { close(); return; }
       var item = e.target.closest('.adm-mp-item');
       if (item) {
-        // Toggle selection state on click
-        if (item.classList.contains('is-selected')) {
-          item.classList.remove('is-selected');
-          selectedUrl = localStorage.removeItem('adm_media_picker_selected');
-        } else {
-          // Deselect any previously selected item in this picker
-          var selected = grid.querySelector('.adm-mp-item.is-selected');
-          if (selected) selected.classList.remove('is-selected');
-          item.classList.add('is-selected');
-          selectedUrl = item.getAttribute('data-mp-pick');
-          try { localStorage.setItem('adm_media_picker_selected', selectedUrl); } catch (_) {}
-        }
+        // Select on click — including a re-click of the already-selected item.
+        // (The old toggle-off branch called the pending callback with
+        // `undefined`, writing the literal string "undefined" into the target
+        // field, e.g. a بنرهای تبلیغاتی image URL.)
+        var prevSelected = grid.querySelector('.adm-mp-item.is-selected');
+        if (prevSelected) prevSelected.classList.remove('is-selected');
+        item.classList.add('is-selected');
+        selectedUrl = item.getAttribute('data-mp-pick');
+        try { localStorage.setItem('adm_media_picker_selected', selectedUrl); } catch (_) {}
         // Close picker and select this image
         close();
         if (pendingCb) { var cb = pendingCb; pendingCb = null; cb(selectedUrl); }
@@ -109,10 +106,18 @@
 
   function render(q) {
     q = String(q || '').trim().toLowerCase();
+    if (!cache.length) {
+      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#c0392b;padding:24px;font-size:13px;line-height:1.9">'
+        + 'گالری تصاویر خالی است.<br>اول یک تصویر با دکمه «آپلود تصویر» بالای همین پنجره اضافه کنید، سپس روی آن کلیک کنید.</p>';
+      return;
+    }
     var list = cache.filter(function (it) {
       return !q || String(it.filename || '').toLowerCase().indexOf(q) !== -1 || String(it.path || '').toLowerCase().indexOf(q) !== -1;
     });
-    if (!list.length) { grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:20px">تصویری یافت نشد.</p>'; return; }
+    if (!list.length) {
+      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:20px">تصویری با عبارت «' + esc(q) + '» یافت نشد. جستجو را پاک کنید تا همه تصاویر نمایش داده شود.</p>';
+      return;
+    }
     grid.innerHTML = list.map(function (it) {
       var url = it.url || it.path;
       var isSelected = url === selectedUrl;
@@ -129,12 +134,20 @@
     fetch('/api/admin/gallery', { headers: { Authorization: 'Bearer ' + token() } })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
       .then(function (res) {
-        if (!res.ok) throw new Error((res.body && res.body.error) || 'failed');
-        cache = res.body.items || [];
+        if (!res.ok) throw new Error((res.body && res.body.error) || ('خطای سرور (' + res.status + ')'));
+        var items = res.body && (res.body.items || res.body.files);
+        cache = Array.isArray(items) ? items : [];
         render(searchEl ? searchEl.value : '');
         if (done) done();
       })
-      .catch(function () { grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:20px">خطا در بارگذاری گالری</p>'; });
+      .catch(function (err) {
+        cache = [];
+        var msg = (err && err.message) || 'ارتباط با سرور برقرار نشد';
+        grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#c0392b;padding:24px;font-size:13px;line-height:1.9">'
+          + 'خطا در بارگذاری گالری:<br>' + esc(msg)
+          + '<br><span style="color:var(--text-muted)">صفحه را رفرش کنید یا دوباره تلاش کنید.</span></p>';
+        toast('خطا در بارگذاری گالری: ' + msg, 'danger');
+      });
   }
 
   function open(cb) {
@@ -151,6 +164,9 @@
   }
 
   function fillTarget(target, url) {
+    // Never write a non-value into the field: a missing/undefined selection
+    // used to be stored as the literal string "undefined".
+    if (typeof url !== 'string' || !url) return;
     var el = typeof target === 'string' ? document.getElementById(target) : target;
     if (!el) return;
     if (el.tagName === 'SELECT') {

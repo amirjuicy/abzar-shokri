@@ -639,7 +639,7 @@
 
   // ── Logs ─────────────────────────────────────────────────
   var logsLevel='', logsType='', logsOffset=0, logsLimit=20, logsTotal=0;
-  function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+  function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML.replace(/\"/g,'&quot;').replace(/'/g,'&#39;'); }
   function loadLogs(){
     var tbody=document.querySelector('#adm-logs-table tbody');
     var meta=document.getElementById('adm-logs-meta');

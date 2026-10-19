@@ -9,6 +9,7 @@ body.admin-body {
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  font-family: var(--font-family);
 }
 
 /* ── Layout ─────────────────────────────────────────────────── */
@@ -251,6 +252,10 @@ body.admin-body {
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .admin-topbar__left {
@@ -1869,7 +1874,7 @@ img, video, canvas, svg, iframe { max-width: 100%; }
   /* forms / modals / cards */
   .adm-card__header { flex-wrap: wrap; gap: 10px; }
   .adm-form-actions { flex-wrap: wrap; }
-  .adm-form-actions .btn, .adm-form-actions button { flex: 1 1 140px; }
+  .adm-form-actions .btn, .adm-form-actions button { flex: 0 1 auto; }
   .adm-modal__box { max-width: calc(100vw - 32px); }
   .adm-rawlog__field .input { width: 100%; }
   .adm-rawlog__field { flex: 1 1 200px; min-width: 0; }
@@ -1906,7 +1911,10 @@ img, video, canvas, svg, iframe { max-width: 100%; }
   .adm-table-footer { flex-direction: column; align-items: stretch; text-align: center; }
   .adm-pagination { justify-content: center; flex-wrap: wrap; }
   .adm-form-actions { flex-direction: column; align-items: stretch; }
-  .adm-form-actions .btn, .adm-form-actions button, .btn { min-height: 42px; }
+  .adm-form-actions .btn, .adm-form-actions button { flex: 0 1 auto; min-height: 42px; }
+  .btn { min-height: 42px; }
+  .btn-sm { min-height: 36px; }
+  .btn-lg { min-height: 46px; }
   .adm-modal { padding: 12px 8px; align-items: flex-end; }
   .adm-modal__box { border-radius: var(--radius-2xl) var(--radius-2xl) 0 0; max-width: 100%; width: 100%; max-height: 92vh; overflow-y: auto; }
   .adm-pm-imagepick { flex-direction: column; align-items: stretch; }
@@ -1914,7 +1922,7 @@ img, video, canvas, svg, iframe { max-width: 100%; }
   .adm-greeting { flex-direction: column; align-items: flex-start; }
   .adm-greeting__text, .adm-greeting__actions { min-width: 0; max-width: 100%; }
   .adm-greeting__actions { flex-wrap: wrap; width: 100%; }
-  .adm-greeting__actions .btn, .adm-greeting__actions button { flex: 1 1 140px; min-width: 0; }
+  .adm-greeting__actions .btn, .adm-greeting__actions button { flex: 0 1 auto; min-width: 0; }
   .adm-greeting__hi { font-size: 16px; overflow-wrap: anywhere; }
   .adm-dash-grid > *, .adm-stats > *, .adm-card, .adm-card__body { min-width: 0; }
   .adm-stat { flex-wrap: wrap; overflow-wrap: anywhere; }
@@ -1931,4 +1939,52 @@ img, video, canvas, svg, iframe { max-width: 100%; }
   .pb-add { grid-template-columns: 1fr 1fr; }
   .pb-grid { grid-template-columns: 1fr; }
   .pb-frame iframe { height: 55vh; }
+}
+/* --- Responsive hardening (admin) --- */
+.admin-content,
+.admin-content * { min-width: 0; }
+.adm-field,
+.adm-field * { min-width: 0; }
+.adm-form-grid { width: 100%; }
+.adm-form-grid > * { min-width: 0; }
+.adm-field__label,
+.adm-field__hint,
+.adm-switch-row__title,
+.adm-switch-row__desc { overflow-wrap: anywhere; word-break: break-word; }
+.adm-table-wrap { max-width: 100%; }
+.adm-modal__box { min-width: 0; }
+
+@media (max-width: 1024px) {
+  .adm-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px) {
+  .adm-form-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .adm-form-grid { grid-template-columns: 1fr; }
+  .admin-content [style*="min-width"] { min-width: 0 !important; flex-basis: 100% !important; }
+  .adm-modal { padding: 12px 8px; }
+  .adm-modal__box { width: 100%; max-width: 100%; }
+  #ship-new-name,
+  #ship-new-desc,
+  #ship-new-cost { flex: 1 1 100% !important; min-width: 0 !important; }
+}
+
+@media (max-width: 600px) {
+  .admin-content span { max-width: 100% !important; }
+  .admin-content .btn { white-space: nowrap; }
+}
+
+/* --- Admin sizing/layout polish (responsive) --- */
+@media (max-width: 600px) {
+  .adm-toolbar__filters { flex-wrap: wrap; overflow-x: visible; }
+  .adm-chip { min-height: 40px; }
+  .adm-chart__day { font-size: 10px; white-space: normal; overflow-wrap: anywhere; }
+  .adm-chart__col { min-width: 0; }
+  .adm-brand-grid img, .adm-gallery-grid img { max-width: 100%; height: auto; }
+}
+@media (max-width: 1024px) {
+  .adm-chart__day { white-space: normal; overflow-wrap: anywhere; }
 }

@@ -166,6 +166,68 @@
     return deriveIcons(url);
   }
 
+  /* �"?�"? Favicon field �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */
+  function faviconInput() { return $('#si-favicon'); }
+  function faviconPreview() { return $('#si-favicon-preview'); }
+  function renderFaviconPreview(url) {
+    var box = faviconPreview();
+    if (!box) return;
+    if (url) {
+      box.innerHTML = '<img src="' + String(url).replace(/"/g, '&quot;') + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block">';
+    } else {
+      box.innerHTML = '<img src="../assets/icons/favicon-32.png" alt="" style="width:100%;height:100%;object-fit:contain;display:block">';
+    }
+  }
+  function setFavicon(url) {
+    var inp = faviconInput();
+    if (inp) inp.value = url || '';
+    renderFaviconPreview(url || '');
+    var clearBtn = $('#si-favicon-clear');
+    if (clearBtn) clearBtn.disabled = !url;
+    var status = $('#si-favicon-status');
+    if (status) { status.textContent = url ? '' : 'بدون favicon سفارشی — از آیکون پیش‌فرض استفاده می‌شود.'; status.style.color = 'var(--text-muted)'; }
+  }
+  function uploadFaviconFile(file) {
+    if (!file) return Promise.resolve('');
+    var fd = new FormData();
+    fd.append('image', file);
+    var status = $('#si-favicon-status');
+    if (status) { status.textContent = 'در حال آپلود...'; status.style.color = 'var(--text-muted)'; }
+    return fetch(API_BASE + '/admin/gallery/upload', {
+      method: 'POST',
+      headers: (function () { var h = {}; var t = adminToken(); if (t) h['Authorization'] = 'Bearer ' + t; return h; })(),
+      body: fd
+    })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, body: j }; }); })
+      .then(function (res) {
+        if (!res.ok) throw new Error((res.body && res.body.error) || 'آپلود ناموفق بود');
+        return res.body.url || res.body.path || '';
+      });
+  }
+  function wireFaviconControls() {
+    var pick = $('#si-favicon-pick');
+    if (pick) pick.addEventListener('click', function () {
+      if (window.AbzarMediaPicker && window.AbzarMediaPicker.open) {
+        window.AbzarMediaPicker.open(function (url) { setFavicon(url || ''); });
+      } else { toast('انتخاب‌کننده رسانه در دسترس نیست', 'warning'); }
+    });
+    var file = $('#si-favicon-file');
+    if (file) file.addEventListener('change', function () {
+      var f = file.files && file.files[0];
+      if (!f) return;
+      uploadFaviconFile(f)
+        .then(function (url) { setFavicon(url || ''); toast('Favicon آپلود شد.', 'success'); })
+        .catch(function (e) { var st = $('#si-favicon-status'); if (st) { st.textContent = e.message || 'آپلود ناموفق بود'; st.style.color = 'var(--color-danger,#d33)'; } toast(e.message || 'آپلود ناموفق بود', 'danger'); })
+        .then(function () { file.value = ''; });
+    });
+    var clear = $('#si-favicon-clear');
+    if (clear) clear.addEventListener('click', function () {
+      setFavicon('');
+      var st = $('#si-favicon-status');
+      if (st) { st.textContent = 'Favicon حذف شد.'; st.style.color = 'var(--text-muted)'; }
+    });
+  }
+
   function wireLogoControls() {
     var pick = $('#si-logo-pick');
     if (pick) pick.addEventListener('click', function () {
@@ -232,6 +294,7 @@
   function applySettings(s) {
     if (F.name()) F.name().value = s['store.name'] || '';
     setLogo(s['store.logo'] || '');
+    setFavicon(s['store.favicon'] || '');
     if (F.phone()) F.phone().value = s['store.phone'] || '';
     if (F.phone2()) F.phone2().value = s['store.phone2'] || '';
     if (F.email()) F.email().value = s['store.email'] || '';
@@ -314,6 +377,7 @@
         body: JSON.stringify({
           'store.name': name,
           'store.logo': logoInput() ? logoInput().value.trim() : '',
+          'store.favicon': faviconInput() ? faviconInput().value.trim() : '',
           'store.phone': phone,
           'store.phone2': F.phone2() ? F.phone2().value.trim() : '',
           'store.email': email,
@@ -378,5 +442,6 @@
 
   load();
   wireLogoControls();
+  wireFaviconControls();
   window.AbzarAdminStoreInfo = { reload: load };
 })();

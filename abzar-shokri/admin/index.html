@@ -9,7 +9,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap">
   <link rel="stylesheet" href="../assets/css/design-system.css">
   <link rel="stylesheet" href="../assets/css/base.css">
   <link rel="stylesheet" href="../assets/css/components.css">
@@ -83,6 +83,10 @@
         <a href="#/tickets" class="admin-nav__link" data-view="tickets">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
           پشتیبانی و تیکت‌ها
+        </a>
+        <a href="#/contact-messages" class="admin-nav__link" data-view="contact-messages">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          پیام‌های تماس
         </a>
         <a href="#/brands" class="admin-nav__link" data-view="brands">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -521,19 +525,7 @@
 
             <div class="adm-table-footer">
               <span class="adm-table-footer__meta" id="adm-orders-count"></span>
-              <div class="adm-pagination">
-                <button type="button" class="adm-pagination__btn" disabled>
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-                </button>
-                <button type="button" class="adm-pagination__btn is-active">۱</button>
-                <button type="button" class="adm-pagination__btn">۲</button>
-                <button type="button" class="adm-pagination__btn">۳</button>
-                <button type="button" class="adm-pagination__btn">…</button>
-                <button type="button" class="adm-pagination__btn">۲۹</button>
-                <button type="button" class="adm-pagination__btn">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>
-                </button>
-              </div>
+              <div class="adm-pagination" id="adm-orders-pagination"></div>
             </div>
           </div>
         </section>
@@ -1251,6 +1243,81 @@
         </div>
 
         <!-- ─── Tickets (پشتیبانی و تیکت‌ها) ─────────────────── -->
+        <section class="admin-view" data-view="contact-messages">
+          <div class="adm-card">
+            <div class="adm-card__header">
+              <div class="adm-card__titles">
+                <h2 class="adm-card__title">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  پیام‌های تماس
+                </h2>
+                <span class="adm-card__sub" id="adm-cm-sub">0 پیام</span>
+              </div>
+              <div class="adm-card__actions">
+                <span class="adm-badge adm-badge--info" id="adm-cm-unread">0 نخوانده</span>
+              </div>
+            </div>
+
+            <div class="adm-toolbar">
+              <div class="adm-toolbar__filters">
+                <select class="input" id="adm-cm-status" style="width:auto;height:38px;border-radius:var(--radius-md);font-size:13px" aria-label="وضعیت">
+                  <option value="all">همه</option>
+                  <option value="unread">نخوانده</option>
+                  <option value="read">خوانده</option>
+                </select>
+                <select class="input" id="adm-cm-subject" style="width:auto;height:38px;border-radius:var(--radius-md);font-size:13px" aria-label="موضوع">
+                  <option value="">همه موضوعات</option>
+                </select>
+              </div>
+              <div class="adm-search">
+                <input type="search" id="adm-cm-search" placeholder="جستجو در نام، ایمیل، تلفن، موضوع، پیام" aria-label="جستجو">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </div>
+            </div>
+
+            <div class="adm-table-wrap">
+              <table class="adm-table" id="adm-cm-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>نام</th>
+                    <th>تماس</th>
+                    <th>موضوع</th>
+                    <th>پیام</th>
+                    <th>تاریخ</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-muted)">در حال بارگذاری...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="adm-table-footer">
+              <span class="adm-table-footer__meta">-</span>
+              <div class="adm-pagination" id="adm-cm-pagination"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Contact message detail modal -->
+        <div class="adm-modal" id="adm-cm-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="adm-cm-title">
+          <div class="adm-modal__backdrop" data-cm-close></div>
+          <div class="adm-modal__box" style="max-width:640px">
+            <div class="adm-modal__header">
+              <h3 class="adm-modal__title" id="adm-cm-title">جزئیات پیام</h3>
+              <button type="button" class="btn btn-ghost btn-sm" data-cm-close>بستن</button>
+            </div>
+            <div id="adm-cm-body" style="display:grid;gap:10px"></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+              <button type="button" class="btn btn-secondary btn-sm" id="adm-cm-toggle">تغییر وضعیت</button>
+              <button type="button" class="btn btn-danger btn-sm" id="adm-cm-del">حذف</button>
+            </div>
+          </div>
+        </div>
+
         <section class="admin-view" data-view="tickets">
           <div class="adm-card">
             <div class="adm-card__header">
@@ -1738,10 +1805,41 @@
                     <span class="adm-switch__track"></span>
                   </label>
                 </div>
-                <div class="adm-form-grid">
-                  <div class="adm-field adm-field--full"><label class="adm-field__label" for="home-promo-1">پیام ۱</label><input class="input" type="text" id="home-promo-1"></div>
-                  <div class="adm-field adm-field--full"><label class="adm-field__label" for="home-promo-2">پیام ۲</label><input class="input" type="text" id="home-promo-2"></div>
-                  <div class="adm-field adm-field--full"><label class="adm-field__label" for="home-promo-3">پیام ۳</label><input class="input" type="text" id="home-promo-3"></div>
+                <div id="home-promo-list" style="display:grid;gap:10px"></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+                  <button type="button" class="btn btn-secondary btn-sm" id="home-promo-add">+ افزودن پیام</button>
+                  <span style="font-size:12px;color:var(--text-muted)" id="home-promo-count-hint"></span>
+                </div>
+                <div class="adm-form-grid" style="margin-top:12px">
+                  <div class="adm-field">
+                    <label class="adm-field__label" for="home-topbar-height">ارتفاع نوار (px)</label>
+                    <input class="input" type="number" id="home-topbar-height" min="20" max="100" style="max-width:120px">
+                  </div>
+                  <div class="adm-field">
+                    <label class="adm-field__label" for="home-topbar-img-height">ارتفاع تصویر (px)</label>
+                    <input class="input" type="number" id="home-topbar-img-height" min="10" max="80" style="max-width:120px">
+                  </div>
+                  <div class="adm-field">
+                    <label class="adm-field__label" for="home-topbar-img-width">عرض تصویر (px)</label>
+                    <input class="input" type="number" id="home-topbar-img-width" min="10" max="200" style="max-width:120px">
+                  </div>
+                </div>
+                <div id="home-topbar-dims-display" style="font-size:12px;color:var(--text-muted);margin-top:4px"></div>
+                <div style="margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:var(--radius-lg);background:#f8f9fa">
+                  <div style="font-size:13px;font-weight:var(--font-weight-bold);margin-bottom:8px">پیش‌نمایش نوار تبلیغاتی</div>
+                  <style>
+                    #home-topbar-preview{background:#fff;border:1px solid var(--border-color-light);color:var(--text-secondary);font-size:12px;font-weight:500;line-height:1.6;direction:rtl}
+                    #home-topbar-preview .promo-topbar__viewport{position:relative;display:flex;align-items:center;justify-content:center;max-width:100%;margin:0 auto;padding:0 12px;overflow:hidden;text-align:center}
+                    #home-topbar-preview .promo-topbar__msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity 300ms ease,transform 300ms ease,visibility 0s linear 300ms;pointer-events:none}
+                    #home-topbar-preview .promo-topbar__msg.is-active{opacity:1;visibility:visible;transform:translateY(0);transition:opacity 300ms ease,transform 300ms ease,visibility 0s linear 0s;pointer-events:auto}
+                    #home-topbar-preview .promo-topbar__img{flex-shrink:0;object-fit:contain;vertical-align:middle;margin-left:6px}
+                    #home-topbar-preview .promo-topbar__msg.has-image{padding:0;background:transparent}
+                    #home-topbar-preview .promo-topbar__msg.has-image .promo-topbar__img{position:absolute;inset:0;width:100%;height:100%;margin:0;object-fit:cover;object-position:center}
+                    #home-topbar-preview .promo-topbar__msg.has-image .promo-topbar__text{display:none}
+                  </style>
+                  <div id="home-topbar-preview" class="promo-topbar" style="position:static;border-radius:var(--radius-lg);overflow:hidden">
+                    <div class="promo-topbar__viewport" style="height:35px"></div>
+                  </div>
                 </div>
                 <div class="adm-form-actions">
                   <button type="button" class="btn btn-accent" data-home-save="banners">ذخیره بنرها</button>
@@ -2036,6 +2134,19 @@
                 <div class="adm-field adm-field--full">
                   <label class="adm-field__label" for="si-desc">توضیح کوتاه فروشگاه</label>
                   <textarea class="input" id="si-desc" rows="2"></textarea>
+                </div>
+                <div class="adm-field adm-field--full">
+                  <label class="adm-field__label">Favicon (آیکون تب مرورگر)</label>
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <div id="si-favicon-preview" style="width:48px;height:48px;border:1px solid var(--color-gray-200);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--color-white)">
+                      <img src="../assets/icons/favicon-32.png" alt="" style="width:100%;height:100%;object-fit:contain">
+                    </div>
+                    <input class="input" type="text" id="si-favicon" dir="ltr" style="text-align:right;flex:1;min-width:200px" placeholder="assets/images/uploads/... یا آدرس تصویر">
+                    <button type="button" class="btn btn-secondary btn-sm" id="si-favicon-pick">انتخاب از گالری</button>
+                    <label class="btn btn-accent btn-sm" style="cursor:pointer;margin:0">آپلود<input type="file" id="si-favicon-file" accept="image/*,image/svg+xml" style="display:none"></label>
+                    <button type="button" class="btn btn-ghost btn-sm" id="si-favicon-clear">حذف</button>
+                  </div>
+                  <span class="adm-field__hint" id="si-favicon-status" style="display:block;margin-top:4px"></span>
                 </div>
               </div>
               <div class="adm-form-actions">
@@ -2920,6 +3031,7 @@
   <script src="assets/js/admin-users.js"></script>
   <script src="assets/js/admin-notifications.js"></script>
   <script src="assets/js/admin-tickets.js"></script>
+  <script src="assets/js/admin-contact-messages.js"></script>
   <script src="assets/js/admin-categories.js"></script>
   <script src="assets/js/admin-brands.js"></script>
   <script src="assets/js/admin-articles.js"></script>

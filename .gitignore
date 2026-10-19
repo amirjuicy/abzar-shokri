@@ -1,1 +1,22 @@
 node_modules
+# Runtime SQLite databases (live customer data) — never commit
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/backups/
+# Runtime logs
+*.log
+server/logs/
+# SQLite sidecars and database backups at any depth
+*.db
+*.db-shm
+*.db-wal
+**/backups/
+**/server/logs/
+# Repro / debug credentials, tokens and PII-bearing artifacts — never commit
+_repro_cred.json
+_get-token.mjs
+_repro*.mjs
+_repro*.json
+_debug_*.mjs
+_verify_order_detail.mjs

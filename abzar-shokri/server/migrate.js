@@ -488,6 +488,23 @@ function migrate() {
   }
 }
 
+/* Contact messages table (idempotent; safe for already-migrated DBs). */
+try {
+  const __db = getDb();
+  __db.exec(`CREATE TABLE IF NOT EXISTS contact_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL DEFAULT '',
+    email TEXT,
+    phone TEXT,
+    subject TEXT NOT NULL DEFAULT '',
+    message TEXT NOT NULL DEFAULT '',
+    is_read INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  __db.exec('CREATE INDEX IF NOT EXISTS idx_contact_messages_created ON contact_messages(created_at)');
+  __db.exec('CREATE INDEX IF NOT EXISTS idx_contact_messages_read ON contact_messages(is_read)');
+} catch (_) {}
+
 if (require.main === module) {
   migrate();
   console.log(`Database ready at ${DB_PATH}`);

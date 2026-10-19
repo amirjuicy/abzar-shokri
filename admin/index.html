@@ -1739,9 +1739,59 @@
                   </label>
                 </div>
                 <div class="adm-form-grid">
-                  <div class="adm-field adm-field--full"><label class="adm-field__label" for="home-promo-1">پیام ۱</label><input class="input" type="text" id="home-promo-1"></div>
-                  <div class="adm-field adm-field--full"><label class="adm-field__label" for="home-promo-2">پیام ۲</label><input class="input" type="text" id="home-promo-2"></div>
-                  <div class="adm-field adm-field--full"><label class="adm-field__label" for="home-promo-3">پیام ۳</label><input class="input" type="text" id="home-promo-3"></div>
+                  <div class="adm-field adm-field--full">
+                    <label class="adm-field__label" for="home-promo-1">پیام ۱</label>
+                    <input class="input" type="text" id="home-promo-1">
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                      <input type="hidden" id="home-promo-1-image">
+                      <button type="button" class="btn btn-secondary btn-sm" data-media-target="home-promo-1-image">انتخاب تصویر</button>
+                      <img id="home-promo-1-preview" style="width:32px;height:32px;object-fit:contain;border:1px solid var(--border);border-radius:4px;display:none;background:#f8f9fa">
+                      <button type="button" class="adm-btn-icon" data-promo-clear-image="1" title="حذف تصویر" style="display:none">✕</button>
+                    </div>
+                  </div>
+                  <div class="adm-field adm-field--full">
+                    <label class="adm-field__label" for="home-promo-2">پیام ۲</label>
+                    <input class="input" type="text" id="home-promo-2">
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                      <input type="hidden" id="home-promo-2-image">
+                      <button type="button" class="btn btn-secondary btn-sm" data-media-target="home-promo-2-image">انتخاب تصویر</button>
+                      <img id="home-promo-2-preview" style="width:32px;height:32px;object-fit:contain;border:1px solid var(--border);border-radius:4px;display:none;background:#f8f9fa">
+                      <button type="button" class="adm-btn-icon" data-promo-clear-image="2" title="حذف تصویر" style="display:none">✕</button>
+                    </div>
+                  </div>
+                  <div class="adm-field adm-field--full">
+                    <label class="adm-field__label" for="home-promo-3">پیام ۳</label>
+                    <input class="input" type="text" id="home-promo-3">
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                      <input type="hidden" id="home-promo-3-image">
+                      <button type="button" class="btn btn-secondary btn-sm" data-media-target="home-promo-3-image">انتخاب تصویر</button>
+                      <img id="home-promo-3-preview" style="width:32px;height:32px;object-fit:contain;border:1px solid var(--border);border-radius:4px;display:none;background:#f8f9fa">
+                      <button type="button" class="adm-btn-icon" data-promo-clear-image="3" title="حذف تصویر" style="display:none">✕</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="adm-form-grid" style="margin-top:12px">
+                  <div class="adm-field">
+                    <label class="adm-field__label" for="home-topbar-height">ارتفاع نوار (px)</label>
+                    <input class="input" type="number" id="home-topbar-height" min="20" max="100" style="max-width:120px">
+                  </div>
+                  <div class="adm-field">
+                    <label class="adm-field__label" for="home-topbar-img-height">ارتفاع تصویر (px)</label>
+                    <input class="input" type="number" id="home-topbar-img-height" min="10" max="80" style="max-width:120px">
+                  </div>
+                  <div class="adm-field">
+                    <label class="adm-field__label" for="home-topbar-img-width">عرض تصویر (px)</label>
+                    <input class="input" type="number" id="home-topbar-img-width" min="10" max="200" style="max-width:120px">
+                  </div>
+                </div>
+                <div id="home-topbar-dims-display" style="font-size:12px;color:var(--text-muted);margin-top:4px"></div>
+                <div style="margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:var(--radius-lg);background:#f8f9fa">
+                  <div style="font-size:13px;font-weight:var(--font-weight-bold);margin-bottom:8px">پیش‌نمایش نوار تبلیغاتی</div>
+                  <div id="home-topbar-preview" class="promo-topbar" style="position:static;border-radius:var(--radius-lg);overflow:hidden">
+                    <div class="promo-topbar__viewport" style="height:35px">
+                      <span class="promo-topbar__msg is-active" id="home-topbar-preview-msg"></span>
+                    </div>
+                  </div>
                 </div>
                 <div class="adm-form-actions">
                   <button type="button" class="btn btn-accent" data-home-save="banners">ذخیره بنرها</button>

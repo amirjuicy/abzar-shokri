@@ -15,7 +15,8 @@
     categories: 'دسته‌بندی‌ها',
     users: 'کاربران',
     notifications: 'اعلان‌ها',
-    tickets: 'پشتیبانی و تیکت‌ها',
+    tickets: 'تیکت‌ها',
+    'contact-messages': 'پیام‌های تماس',
     brands: 'برندها',
     articles: 'مقالات',
     reviews: 'نظرات و پرسش‌ها',
@@ -765,6 +766,7 @@
       } else if(v==='orders' && window.AbzarAdminOrders && window.AbzarAdminOrders.reload) window.AbzarAdminOrders.reload(true);
       else if(v==='users' && window.AbzarAdminUsers && window.AbzarAdminUsers.reload) window.AbzarAdminUsers.reload(true);
       else if(v==='products' && window.AbzarAdminProducts && window.AbzarAdminProducts.reload) window.AbzarAdminProducts.reload(true);
+      else if(v==='contact-messages' && window.AbzarAdminContactMessages && window.AbzarAdminContactMessages.reload) window.AbzarAdminContactMessages.reload();
       else if(v==='reviews' && window.AbzarAdminReviews && window.AbzarAdminReviews.reload) window.AbzarAdminReviews.reload(true);
       else if(v==='notifications' && window.AbzarAdminNotifications && window.AbzarAdminNotifications.reload) window.AbzarAdminNotifications.reload(true);
       else if(v==='transactions' && window.AbzarAdminTransactions && window.AbzarAdminTransactions.reload) window.AbzarAdminTransactions.reload(true);

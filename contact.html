@@ -64,61 +64,43 @@
     <div class="contact-app__layout">
       <!-- Main: methods + support + map -->
       <div class="contact-app__main">
-        <div class="contact-methods">
+        <div class="quick-actions">
           <!-- Phone -->
-          <a class="contact-method-card contact-method-card--accent" href="tel:02100000000">
-            <div class="contact-method-card__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-            <div class="contact-method-card__body">
-              <div class="contact-method-card__label">تلفن پشتیبانی</div>
-              <div class="contact-method-card__value contact-method-card__value--ltr" data-setting="store.phone">۰۲۱-XXXX-XXXX</div>
-              <div class="contact-method-card__hint">پاسخگویی سریع در ساعات کاری</div>
-              <span class="contact-method-card__action"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> تماس بگیرید</span>
+          <a class="quick-action-card quick-action-card--accent" href="tel:02144556677">
+            <div class="quick-action-card__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            <div class="quick-action-card__body">
+              <div class="quick-action-card__title">تلفن پشتیبانی</div>
+              <div class="quick-action-card__desc" data-setting="store.phone">۰۲۱-XXXX-XXXX</div>
+              <span class="quick-action-card__cta">تماس بگیرید</span>
             </div>
-            <span class="contact-method-card__chevron" aria-hidden="true"></span>
-          </a>
-          <!-- Secondary phone (shown only when store.phone2 is set in Admin → اطلاعات فروشگاه) -->
-          <a class="contact-method-card" href="tel:" data-tel-keep style="display:none" data-phone2-card>
-            <div class="contact-method-card__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-            <div class="contact-method-card__body">
-              <div class="contact-method-card__label">تلفن دوم</div>
-              <div class="contact-method-card__value contact-method-card__value--ltr" data-setting="store.phone2"></div>
-              <div class="contact-method-card__hint">پاسخگویی در ساعات کاری</div>
-            </div>
-            <span class="contact-method-card__chevron" aria-hidden="true"></span>
           </a>
           <!-- Email -->
-          <a class="contact-method-card" href="mailto:info@abzarshokri.com">
-            <div class="contact-method-card__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
-            <div class="contact-method-card__body">
-              <div class="contact-method-card__label">ایمیل</div>
-              <div class="contact-method-card__value" dir="ltr" style="text-align:right" data-setting="store.email">info@abzarshokri.com</div>
-              <div class="contact-method-card__hint">پاسخ در کمتر از ۲۴ ساعت</div>
-              <span class="contact-method-card__action"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> ارسال ایمیل</span>
+          <a class="quick-action-card" href="mailto:info@abzarshokri.com">
+            <div class="quick-action-card__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+            <div class="quick-action-card__body">
+              <div class="quick-action-card__title">ایمیل</div>
+              <div class="quick-action-card__desc" dir="ltr" data-setting="store.email">info@abzarshokri.com</div>
+              <span class="quick-action-card__cta">ارسال ایمیل</span>
             </div>
-            <span class="contact-method-card__chevron" aria-hidden="true"></span>
           </a>
-          <!-- Address -->
-          <div class="contact-method-card" role="button" tabindex="0" onclick="document.getElementById('contact-map').scrollIntoView({behavior:'smooth',block:'center'})">
-            <div class="contact-method-card__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
-            <div class="contact-method-card__body">
-              <div class="contact-method-card__label">آدرس فروشگاه</div>
-              <div class="contact-method-card__value" data-setting="store.address">تهران، خیابان ولیعصر، پلاک XXX</div>
-              <div class="contact-method-card__hint">نمایش روی نقشه</div>
-              <span class="contact-method-card__action"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> مسیریابی</span>
+          <!-- Store Directions -->
+          <a class="quick-action-card" href="#contact-map" onclick="document.getElementById('contact-map').scrollIntoView({behavior:'smooth',block:'center'});return false;">
+            <div class="quick-action-card__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+            <div class="quick-action-card__body">
+              <div class="quick-action-card__title">مسیریابی فروشگاه</div>
+              <div class="quick-action-card__desc" data-setting="store.address">تهران، خیابان ولیعصر، پلاک XXX</div>
+              <span class="quick-action-card__cta">نمایش روی نقشه</span>
             </div>
-            <span class="contact-method-card__chevron" aria-hidden="true"></span>
-          </div>
-          <!-- Hours -->
-          <div class="contact-method-card">
-            <div class="contact-method-card__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-            <div class="contact-method-card__body">
-              <div class="contact-method-card__label">ساعت کاری</div>
-              <div class="contact-method-card__value" data-setting="store.hours">شنبه تا پنج‌شنبه</div>
-              <div class="contact-method-card__hint" data-setting="store.hours_detail">۹ صبح تا ۶ عصر — جمعه تعطیل</div>
-              <span class="contact-method-card__action" style="background:#f3f4f6;border-color:#ececef;color:#3f4064"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> همیشه در دسترس</span>
+          </a>
+          <!-- Contact Form -->
+          <a class="quick-action-card" href="#contact-form" onclick="document.getElementById('contact-form').scrollIntoView({behavior:'smooth',block:'center'});return false;">
+            <div class="quick-action-card__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            <div class="quick-action-card__body">
+              <div class="quick-action-card__title">ارسال پیام</div>
+              <div class="quick-action-card__desc">پاسخ در کمتر از ۲۴ ساعت</div>
+              <span class="quick-action-card__cta">فرم تماس</span>
             </div>
-            <span class="contact-method-card__chevron" aria-hidden="true" style="visibility:hidden"></span>
-          </div>
+          </a>
         </div>
 
         <div class="contact-support">
@@ -188,6 +170,17 @@
 <script src="assets/js/common.js"></script>
   <script src="assets/js/pwa.js"></script>
 <script>
-document.getElementById("contact-form").addEventListener("submit",function(e){e.preventDefault();App.showToast("پیام شما با موفقیت ارسال شد! (شبیه‌سازی)","success");this.reset();});
+document.getElementById("contact-form").addEventListener("submit",async function(e){
+  e.preventDefault();
+  var btn=this.querySelector('button[type="submit"]');
+  var orig=btn.textContent;
+  btn.disabled=true;btn.textContent='در حال ارسال...';
+  try{
+    var res=await fetch('/api/tickets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:this.querySelector('select').value,message:'نام: '+this.querySelector('input').value+'\nایمیل: '+this.querySelectorAll('input')[1].value+'\n\n'+this.querySelector('textarea').value})});
+    if(res.ok){App.showToast('پیام شما با موفقیت ارسال شد!','success');this.reset();}
+    else{var d=await res.json().catch(()=>({}));App.showToast(d.error||'خطا در ارسال پیام. لطفا دوباره تلاش کنید.','error');}
+  }catch(err){App.showToast('خطا در ارسال پیام. لطفا دوباره تلاش کنید.','error');}
+  btn.disabled=false;btn.textContent=orig;
+});
 </script>
 </body></html>

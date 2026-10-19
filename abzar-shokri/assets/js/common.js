@@ -198,6 +198,17 @@
      cache is then a lie — drop it once per page load so the UI honestly
      shows logged-out instead of failing every request with 401. */
   var authExpiredFired = false;
+  /* Session readiness gate: the header must NOT show logged-in state (logout
+     button) until the backend has confirmed the token. Without this gate, a
+     stale as_session in localStorage (after DB restore, token expiry, or
+     logout on another device) causes the header to render the logout button
+     for logged-out visitors on initial paint, before fetchMe() completes. */
+  var sessionReady = false;
+  function markSessionReady() {
+    if (sessionReady) return;
+    sessionReady = true;
+    try { refreshHeaderAuth(); } catch (e) {}
+  }
   function handleAuthExpired() {
     if (authExpiredFired) return;
     /* An admin session is logged in, just not as a customer: its 401s on
@@ -205,8 +216,8 @@
     if (isAdminSession()) return;
     authExpiredFired = true;
     try { setSession(null); } catch (e) {}
+    markSessionReady();
     try { refreshState(); } catch (e) {}
-    try { refreshHeaderAuth(); } catch (e) {}
     try { document.dispatchEvent(new CustomEvent('as_auth_expired')); } catch (e) {}
     try { notifyAuthChange(); } catch (e) {}
   }
@@ -303,12 +314,12 @@
   }
 
   function fetchMe() {
-    if (!apiAvailable()) return Promise.resolve(getCurrentUser());
+    if (!apiAvailable()) { markSessionReady(); return Promise.resolve(getCurrentUser()); }
     var session = getSession();
-    if (!session || !session.token) return Promise.resolve(getCurrentUser());
+    if (!session || !session.token) { markSessionReady(); return Promise.resolve(getCurrentUser()); }
     /* Admins have no customer row, so /auth/me can only 401 here and there is
        nothing to refresh — the local admin profile is already cached. */
-    if (isAdminSession()) return Promise.resolve(getCurrentUser());
+    if (isAdminSession()) { markSessionReady(); return Promise.resolve(getCurrentUser()); }
     return apiRequest('GET', '/auth/me').then(function (data) {
       if (data && data.user) {
         /* The request may resolve after the session changed (e.g. logout
@@ -322,10 +333,21 @@
         try { pullCartFromServer(); } catch (e) {}
         try { pullWishlistFromServer(); } catch (e) {}
         try { pullRecentFromServer(); } catch (e) {}
-        try { refreshHeaderAuth(); } catch (e) {}
       }
+      markSessionReady();
       return data.user;
-    }).catch(function () { return getCurrentUser(); });
+    }).catch(function (err) {
+      /* A 401 already cleared the session via handleAuthExpired. Every other
+         failure — 429 throttle, 5xx, network blip — leaves the token merely
+         UNVALIDATED, not invalid, so the cached session must survive. Wiping
+         it here silently signed users out: /api/auth/me runs on every page
+         load and authLimiter caps /api/auth/* at 20 req / 15 min, so the
+         20th page load returned 429 and reset the header to logged-out. */
+      var status = err && err.status;
+      if (status === 401 || status === 403) { try { setSession(null); } catch (e) {} }
+      markSessionReady();
+      return getCurrentUser();
+    });
   }
 
   var authReady = (function () {
@@ -1442,7 +1464,10 @@
   function escAuthHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   function headerAuthHTML() {
-    var user = getCurrentUser();
+    /* Gate on sessionReady: never show logged-in state (logout button) until
+       the backend has confirmed the token. This prevents stale localStorage
+       sessions from leaking the logout button to logged-out visitors. */
+    var user = sessionReady ? getCurrentUser() : null;
     var dropdownArrow = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
     if (!user) {
       var loginIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>';
@@ -1471,7 +1496,7 @@
   }
 
   function mobileAuthHTML() {
-    var user = getCurrentUser();
+    var user = sessionReady ? getCurrentUser() : null;
     return user
       ? '<a href="/account" class="header-action" aria-label="حساب کاربری">' + Icons.user + '</a>'
       : '<a href="/login" class="header-action" aria-label="ورود و ثبت‌نام">' + Icons.user + '</a>';
@@ -1537,8 +1562,13 @@
      Idempotent: when the auth state is unchanged since the last render,
      the DOM is left untouched so polling (fetchMe/401) can never cause
      a visible re-render flash or steal focus. */
+  /* The key must mirror exactly what headerAuthHTML()/mobileAuthHTML() will
+     render, which is gated on sessionReady. Otherwise the pre-confirmation
+     render stamps 'in:<id>' while still painting the logged-out button, and
+     the post-confirmation refresh becomes a no-op — leaving the header stuck
+     on "ورود | ثبت‌نام" after a successful login. */
   function currentAuthKey() {
-    try { var u = getCurrentUser(); return u ? ('in:' + u.id) : 'out'; } catch (e) { return 'out'; }
+    try { var u = sessionReady ? getCurrentUser() : null; return u ? ('in:' + u.id) : 'out'; } catch (e) { return 'out'; }
   }
   function refreshHeaderAuth() {
     var authKey = currentAuthKey();
@@ -1692,10 +1722,35 @@
     } catch (e) {}
     return '';
   }
+  /* Baked (pre-rendered) headers — e.g. the homepage — ship promo-topbar
+     messages as plain text spans without the optional banner-image slot
+     that the template markup and the CMS (Admin → بنرهای تبلیغاتی) rely on.
+     Upgrade such messages in place (never inside a Visual-Builder page
+     header, which owns its own markup) so a saved promo image can render. */
+  function ensurePromoMsgImageSlots(rootEl) {
+    try {
+      var msgs = rootEl.querySelectorAll('.promo-topbar__msg');
+      for (var i = 0; i < msgs.length; i++) {
+        var m = msgs[i];
+        if (m.closest && m.closest('[data-pb-page-header]')) continue;
+        if (m.querySelector('.promo-topbar__img') || m.querySelector('.promo-topbar__text')) continue;
+        var txt = document.createElement('span');
+        txt.className = 'promo-topbar__text';
+        while (m.firstChild) txt.appendChild(m.firstChild);
+        var img = document.createElement('img');
+        img.className = 'promo-topbar__img';
+        img.setAttribute('src', '');
+        img.setAttribute('alt', '');
+        img.style.display = 'none';
+        m.appendChild(img);
+        m.appendChild(txt);
+      }
+    } catch (e) {}
+  }
   function renderHeader(el) {
     // Visual Builder round-trip: a non-empty placeholder already holds saved
     // header markup — preserve it instead of overwriting with the template.
-    if (el.innerHTML.trim()) { try { if (isAccountPage()) el.classList.add('is-account-header'); } catch (e) {} return; }
+    if (el.innerHTML.trim()) { try { if (isAccountPage()) el.classList.add('is-account-header'); } catch (e) {} try { ensurePromoMsgImageSlots(el); } catch (e) {} return; }
     var currentPage = storeFile();
     function isActive(page) { return currentPage === page ? 'is-active' : ''; }
 
@@ -1708,7 +1763,7 @@
 
 el.innerHTML = '\
     <header class="site-header">\
-    <div class="promo-topbar" role="status" aria-live="polite"><div class="promo-topbar__viewport"><span class="promo-topbar__msg is-active">ارسال رایگان برای سفارش‌های بالای ۵۰۰ هزار تومان</span><span class="promo-topbar__msg">۷ روز ضمانت بازگشت کالا بدون قید و شرط</span><span class="promo-topbar__msg">تضمین اصالت کالا با گارانتی معتبر</span></div></div>\
+    <div class="promo-topbar" role="status" aria-live="polite"><div class="promo-topbar__viewport"><span class="promo-topbar__msg is-active"><img class="promo-topbar__img" src="" alt="" style="display:none"><span class="promo-topbar__text">ارسال رایگان برای سفارش‌های بالای ۵۰۰ هزار تومان</span></span><span class="promo-topbar__msg"><img class="promo-topbar__img" src="" alt="" style="display:none"><span class="promo-topbar__text">۷ روز ضمانت بازگشت کالا بدون قید و شرط</span></span><span class="promo-topbar__msg"><img class="promo-topbar__img" src="" alt="" style="display:none"><span class="promo-topbar__text">تضمین اصالت کالا با گارانتی معتبر</span></span></div></div>\
     <div class="header-main"><div class="container">\
     <a href="/" class="header-logo"><span class="header-logo__icon">' + Icons.flash.replace('width="24" height="24"', 'width="24" height="24"') + '</span><span class="header-logo__text"><span class="header-logo__title">' + storeName + '</span><span class="header-logo__subtitle">فروشگاه تخصصی ابزارآلات</span></span></a>\
     ' + searchHtml + '\
@@ -1772,7 +1827,7 @@ el.innerHTML = '\
     var mobileSearchHtml = hideSearch ? '' : '<div class="mobile-header__search-wrap"><input type="text" class="mobile-header__search-input" placeholder=" " autocomplete="off" aria-label="جستجو در ابزار شکری"><span class="mobile-header__search-ph" aria-hidden="true"><span class="mobile-header__search-ph--muted">جستجو در</span><span class="mobile-header__search-ph--brand">ابزار شکری</span></span><button class="mobile-header__search-icon" type="button">' + Icons.search + '</button><div class="search-dropdown search-dropdown--mobile"></div></div>';
 
     el.innerHTML = '\
-    <div class="promo-topbar" role="status" aria-live="polite"><div class="promo-topbar__viewport"><span class="promo-topbar__msg is-active">ارسال رایگان برای سفارش‌های بالای ۵۰۰ هزار تومان</span><span class="promo-topbar__msg">۷ روز ضمانت بازگشت کالا بدون قید و شرط</span><span class="promo-topbar__msg">تضمین اصالت کالا با گارانتی معتبر</span></div></div>\
+    <div class="promo-topbar" role="status" aria-live="polite"><div class="promo-topbar__viewport"><span class="promo-topbar__msg is-active"><img class="promo-topbar__img" src="" alt="" style="display:none"><span class="promo-topbar__text">ارسال رایگان برای سفارش‌های بالای ۵۰۰ هزار تومان</span></span><span class="promo-topbar__msg"><img class="promo-topbar__img" src="" alt="" style="display:none"><span class="promo-topbar__text">۷ روز ضمانت بازگشت کالا بدون قید و شرط</span></span><span class="promo-topbar__msg"><img class="promo-topbar__img" src="" alt="" style="display:none"><span class="promo-topbar__text">تضمین اصالت کالا با گارانتی معتبر</span></span></div></div>\
     <div class="container">\
     <button class="mobile-header__menu-btn" aria-label="منو">' + Icons.menu + '</button>\
     ' + mobileSearchHtml + '\
@@ -1846,12 +1901,13 @@ el.innerHTML = '\
     } catch (e) {}
     return '';
   }
-  function renderContactMapCard(mapUrl) {
+  function renderContactMapCard(mapUrl, coords) {
     var card = document.getElementById('contact-map');
     var body = document.querySelector('[data-contact-map]') || (card ? card.querySelector('.contact-map-card__body') : null);
     if (!card || !body) return;
-    var action = card.querySelector('.contact-map-card__action');
+    var action = card.querySelector('.contact-map-card__action:not([data-contact-navigate])');
     var raw = String(mapUrl == null ? '' : mapUrl).trim();
+    var co = coords || {};
     var embed = contactMapEmbedUrl(raw);
     if (action) {
       if (raw && /^https?:\/\//i.test(raw)) {
@@ -1866,8 +1922,42 @@ el.innerHTML = '\
       var old = body.querySelector('iframe');
       if (old) old.remove();
       body.classList.remove('contact-map-card__body--has-map');
-      return;
     }
+    /* ── "مسیریابی" (navigate) action ───────────────────────────
+       Always actionable: point it at a Google Maps directions URL built from
+       the saved coordinates when available, otherwise from the saved address.
+       It is a normal same-tab link, so it keeps working with JS disabled and
+       without a popup blocker. The legacy "open in map" link above is only
+       populated when an explicit store.map_url exists. */
+    var nav = card.querySelector('[data-contact-navigate]');
+    if (nav) {
+      var latRaw = co.lat, lngRaw = co.lng;
+      var latN = parseFloat(latRaw), lngN = parseFloat(lngRaw);
+      var dest = '';
+      if (isFinite(latN) && isFinite(lngN) && (latN || lngN)) {
+        dest = latN + ',' + lngN;
+      } else if (raw && /^https?:\/\//i.test(raw)) {
+        dest = raw;
+      } else {
+        var addrText = '';
+        try {
+          var addrEl = card.querySelector('[data-setting="store.address"]');
+          addrText = String((addrEl && addrEl.textContent) || '').trim();
+        } catch (e4) {}
+        dest = addrText;
+      }
+      if (dest) {
+        var dirUrl = /^https?:\/\//i.test(dest)
+          ? dest
+          : 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(dest);
+        nav.setAttribute('href', dirUrl);
+        nav.style.display = '';
+      } else {
+        nav.setAttribute('href', '#');
+        nav.style.display = 'none';
+      }
+    }
+    if (!embed) return;
     var frame = body.querySelector('iframe');
     if (!frame) {
       frame = document.createElement('iframe');
@@ -2054,10 +2144,15 @@ el.innerHTML = '\
           a.setAttribute('href', 'mailto:' + email);
           if (!a.querySelector('svg') && (a.textContent || '').indexOf('@') !== -1) a.textContent = email;
         });
+        // Directions quick-action follows the saved store address.
+        if (addr) {
+          var dirCard = document.querySelector('.quick-action-card--directions');
+          if (dirCard) dirCard.setAttribute('href', 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(addr));
+        }
         if (phone2) document.querySelectorAll('[data-phone2-card]').forEach(function (a) {
           a.setAttribute('href', storeTelHref(phone2));
         });
-        try { renderContactMapCard(mapUrl); } catch (e) {}
+        try { renderContactMapCard(mapUrl, { lat: s['store.latitude'] || '', lng: s['store.longitude'] || '' }); } catch (e) {}
       } catch (e) {}
       // 5) Chat widget contact answer follows the saved contact.
       try {
@@ -2193,6 +2288,22 @@ el.innerHTML = '\
 
   /* ── Bind Events ──────────────────────────────────────────── */
   function bindEvents() {
+    /* Contact-page quick-action / support cards: bare "#contact-form" fragments
+       resolve against <base href="/"> and leave the page (they become
+       "/#contact-form" -> homepage) whenever the inline onclick is missing —
+       e.g. a stale cached shell, CSP, or JS disabled. Normalise them here so the
+       real destination ("/contact#contact-form") survives regardless, then let
+       the inline handler do the smooth scroll when present. */
+    if (!bindEvents._contactHrefFixed) {
+      bindEvents._contactHrefFixed = true;
+      try {
+        var _contactHere = /\/contact\/?$/.test(location.pathname) ? location.pathname : '/contact';
+        Array.prototype.forEach.call(document.querySelectorAll('a[href^="#"]'), function (_a) {
+          var _frag = _a.getAttribute('href') || '';
+          if (_frag.length > 1) _a.setAttribute('href', _contactHere + _frag);
+        });
+      } catch (e) {}
+    }
     /* Singleton: document-level listeners must not be stacked when init
        runs on top of the synchronous critical render. Element-level binds
        below already guard per-node (__accountBound & co). */
@@ -2719,6 +2830,73 @@ el.innerHTML = '\
     // Homepage sections (مدیریت صفحه اصلی): titles, enable/disable, order,
     // featured categories/products and amazing-discounts countdown.
     // Reads home.* keys from /api/content; no-ops when absent or disabled.
+    /* Promo top bar CMS sync (بنرهای تبلیغاتی). Runs over EVERY .promo-topbar
+       instance: the desktop header and the mobile header each ship their own
+       copy, and on small viewports only the mobile one is visible. Applying to
+       a single querySelector() match (or to one flat message list) left the
+       mobile bar with hardcoded text and no banner image or dimensions.
+       Visual-Builder page headers own their markup and are skipped. */
+    function applyPromoTopbarCms(c){
+      if(!c) return;
+      /* Count = promo.topbar.count (dynamic list). Legacy data with no count
+         key falls back to the highest non-empty promo.topbar.<n> slot. */
+      function promoCount(){
+        var raw=c['promo.topbar.count'];
+        var n=(raw!=null&&String(raw).trim()!=='')?parseInt(raw,10):NaN;
+        if(!isFinite(n)||n<0){
+          n=0;
+          for(var i=1;i<=20;i++){
+            var t=c['promo.topbar.'+i], im=c['promo.topbar.'+i+'.image'];
+            if((t!=null&&String(t)!=='')||(im!=null&&String(im)!=='')) n=i;
+          }
+          if(!n) n=3;
+        }
+        return Math.max(1,Math.min(n,20));
+      }
+      var count=promoCount();
+      var bars=document.querySelectorAll('.promo-topbar');
+      Array.prototype.forEach.call(bars,function(bar){
+        try{
+          if(bar.closest&&bar.closest('[data-pb-page-header]')) return;
+          var tbEnabled = c['home.topbar.enabled']==null || String(c['home.topbar.enabled'])==='1';
+          if(c['home.topbar.enabled']!=null) bar.style.display = tbEnabled ? '' : 'none';
+          /* The height variable is set on <body> (not the bar) so the desktop
+             body reservation and the mobile sticky offsets inherit the same
+             value as the bar's own viewport height. */
+          var tbH=parseInt(c['promo.topbar.height'],10);
+          if(!tbEnabled) document.body.style.removeProperty('--promo-topbar-height');
+          else if(tbH>=20&&tbH<=100) document.body.style.setProperty('--promo-topbar-height', tbH+'px');
+          var tbIH=parseInt(c['promo.topbar.img_height'],10), tbIW=parseInt(c['promo.topbar.img_width'],10);
+          var viewport=bar.querySelector('.promo-topbar__viewport');
+          if(!viewport) return;
+          var promos=viewport.querySelectorAll('.promo-topbar__msg');
+          /* Grow/shrink the message list to the exact saved count so the
+             storefront always renders the same number of messages. */
+          while(promos.length>count){ viewport.removeChild(promos[promos.length-1]); promos=viewport.querySelectorAll('.promo-topbar__msg'); }
+          while(promos.length<count){
+            var span=document.createElement('span');
+            span.className='promo-topbar__msg';
+            var im2=document.createElement('img'); im2.className='promo-topbar__img'; im2.setAttribute('src',''); im2.setAttribute('alt',''); im2.style.display='none';
+            var tx=document.createElement('span'); tx.className='promo-topbar__text';
+            span.appendChild(im2); span.appendChild(tx);
+            viewport.appendChild(span);
+            promos=viewport.querySelectorAll('.promo-topbar__msg');
+          }
+          /* Exactly one active message (the first) after any resize. */
+          for(var p=0;p<promos.length;p++){
+            promos[p].classList.toggle('is-active', p===0);
+            var imgEl=promos[p].querySelector('.promo-topbar__img');
+            var textEl=promos[p].querySelector('.promo-topbar__text');
+            if(imgEl){
+              var imgUrl=c['promo.topbar.'+(p+1)+'.image']||'';
+              if(imgUrl){ imgEl.src=imgUrl; imgEl.style.display=''; imgEl.style.height=''; imgEl.style.width=''; promos[p].classList.add('has-image'); }
+              else{ imgEl.removeAttribute('src'); imgEl.style.display='none'; promos[p].classList.remove('has-image'); }
+            }
+            if(textEl) textEl.textContent=(c['promo.topbar.'+(p+1)]!=null)?c['promo.topbar.'+(p+1)]:'';
+          }
+        }catch(e){}
+      });
+    }
     function applyHomeSections(c){
       var SECTIONS=[
         {key:'hero', el:'hero-slideshow', titleKey:null},
@@ -2731,7 +2909,7 @@ el.innerHTML = '\
       function secEnabled(s){ return String(c['home.sections.'+s.key+'.enabled']||'1')==='1'; }
       // Titles
       SECTIONS.forEach(function(s){
-        if(!s.titleKey || c[s.titleKey]==null) return;
+        if(!s.titleKey || c[s.titleKey]==null || String(c[s.titleKey]).trim()==='') return;
         var el=document.getElementById(s.el); if(!el) return;
         var t = s.key==='amazing' ? el.querySelector('.special-offers__title-text') : el.querySelector('.section-title');
         if(t) t.textContent=c[s.titleKey];
@@ -2741,11 +2919,8 @@ el.innerHTML = '\
         var el=document.getElementById(s.el); if(!el) return;
         el.style.display = secEnabled(s) ? '' : 'none';
       });
-      // Promo topbar visibility
-      if(c['home.topbar.enabled']!=null){
-        var topbar=document.querySelector('.promo-topbar');
-        if(topbar) topbar.style.display = String(c['home.topbar.enabled'])==='1' ? '' : 'none';
-      }
+      // Promo topbar: visibility, messages, image + dimensions (all bars)
+      applyPromoTopbarCms(c);
       // Order (managed sections keep their anchor; unmanaged stay put)
       try{
         var order=String(c['home.sections.order']||'').split(',').map(function(x){return x.trim();}).filter(Boolean);
@@ -2818,11 +2993,8 @@ el.innerHTML = '\
       if(location.protocol!=='file:' && typeof fetch==='function'){
         fetch('/api/content').then(function(r){ return r.ok?r.json():null; }).then(function(c){
           if(!c) return;
-          // Skip viewports inside a Visual-Builder-saved page header: per-page
-          // header edits (site_pages.header_html) own those spans; the global
-          // CMS values must not stomp them after site-page.js applies them.
-          var promos=[]; try{ Array.prototype.forEach.call(document.querySelectorAll('.promo-topbar__msg'),function(el){ if(!(el.closest&&el.closest('[data-pb-page-header]'))) promos.push(el); }); }catch(e){ promos=document.querySelectorAll('.promo-topbar__msg'); }
-          for(var j=0;j<3;j++){ if(promos[j] && c['promo.topbar.'+(j+1)]!=null) promos[j].textContent=c['promo.topbar.'+(j+1)]; }
+          // Promo topbar (all bars: desktop + mobile header copies)
+          try{ applyPromoTopbarCms(c); }catch(e){}
           if(c['footer.brand.desc']!=null){ var fd=document.querySelector('.footer-brand__desc'); if(fd) fd.textContent=c['footer.brand.desc']; }
           if(c['footer.address']!=null){
             var links=document.querySelectorAll('.footer-link');
@@ -4157,5 +4329,13 @@ el.innerHTML = '\
     if (t && t.closest && t.closest('.addr-province-menu')) return;
     closeSelectDropdown();
   }, true);
+
+  /* Ensure store logo/favicon applies on every page that uses common.js */
+  if (!window.StoreLogo) {
+    var __sl = document.createElement('script');
+    __sl.src = 'assets/js/store-logo.js?v=1';
+    __sl.onload = function () { try { if (window.StoreLogo && !window.StoreLogo._applied) window.StoreLogo.load(); } catch (e) {} };
+    document.head.appendChild(__sl);
+  }
 
 })();

@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   function $(s, c) { return (c || document).querySelector(s); }
-  function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+  function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML.replace(/\"/g,'&quot;').replace(/'/g,'&#39;'); }
   function token() { try { var s = JSON.parse(localStorage.getItem('as_admin_session') || 'null'); return (s && s.token) || ''; } catch (e) { return ''; } }
   function toast(m, t) { if (window.AbzarAdmin && window.AbzarAdmin.showToast) window.AbzarAdmin.showToast(m, t); }
 

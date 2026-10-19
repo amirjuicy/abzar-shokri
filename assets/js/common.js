@@ -228,6 +228,17 @@
      cache is then a lie — drop it once per page load so the UI honestly
      shows logged-out instead of failing every request with 401. */
   var authExpiredFired = false;
+  /* Session readiness gate: the header must NOT show logged-in state (logout
+     button) until the backend has confirmed the token. Without this gate, a
+     stale as_session in localStorage (after DB restore, token expiry, or
+     logout on another device) causes the header to render the logout button
+     for logged-out visitors on initial paint, before fetchMe() completes. */
+  var sessionReady = false;
+  function markSessionReady() {
+    if (sessionReady) return;
+    sessionReady = true;
+    try { refreshHeaderAuth(); } catch (e) {}
+  }
   function handleAuthExpired() {
     if (authExpiredFired) return;
     /* An admin session is logged in, just not as a customer: its 401s on
@@ -235,8 +246,8 @@
     if (isAdminSession()) return;
     authExpiredFired = true;
     try { setSession(null); } catch (e) {}
+    markSessionReady();
     try { refreshState(); } catch (e) {}
-    try { refreshHeaderAuth(); } catch (e) {}
     try { document.dispatchEvent(new CustomEvent('as_auth_expired')); } catch (e) {}
     try { notifyAuthChange(); } catch (e) {}
   }
@@ -333,12 +344,12 @@
   }
 
   function fetchMe() {
-    if (!apiAvailable()) return Promise.resolve(getCurrentUser());
+    if (!apiAvailable()) { markSessionReady(); return Promise.resolve(getCurrentUser()); }
     var session = getSession();
-    if (!session || !session.token) return Promise.resolve(getCurrentUser());
+    if (!session || !session.token) { markSessionReady(); return Promise.resolve(getCurrentUser()); }
     /* Admins have no customer row, so /auth/me can only 401 here and there is
        nothing to refresh — the local admin profile is already cached. */
-    if (isAdminSession()) return Promise.resolve(getCurrentUser());
+    if (isAdminSession()) { markSessionReady(); return Promise.resolve(getCurrentUser()); }
     return apiRequest('GET', '/auth/me').then(function (data) {
       if (data && data.user) {
         /* The request may resolve after the session changed (e.g. logout
@@ -352,10 +363,18 @@
         try { pullCartFromServer(); } catch (e) {}
         try { pullWishlistFromServer(); } catch (e) {}
         try { pullRecentFromServer(); } catch (e) {}
-        try { refreshHeaderAuth(); } catch (e) {}
       }
+      markSessionReady();
       return data.user;
-    }).catch(function () { return getCurrentUser(); });
+    }).catch(function () {
+      /* Any failure (network error, 500, etc.) means the session is NOT
+         confirmed by the backend. Clear stale local state so the UI does
+         not trust an unvalidated localStorage flag. handleAuthExpired
+         already fires on 401, but other errors need the same treatment. */
+      try { setSession(null); } catch (e) {}
+      markSessionReady();
+      return getCurrentUser();
+    });
   }
 
   var authReady = (function () {
@@ -1479,7 +1498,10 @@
   function escAuthHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   function headerAuthHTML() {
-    var user = getCurrentUser();
+    /* Gate on sessionReady: never show logged-in state (logout button) until
+       the backend has confirmed the token. This prevents stale localStorage
+       sessions from leaking the logout button to logged-out visitors. */
+    var user = sessionReady ? getCurrentUser() : null;
     var dropdownArrow = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
     if (!user) {
       var loginIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>';
@@ -1508,7 +1530,7 @@
   }
 
   function mobileAuthHTML() {
-    var user = getCurrentUser();
+    var user = sessionReady ? getCurrentUser() : null;
     return user
       ? '<a href="/account" class="header-action" aria-label="حساب کاربری">' + Icons.user + '</a>'
       : '<a href="/login" class="header-action" aria-label="ورود و ثبت‌نام">' + Icons.user + '</a>';

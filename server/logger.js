@@ -73,6 +73,33 @@ function sanitize(obj){
   return out;
 }
 
+function isSensitiveParam(name){
+  const n = String(name || '').toLowerCase().replace(/[_-]/g, '');
+  return n === 'accesstoken' || n === 'token' || n === 'authorization' || n === 'auth'
+    || n.includes('password') || n.includes('secret')
+    || n.indexOf('payment') === 0 || n.indexOf('card') === 0 || n === 'cvv';
+}
+// Redact sensitive query values before any URL/path is logged. Keeps the path,
+// parameter names, non-sensitive values and status info intact. Name matching
+// is case-insensitive and tolerant of _/-/URL-encoded spellings.
+function redactUrl(raw){
+  if (typeof raw !== 'string' || !raw) return raw;
+  const hash = raw.indexOf('#');
+  const frag = hash === -1 ? '' : raw.slice(hash);
+  const nofrag = hash === -1 ? raw : raw.slice(0, hash);
+  const q = nofrag.indexOf('?');
+  if (q === -1) return raw;
+  const redacted = nofrag.slice(q + 1).split('&').map((pair) => {
+    const eq = pair.indexOf('=');
+    const name = eq === -1 ? pair : pair.slice(0, eq);
+    let dec = name;
+    try { dec = decodeURIComponent(name.replace(/\+/g, ' ')); } catch (_) {}
+    if (isSensitiveParam(dec)) return (eq === -1 ? name : name + '=') + '[REDACTED]';
+    return pair;
+  });
+  return nofrag.slice(0, q) + '?' + redacted.join('&') + frag;
+}
+
 function genId(){ try{ return require('crypto').randomUUID(); }catch(_){ return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9); } }
 
 function requestIdMiddleware(req,res,next){
@@ -193,7 +220,7 @@ function requestLogger(req,res,next){
     const statusCode = res.statusCode;
     const base = {
       requestId: req.requestId,
-      method:req.method, path:req.originalUrl, statusCode, status: statusCode, durationMs:duration, duration,
+      method:req.method, path:redactUrl(req.originalUrl), statusCode, status: statusCode, durationMs:duration, duration,
       ...(userId?{userId}:{})
     };
     if(statusCode>=500){
@@ -292,6 +319,6 @@ function listLogFiles(type){
   }catch(_){ return []; }
 }
 
-module.exports={ LOG_DIR, LOG_TYPES, RETENTION_DAYS, write, logInfo, logError, logWarn, logSecurity, requestIdMiddleware, requestLogger, sanitize, readLogs, logFilePath, logFileInfo, readLogFile, listLogFiles, isLogDate, isLogType, normType, typeForEntry, migrateLegacyLogs, cleanup, cleanupLogs: cleanup, startLogCleanupScheduler };
+module.exports={ LOG_DIR, LOG_TYPES, RETENTION_DAYS, write, logInfo, logError, logWarn, logSecurity, requestIdMiddleware, requestLogger, sanitize, redactUrl, readLogs, logFilePath, logFileInfo, readLogFile, listLogFiles, isLogDate, isLogType, normType, typeForEntry, migrateLegacyLogs, cleanup, cleanupLogs: cleanup, startLogCleanupScheduler };
 migrateLegacyLogs();
 startLogCleanupScheduler();

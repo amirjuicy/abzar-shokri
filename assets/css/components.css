@@ -3085,6 +3085,7 @@ body.is-site-loading {
 .mobile-purchase-bar__currency { font-size: 11px; color: var(--text-muted); font-weight: 500; }
 /* Stepper (revealed after add-to-cart, replaces button) */
 .mobile-purchase-bar__qty[hidden] { display: none !important; }
+.mobile-purchase-bar__add-btn[hidden] { display: none !important; }
 .mobile-purchase-bar__qty {
   width: 100%;
   min-height: 48px;

@@ -1,0 +1,698 @@
+{
+  "results": [
+    {
+      "name": "test image created (real png)",
+      "ok": true,
+      "detail": "25309 bytes"
+    },
+    {
+      "name": "admin: card بنرهای تبلیغاتی visible in مدیریت صفحه اصلی",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "admin: uploaded image auto-filled into پیام ۱ field",
+      "ok": true,
+      "detail": "/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png"
+    },
+    {
+      "name": "admin: 32px preview thumbnail updates right after picking image",
+      "ok": true,
+      "detail": "{\"previewDisplay\":\"\",\"previewSrc\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"clearVisible\":true,\"liveHasImg\":false}"
+    },
+    {
+      "name": "admin: image selected from gallery into پیام 2",
+      "ok": true,
+      "detail": "/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png"
+    },
+    {
+      "name": "admin: image selected from gallery into پیام 3",
+      "ok": true,
+      "detail": "/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png"
+    },
+    {
+      "name": "api: promo.topbar.1.image persisted",
+      "ok": true,
+      "detail": "/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png"
+    },
+    {
+      "name": "api: promo.topbar.2.image persisted",
+      "ok": true,
+      "detail": "/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png"
+    },
+    {
+      "name": "api: promo.topbar.3.image persisted",
+      "ok": true,
+      "detail": "/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png"
+    },
+    {
+      "name": "api: promo.topbar.1 text persisted",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "desktop /: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":false,\"d\":\"block\",\"h\":61}"
+    },
+    {
+      "name": "desktop /: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":1440,\"h\":60,\"top\":0}"
+    },
+    {
+      "name": "desktop /: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "desktop /shop: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":false,\"d\":\"block\",\"h\":61}"
+    },
+    {
+      "name": "desktop /shop: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":1440,\"h\":60,\"top\":0}"
+    },
+    {
+      "name": "desktop /shop: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "desktop /brands: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":false,\"d\":\"block\",\"h\":61}"
+    },
+    {
+      "name": "desktop /brands: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":1440,\"h\":60,\"top\":0}"
+    },
+    {
+      "name": "desktop /brands: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "desktop /faq: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":false,\"d\":\"block\",\"h\":61}"
+    },
+    {
+      "name": "desktop /faq: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":1440,\"h\":60,\"top\":0}"
+    },
+    {
+      "name": "desktop /faq: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "mobile /: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":true,\"d\":\"block\",\"h\":56}"
+    },
+    {
+      "name": "mobile /: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":390,\"h\":55,\"top\":0}"
+    },
+    {
+      "name": "mobile /: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "mobile /shop: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":true,\"d\":\"block\",\"h\":56}"
+    },
+    {
+      "name": "mobile /shop: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":390,\"h\":55,\"top\":0}"
+    },
+    {
+      "name": "mobile /shop: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "mobile /brands: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":true,\"d\":\"block\",\"h\":56}"
+    },
+    {
+      "name": "mobile /brands: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":390,\"h\":55,\"top\":0}"
+    },
+    {
+      "name": "mobile /brands: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "mobile /faq: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":true,\"d\":\"block\",\"h\":56}"
+    },
+    {
+      "name": "mobile /faq: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":390,\"h\":55,\"top\":0}"
+    },
+    {
+      "name": "mobile /faq: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "api: height/img dims persisted",
+      "ok": true,
+      "detail": "60/40/64"
+    },
+    {
+      "name": "desktop-dims /: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":false,\"d\":\"block\",\"h\":61}"
+    },
+    {
+      "name": "desktop-dims /: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":1440,\"h\":60,\"top\":0}"
+    },
+    {
+      "name": "desktop-dims /: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "desktop-dims /: bar height matches setting",
+      "ok": true,
+      "detail": "bar=61 want=61"
+    },
+    {
+      "name": "desktop-dims /: message viewport height matches setting",
+      "ok": true,
+      "detail": "vp=60 want=60"
+    },
+    {
+      "name": "desktop-dims /: banner image fills bar edge-to-edge",
+      "ok": true,
+      "detail": "img=1440x60 bar=1440x61"
+    },
+    {
+      "name": "desktop-dims /: text hidden behind banner image",
+      "ok": true,
+      "detail": "none"
+    },
+    {
+      "name": "desktop-dims /shop: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":false,\"d\":\"block\",\"h\":61}"
+    },
+    {
+      "name": "desktop-dims /shop: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":1440,\"h\":60,\"top\":0}"
+    },
+    {
+      "name": "desktop-dims /shop: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "desktop-dims /shop: bar height matches setting",
+      "ok": true,
+      "detail": "bar=61 want=61"
+    },
+    {
+      "name": "desktop-dims /shop: message viewport height matches setting",
+      "ok": true,
+      "detail": "vp=60 want=60"
+    },
+    {
+      "name": "desktop-dims /shop: banner image fills bar edge-to-edge",
+      "ok": true,
+      "detail": "img=1440x60 bar=1440x61"
+    },
+    {
+      "name": "desktop-dims /shop: text hidden behind banner image",
+      "ok": true,
+      "detail": "none"
+    },
+    {
+      "name": "desktop-dims /brands: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":false,\"d\":\"block\",\"h\":61}"
+    },
+    {
+      "name": "desktop-dims /brands: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":1440,\"h\":60,\"top\":0}"
+    },
+    {
+      "name": "desktop-dims /brands: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "desktop-dims /brands: bar height matches setting",
+      "ok": true,
+      "detail": "bar=61 want=61"
+    },
+    {
+      "name": "desktop-dims /brands: message viewport height matches setting",
+      "ok": true,
+      "detail": "vp=60 want=60"
+    },
+    {
+      "name": "desktop-dims /brands: banner image fills bar edge-to-edge",
+      "ok": true,
+      "detail": "img=1440x60 bar=1440x61"
+    },
+    {
+      "name": "desktop-dims /brands: text hidden behind banner image",
+      "ok": true,
+      "detail": "none"
+    },
+    {
+      "name": "desktop-dims /faq: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":false,\"d\":\"block\",\"h\":61}"
+    },
+    {
+      "name": "desktop-dims /faq: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":1440,\"h\":60,\"top\":0}"
+    },
+    {
+      "name": "desktop-dims /faq: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "desktop-dims /faq: bar height matches setting",
+      "ok": true,
+      "detail": "bar=61 want=61"
+    },
+    {
+      "name": "desktop-dims /faq: message viewport height matches setting",
+      "ok": true,
+      "detail": "vp=60 want=60"
+    },
+    {
+      "name": "desktop-dims /faq: banner image fills bar edge-to-edge",
+      "ok": true,
+      "detail": "img=1440x60 bar=1440x61"
+    },
+    {
+      "name": "desktop-dims /faq: text hidden behind banner image",
+      "ok": true,
+      "detail": "none"
+    },
+    {
+      "name": "mobile-dims /: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":true,\"d\":\"block\",\"h\":56}"
+    },
+    {
+      "name": "mobile-dims /: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":390,\"h\":55,\"top\":0}"
+    },
+    {
+      "name": "mobile-dims /: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "mobile-dims /: bar height matches setting",
+      "ok": true,
+      "detail": "bar=56 want=56"
+    },
+    {
+      "name": "mobile-dims /: message viewport height matches setting",
+      "ok": true,
+      "detail": "vp=55 want=55"
+    },
+    {
+      "name": "mobile-dims /: banner image fills bar edge-to-edge",
+      "ok": true,
+      "detail": "img=390x55 bar=390x56"
+    },
+    {
+      "name": "mobile-dims /: text hidden behind banner image",
+      "ok": true,
+      "detail": "none"
+    },
+    {
+      "name": "mobile-dims /shop: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":true,\"d\":\"block\",\"h\":56}"
+    },
+    {
+      "name": "mobile-dims /shop: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":390,\"h\":55,\"top\":0}"
+    },
+    {
+      "name": "mobile-dims /shop: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "mobile-dims /shop: bar height matches setting",
+      "ok": true,
+      "detail": "bar=56 want=56"
+    },
+    {
+      "name": "mobile-dims /shop: message viewport height matches setting",
+      "ok": true,
+      "detail": "vp=55 want=55"
+    },
+    {
+      "name": "mobile-dims /shop: banner image fills bar edge-to-edge",
+      "ok": true,
+      "detail": "img=390x55 bar=390x56"
+    },
+    {
+      "name": "mobile-dims /shop: text hidden behind banner image",
+      "ok": true,
+      "detail": "none"
+    },
+    {
+      "name": "mobile-dims /brands: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":true,\"d\":\"block\",\"h\":56}"
+    },
+    {
+      "name": "mobile-dims /brands: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":390,\"h\":55,\"top\":0}"
+    },
+    {
+      "name": "mobile-dims /brands: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "mobile-dims /brands: bar height matches setting",
+      "ok": true,
+      "detail": "bar=56 want=56"
+    },
+    {
+      "name": "mobile-dims /brands: message viewport height matches setting",
+      "ok": true,
+      "detail": "vp=55 want=55"
+    },
+    {
+      "name": "mobile-dims /brands: banner image fills bar edge-to-edge",
+      "ok": true,
+      "detail": "img=390x55 bar=390x56"
+    },
+    {
+      "name": "mobile-dims /brands: text hidden behind banner image",
+      "ok": true,
+      "detail": "none"
+    },
+    {
+      "name": "mobile-dims /faq: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":true,\"d\":\"block\",\"h\":56}"
+    },
+    {
+      "name": "mobile-dims /faq: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":390,\"h\":55,\"top\":0}"
+    },
+    {
+      "name": "mobile-dims /faq: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "mobile-dims /faq: bar height matches setting",
+      "ok": true,
+      "detail": "bar=56 want=56"
+    },
+    {
+      "name": "mobile-dims /faq: message viewport height matches setting",
+      "ok": true,
+      "detail": "vp=55 want=55"
+    },
+    {
+      "name": "mobile-dims /faq: banner image fills bar edge-to-edge",
+      "ok": true,
+      "detail": "img=390x55 bar=390x56"
+    },
+    {
+      "name": "mobile-dims /faq: text hidden behind banner image",
+      "ok": true,
+      "detail": "none"
+    },
+    {
+      "name": "admin reload: form re-populated from /api/content",
+      "ok": true,
+      "detail": "{\"h\":\"60\",\"ih\":\"40\",\"iw\":\"64\",\"img1\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"msg1\":\"ارسال رایگان ویژه تست بنر\",\"previewSrc\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\"}"
+    },
+    {
+      "name": "reload: /api/content still holds image + dims",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "desktop-reload /: promo bar visible",
+      "ok": true,
+      "detail": "{\"mobile\":false,\"d\":\"block\",\"h\":61}"
+    },
+    {
+      "name": "desktop-reload /: active message has banner image rendered",
+      "ok": true,
+      "detail": "{\"src\":\"/assets/images/uploads/mvdmsgkn-promo-topbar-test-banner.png\",\"display\":\"block\",\"natW\":640,\"natH\":128,\"w\":1440,\"h\":60,\"top\":0}"
+    },
+    {
+      "name": "desktop-reload /: visible bar shows CMS text",
+      "ok": true,
+      "detail": "ارسال رایگان ویژه تست بنر"
+    },
+    {
+      "name": "desktop-reload /: bar height matches setting",
+      "ok": true,
+      "detail": "bar=61 want=61"
+    },
+    {
+      "name": "desktop-reload /: message viewport height matches setting",
+      "ok": true,
+      "detail": "vp=60 want=60"
+    },
+    {
+      "name": "desktop-reload /: banner image fills bar edge-to-edge",
+      "ok": true,
+      "detail": "img=1440x60 bar=1440x61"
+    },
+    {
+      "name": "desktop-reload /: text hidden behind banner image",
+      "ok": true,
+      "detail": "none"
+    }
+  ],
+  "adminLogs": {
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "pageErrors": [],
+    "failed": [
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404"
+    ]
+  },
+  "storeLogs": {
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "pageErrors": [],
+    "failed": [
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/stanley-wrench-set-10.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/stanley-wrench-set-10.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/stanley-wrench-set-10.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/stanley-wrench-set-10.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/stanley-wrench-set-10.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/stanley-wrench-set-10.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/stanley-wrench-set-10.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/stanley-wrench-set-10.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/dewalt.svg :: HTTP 404",
+      "http://127.0.0.1:3000/stanley-wrench-set-10.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/makita.svg :: HTTP 404",
+      "http://127.0.0.1:3000/assets/images/brands/bosch.svg :: HTTP 404"
+    ]
+  }
+}

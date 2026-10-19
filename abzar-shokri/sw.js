@@ -110,7 +110,16 @@
 // the button is tapped) and briefly bounces that header cart icon; header.css
 // gained the scoped keyframes. Both files are precached cache-first below, so
 // bump to drop the stale shell.
-var CACHE_NAME = 'abzar-shokri-v42';
+/* v43: contact-page actions actually work for returning visitors. contact.html is
+ * rewritten to its own clean route ("/contact#contact-form" instead of a bare
+ * "#contact-form", which <base href="/"> resolved to the HOMEPAGE and made the
+ * "ارسال پیام" card appear dead), the map card's "مسیریابی" link is wired up
+ * (it was a permanent href="#"), and common.js gained a normaliser for bare
+ * same-page fragments plus the navigate href. contact.html/contact.css/common.js
+ * are cache-first (contact.css is not even precached), so persistent clients
+ * pinned the old markup and JS — bump so they pick the fix up.
+ */
+var CACHE_NAME = 'abzar-shokri-v44';
 var OFFLINE_URL = 'offline.html';
 
 var APP_SHELL = [
@@ -126,6 +135,7 @@ var APP_SHELL = [
   'assets/css/homepage.css',
   'assets/css/desktop.css',
   'assets/css/pages.css',
+  'assets/css/contact.css',
   'assets/css/pwa.css',
   'assets/js/data.js',
   'assets/js/icons.js',

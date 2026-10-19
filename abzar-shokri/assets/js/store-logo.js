@@ -120,13 +120,23 @@
     }
   }
 
-  /* Favicon + touch icon. Sizes that have a derived file use it, the rest
-     keep pointing at the bundled bolt icons. */
-  function fillIcons(logo) {
+  /* Favicon + touch icon. A saved `store.favicon` wins outright; otherwise the
+     icons derived from `store.logo` are used, falling back to bundled icons. */
+  function fillIcons(logo, favicon) {
     var head = doc().head;
     if (!head) return;
+    var favUrl = favicon ? resolveUrl(favicon) : '';
+    if (favUrl) {
+      var f32 = head.querySelector('link[data-store-icon="32"]') || head.querySelector('link[rel="icon"][sizes="32x32"]');
+      var f16 = head.querySelector('link[data-store-icon="16"]') || head.querySelector('link[rel="icon"][sizes="16x16"]');
+      var ftouch = head.querySelector('link[data-store-icon="180"]') || head.querySelector('link[rel="apple-touch-icon"]');
+      if (f32) { f32.setAttribute('href', favUrl); f32.setAttribute('data-store-icon', '32'); f32.setAttribute('data-store-derived', '1'); }
+      if (f16) { f16.setAttribute('href', favUrl); f16.setAttribute('data-store-icon', '16'); f16.setAttribute('data-store-derived', '1'); }
+      if (ftouch) { ftouch.setAttribute('href', favUrl); ftouch.setAttribute('data-store-icon', '180'); ftouch.setAttribute('data-store-derived', '1'); }
+      return;
+    }
     var hasDerived = !!logo;
-    var setLinks = function () {
+    var setLinks = function (useDerived) {
       var fav32 = head.querySelector('link[data-store-icon="32"]') ||
         head.querySelector('link[rel="icon"][sizes="32x32"]');
       var fav16 = head.querySelector('link[data-store-icon="16"]') ||
@@ -134,19 +144,19 @@
       var touch = head.querySelector('link[data-store-icon="180"]') ||
         head.querySelector('link[rel="apple-touch-icon"]');
       if (fav32) {
-        if (hasDerived) { fav32.setAttribute('href', ICON_BASE + 'icon-32.png?v=' + stamp()); }
+        if (useDerived) { fav32.setAttribute('href', ICON_BASE + 'icon-32.png?v=' + stamp()); }
         else { fav32.setAttribute('href', 'assets/icons/favicon-32.png'); }
-        mark(fav32, '32', hasDerived);
+        mark(fav32, '32', useDerived);
       }
       if (fav16) {
-        if (hasDerived) { fav16.setAttribute('href', ICON_BASE + 'icon-32.png?v=' + stamp()); }
+        if (useDerived) { fav16.setAttribute('href', ICON_BASE + 'icon-32.png?v=' + stamp()); }
         else { fav16.setAttribute('href', 'assets/icons/favicon-16.png'); }
-        mark(fav16, '16', hasDerived);
+        mark(fav16, '16', useDerived);
       }
       if (touch) {
-        if (hasDerived) { touch.setAttribute('href', ICON_BASE + 'icon-180.png?v=' + stamp()); }
+        if (useDerived) { touch.setAttribute('href', ICON_BASE + 'icon-180.png?v=' + stamp()); }
         else { touch.setAttribute('href', 'assets/icons/apple-touch-icon.png'); }
-        mark(touch, '180', hasDerived);
+        mark(touch, '180', useDerived);
       }
     };
     function mark(el, size, derived) {
@@ -155,7 +165,17 @@
       else el.removeAttribute('data-store-derived');
     }
     function stamp() { return String(Date.now()); }
-    setLinks();
+    // Bundled icons first: the favicon must never point at a missing file.
+    setLinks(false);
+    if (!hasDerived) return;
+    // Switch to the derived icons only when they exist on the server (they are
+    // generated from store.logo on save). A missing/invalid logo keeps the
+    // bundled fallback instead of a broken image.
+    try {
+      fetch(ICON_BASE + 'icon-32.png', { cache: 'no-store' }).then(function (r) {
+        if (r && r.ok) setLinks(true);
+      }).catch(function () {});
+    } catch (_) {}
     // The manifest link is intentionally left as-is: /manifest.webmanifest is
     // generated server-side from the same store.logo + store.name, so the PWA
     // installer already sees the saved logo without a second source here.
@@ -165,11 +185,12 @@
     if (!settings) return;
     try { injectStyles(); } catch (_) {}
     var logo = resolveUrl(settings['store.logo']);
+    var favicon = resolveUrl(settings['store.favicon']);
     current.logo = logo;
     current.applied = true;
     try { global.__storeLogo = logo; } catch (_) {}
     try { fillTargets(logo); } catch (_) {}
-    try { fillIcons(logo); } catch (_) {}
+    try { fillIcons(logo, favicon); } catch (_) {}
   }
 
   function get() { return current.logo; }
@@ -200,5 +221,14 @@
     doc().addEventListener('DOMContentLoaded', function () { injectStyles(); });
   } else {
     injectStyles();
+  }
+
+  // Auto-apply on pages that do not call StoreLogo.apply() themselves (so the
+  // saved favicon is applied everywhere, not just the homepage).
+  function __autoLoad() { if (!current.applied) { try { load(); } catch (e) {} } }
+  if (doc().readyState === 'loading') {
+    doc().addEventListener('DOMContentLoaded', __autoLoad);
+  } else {
+    setTimeout(__autoLoad, 0);
   }
 })(window);

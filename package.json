@@ -1,6 +1,8 @@
 {
   "scripts": {
-    "check:radius": "node check-radius.mjs"
+    "check:radius": "node check-radius.mjs",
+    "backup": "node server/backup.js",
+    "backup:validate": "node server/restore-validate.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -15,7 +15,8 @@ try { db.exec('PRAGMA journal_mode = WAL'); } catch (_) {}
 
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { requestIdMiddleware, requestLogger, logError } = require('./logger');
+const { requestIdMiddleware, requestLogger, logError, logWarn } = require('./logger');
+const { syncIcons } = require('./store-icons');
 
 const app = express();
 app.use(requestIdMiddleware);
@@ -971,14 +972,14 @@ function ensureAdminColumns() {
 try { ensureAdminColumns(); } catch (_) {}
 // One key per admin sidebar view (data-view). 'dashboard' needs no API section.
 const ADMIN_SECTIONS = ['dashboard', 'orders', 'transactions', 'reports', 'discounts', 'products',
-  'categories', 'users', 'notifications', 'tickets', 'brands', 'articles', 'reviews',
+  'categories', 'users', 'notifications', 'tickets', 'contact-messages', 'brands', 'articles', 'reviews',
   'content', 'home', 'gallery', 'admins', 'logs', 'settings', 'store-info', 'sms', 'seo'];
 const ROLE_PERMS = {
   superadmin: { sections: 'all', readonly: false },
   admin: { sections: 'all', readonly: false },
   manager: { sections: ADMIN_SECTIONS.filter((s) => s !== 'admins'), readonly: false },
   editor: { sections: ['products', 'categories', 'brands', 'articles', 'content', 'home', 'gallery', 'reviews'], readonly: false },
-  support: { sections: ['tickets', 'users', 'notifications', 'reviews', 'orders'], readonly: false },
+  support: { sections: ['tickets', 'contact-messages', 'users', 'notifications', 'reviews', 'orders'], readonly: false },
   viewer: { sections: 'all', readonly: true },
 };
 const VALID_ROLES = new Set(Object.keys(ROLE_PERMS));
@@ -1090,6 +1091,7 @@ const ADMIN_SECTION_PREFIXES = [
   ['/admin/notifications', 'notifications'],
   ['/admin/seo', 'seo'],
   ['/admin/tickets', 'tickets'],
+  ['/admin/contact-messages', 'contact-messages'],
   ['/admin/articles', 'articles'],
   ['/admin/article-categories', 'articles'],
   ['/admin/pages', 'content'],
@@ -1109,6 +1111,7 @@ const ADMIN_SECTION_PREFIXES = [
   ['/reviews', 'reviews'],
   ['/questions', 'reviews'],
   ['/tickets', 'tickets'],
+  ['/contact-messages', 'contact-messages'],
   ['/notifications', 'notifications'],
 ];
 function sectionForAdminPath(path) {
@@ -1189,6 +1192,12 @@ const SETTING_DEFAULTS = {
   // ── Centralized store identity / contact (single source of truth).
   // Admin → «اطلاعات فروشگاه» is the ONLY place these keys are editable.
   'store.name': 'ابزار شکری',
+  // store.logo is the single source of truth for the storefront logo and the
+  // derived favicon/PWA icons (assets/images/uploads/store/icon-*.png). It is
+  // editable only in Admin → اطلاعات فروشگاه and persisted here like the other
+  // store.* identity keys; server/store-icons.js regenerates the icons on save.
+  'store.logo': '',
+  'store.favicon': '',
   'store.phone': '۰۲۱-۴۴۵۵۶۶۷۷',
   'store.phone2': '',
   'store.email': 'info@abzar-shokri.com',
@@ -1422,7 +1431,8 @@ function toSeoTemplate(v, storeName) {
   return '{name}';
 }
 
-api.put('/settings', requireAdmin, (req, res) => {
+api.put('/settings', requireAdmin, async (req, res, next) => {
+  try {
   const b = req.body || {};
   ensureSettingsTable();
   const upd = db.prepare("INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=datetime('now')");
@@ -1466,8 +1476,20 @@ api.put('/settings', requireAdmin, (req, res) => {
       db.prepare("UPDATE shipping_methods SET cost = ?, updated_at = datetime('now') WHERE is_default = 1").run(cfg);
     }
   } catch (_) {}
+  // Derived favicon/PWA icons: regenerate from the saved logo, or remove them
+  // when the logo is cleared/invalid so the client never points at a 404.
+  if (b['store.logo'] !== undefined) {
+    try {
+      const iconRes = await syncIcons(b['store.logo']);
+      if (!iconRes.generated) {
+        logWarn('store icons not generated', { logo: String(b['store.logo'] || ''), error: iconRes.error || 'no usable logo file' });
+      }
+    } catch (e) {
+      logError('store icons sync failed', { error: String((e && e.message) || e) });
+    }
+  }
   res.json(readSettings());
-});
+} catch (e) { next(e); }});
 
 // ── SMS test send (admin-only; logs instead of calling provider) ──
 api.post('/sms-test', requireAdmin, (req, res) => {
@@ -3981,6 +4003,146 @@ api.delete('/admin/tickets/:id', requireAdmin, (req, res) => {
   if (!info.changes) return res.status(404).json({ error: 'Ticket not found' });
   res.json({ ok: true });
 });
+
+// --- Contact messages (public form -> DB, admin management) ---
+function ensureContactMessagesTable() {
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS contact_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL DEFAULT '',
+      email TEXT,
+      phone TEXT,
+      subject TEXT NOT NULL DEFAULT '',
+      message TEXT NOT NULL DEFAULT '',
+      is_read INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_contact_messages_created ON contact_messages(created_at)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_contact_messages_read ON contact_messages(is_read)');
+  } catch (_) {}
+}
+try { ensureContactMessagesTable(); } catch (_) {}
+
+function normalizeContactPhone(raw) {
+  const map = { '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9','٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9' };
+  let s = String(raw || '').trim().replace(/[۰-۹٠-٩]/g, (c) => (map[c] || c));
+  s = s.replace(/[\s\-().]/g, '');
+  if (s.startsWith('+')) s = s.slice(1);
+  if (s.startsWith('0098')) s = '0' + s.slice(4);
+  else if (s.startsWith('98') && s.length >= 11) s = '0' + s.slice(2);
+  else if (s.startsWith('9') && s.length === 10) s = '0' + s;
+  s = s.replace(/\D/g, '');
+  return s;
+}
+function isValidContactEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '').trim()); }
+function isValidContactPhone(raw) {
+  const n = normalizeContactPhone(raw);
+  return /^0\d{9,10}$/.test(n);
+}
+
+const contactLimiter = rateLimit({ windowMs: 15*60*1000, max: 5, standardHeaders:true, legacyHeaders:false, message:{error:'Too many requests, please try again later'} });
+
+api.post('/contact', contactLimiter, (req, res) => {
+  try { ensureContactMessagesTable(); } catch (_) {}
+  const b = req.body || {};
+  const name = String(b.name || '').trim();
+  const subject = String(b.subject || '').trim();
+  const message = String(b.message || '').trim();
+  const email = String(b.email || '').trim();
+  const phoneRaw = String(b.phone || '').trim();
+
+  if (!name) return res.status(400).json({ error: 'نام الزامی است' });
+  if (name.length > 100) return res.status(400).json({ error: 'نام بیش از حد طولانی است' });
+  if (!subject) return res.status(400).json({ error: 'موضوع الزامی است' });
+  if (subject.length > 200) return res.status(400).json({ error: 'موضوع بیش از حد طولانی است' });
+  if (!message) return res.status(400).json({ error: 'پیام الزامی است' });
+  if (message.length > 2000) return res.status(400).json({ error: 'پیام بیش از حد طولانی است' });
+
+  const hasEmail = email.length > 0;
+  const phone = phoneRaw ? normalizeContactPhone(phoneRaw) : '';
+  const hasPhone = phone.length > 0;
+
+  if (hasEmail) {
+    if (email.length > 254) return res.status(400).json({ error: 'ایمیل نامعتبر است' });
+    if (!isValidContactEmail(email)) return res.status(400).json({ error: 'ایمیل نامعتبر است' });
+  }
+  if (hasPhone) {
+    if (!isValidContactPhone(phoneRaw)) return res.status(400).json({ error: 'شماره تماس نامعتبر است' });
+  }
+  if (!hasEmail && !hasPhone) {
+    return res.status(400).json({ error: 'وارد کردن ایمیل یا شماره تماس الزامی است' });
+  }
+
+  const info = db.prepare(`INSERT INTO contact_messages (name, email, phone, subject, message, is_read)
+    VALUES (?, ?, ?, ?, ?, 0)`)
+    .run(name, hasEmail ? email : null, hasPhone ? phone : null, subject, message);
+  res.status(201).json({ ok: true, id: info.lastInsertRowid });
+});
+
+// Admin: list contact messages
+api.get('/admin/contact-messages', requireAdmin, (req, res) => {
+  try { ensureContactMessagesTable(); } catch (_) {}
+  const { q, status, subject, limit = 50, offset = 0 } = req.query;
+  const where = [];
+  const params = [];
+  if (status === 'read') { where.push('is_read = 1'); }
+  else if (status === 'unread') { where.push('is_read = 0'); }
+  if (subject) { where.push('subject = ?'); params.push(String(subject)); }
+  if (q) {
+    const like = `%${String(q)}%`;
+    where.push('(name LIKE ? OR email LIKE ? OR phone LIKE ? OR subject LIKE ? OR message LIKE ?)');
+    params.push(like, like, like, like, like);
+  }
+  const lim = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 200);
+  const off = Math.max(parseInt(offset, 10) || 0, 0);
+  const clause = where.length ? ('WHERE ' + where.join(' AND ')) : '';
+  const rows = db.prepare(`SELECT * FROM contact_messages ${clause} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`).all(...params, lim, off);
+  const total = db.prepare(`SELECT COUNT(*) AS n FROM contact_messages ${clause}`).get(...params).n;
+  const unreadCount = db.prepare('SELECT COUNT(*) AS n FROM contact_messages WHERE is_read = 0').get().n;
+  const totalCount = db.prepare('SELECT COUNT(*) AS n FROM contact_messages').get().n;
+  res.json({
+    total, items: rows.map((r) => ({
+      id: r.id, name: r.name, email: r.email, phone: r.phone, subject: r.subject,
+      message: r.message, isRead: !!r.is_read, createdAt: r.created_at,
+    })), unreadCount, totalCount,
+  });
+});
+
+// Distinct subjects for filter
+api.get('/admin/contact-messages/subjects', requireAdmin, (req, res) => {
+  try { ensureContactMessagesTable(); } catch (_) {}
+  const rows = db.prepare("SELECT DISTINCT subject FROM contact_messages WHERE subject <> '' ORDER BY subject").all();
+  res.json(rows.map((r) => r.subject));
+});
+
+api.get('/admin/contact-messages/:id', requireAdmin, (req, res) => {
+  try { ensureContactMessagesTable(); } catch (_) {}
+  const r = db.prepare('SELECT * FROM contact_messages WHERE id = ?').get(req.params.id);
+  if (!r) return res.status(404).json({ error: 'پیام یافت نشد' });
+  res.json({ id: r.id, name: r.name, email: r.email, phone: r.phone, subject: r.subject, message: r.message, isRead: !!r.is_read, createdAt: r.created_at });
+});
+
+api.patch('/admin/contact-messages/:id', requireAdmin, (req, res) => {
+  try { ensureContactMessagesTable(); } catch (_) {}
+  const cur = db.prepare('SELECT * FROM contact_messages WHERE id = ?').get(req.params.id);
+  if (!cur) return res.status(404).json({ error: 'پیام یافت نشد' });
+  const b = req.body || {};
+  let isRead = cur.is_read;
+  if (b.isRead !== undefined) isRead = b.isRead ? 1 : 0;
+  else if (b.read !== undefined) isRead = b.read ? 1 : 0;
+  else if (b.status !== undefined) isRead = (String(b.status) === 'read') ? 1 : 0;
+  db.prepare('UPDATE contact_messages SET is_read = ? WHERE id = ?').run(isRead, req.params.id);
+  const r = db.prepare('SELECT * FROM contact_messages WHERE id = ?').get(req.params.id);
+  res.json({ id: r.id, name: r.name, email: r.email, phone: r.phone, subject: r.subject, message: r.message, isRead: !!r.is_read, createdAt: r.created_at });
+});
+
+api.delete('/admin/contact-messages/:id', requireAdmin, (req, res) => {
+  try { ensureContactMessagesTable(); } catch (_) {}
+  const info = db.prepare('DELETE FROM contact_messages WHERE id = ?').run(req.params.id);
+  if (!info.changes) return res.status(404).json({ error: 'پیام یافت نشد' });
+  res.json({ ok: true });
+});
+
 // Customer: own tickets (list + detail), create, reply. Widget untouched.
 api.get('/tickets', (req, res) => {
   const auth = getAuthUser(req);
@@ -4392,6 +4554,12 @@ const CONTENT_DEFAULTS = {
   'promo.topbar.1': 'ارسال رایگان برای سفارش‌های بالای ۵۰۰ هزار تومان',
   'promo.topbar.2': '۷ روز ضمانت بازگشت کالا بدون قید و شرط',
   'promo.topbar.3': 'تضمین اصالت کالا با گارانتی معتبر',
+  'promo.topbar.1.image': '',
+  'promo.topbar.2.image': '',
+  'promo.topbar.3.image': '',
+  'promo.topbar.height': '35',
+  'promo.topbar.img_height': '20',
+  'promo.topbar.img_width': '20',
   'service.ship.title': 'ارسال رایگان',
   'service.ship.desc': 'سفارش‌های بالای ۵۰۰ هزار تومان',
   'service.return.title': '۷ روز ضمانت بازگشت',
@@ -4433,7 +4601,11 @@ function readContent(){
   try{ ensureContentTable(); }catch(_){}
   const rows=db.prepare('SELECT key, value FROM site_content').all();
   const out={ ...CONTENT_DEFAULTS };
-  for(const r of rows) out[r.key]=r.value;
+  for(const r of rows){
+    // Empty stored section titles must not override the bundled defaults.
+    if(/^section\..*\.title$/.test(r.key) && String(r.value||'').trim()==='') continue;
+    out[r.key]=r.value;
+  }
   // ── Centralized identity: footer contact/brand keys are read-only mirrors
   // of /api/settings store.* (editable ONLY in Admin → اطلاعات فروشگاه).
   try{
@@ -4687,6 +4859,10 @@ api.get('/admin/gallery', requireAdmin, (req, res) => {
   const relPath = String(req.query.path || '').replace(/^\/+/, '');
   const result = listDir(relPath);
   if (!result) return res.status(400).json({ error: 'Invalid path' });
+  // Flat recursive file list: the shared media picker (بنرهای تبلیغاتی,
+  // بنرهای اسلایدر, لوگو و…) consumes `items` and has no folder navigation,
+  // so without this it could only ever show "تصویری یافت نشد".
+  if (!relPath) result.items = galleryListFiles();
   res.json(result);
 });
 api.post('/admin/gallery/upload', requireAdmin, (req, res) => {

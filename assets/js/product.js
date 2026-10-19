@@ -232,7 +232,7 @@
           }).join('') +
         '</div>' +
         (specKeys.length > 6 ?
-        '<button class="pdp-specs__more" onclick="document.querySelector(\'[data-tab=specs]\').click()">Ù…Ø´Ø§Ù‡Ø¯Ù‡ Ù‡Ù…Ù‡ ÙˆÛŒÚ˜Ú¯ÛŒâ€ŒÙ‡Ø§ ' +
+        '<button class="pdp-specs__more" onclick="var _t=document.querySelector(\'[data-tab=specs]\'); if(_t)_t.click()">Ù…Ø´Ø§Ù‡Ø¯Ù‡ Ù‡Ù…Ù‡ ÙˆÛŒÚ˜Ú¯ÛŒâ€ŒÙ‡Ø§ ' +
           '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>' +
         '</button>' : '') +
       '</div>' : '') +
@@ -404,17 +404,7 @@
     bindReviewForm();
     startPdpCountdown();
     /* Sync desktop buybox with cart (if already in cart) */
-    setTimeout(function () {
-      var mode = selectedPricingMode || 'retail';
-      var key = p.id + '_' + mode;
-      var items = App.getCart ? App.getCart() : [];
-      var item = (items.find ? items.find(function (x) { return x.key === key; }) : null);
-      if (item) {
-        desktopCartKey = key;
-        var control = document.getElementById('product-cart-control');
-        if (control) control.innerHTML = desktopInCartHTML(item.quantity);
-      }
-    }, 0);
+    setTimeout(function () { syncDesktopControl(); }, 0);
     /* Mouse drag-to-scroll for horizontal strips (shared helper in common.js).
        Touch behavior untouched; arrow buttons unchanged. */
     try {
@@ -445,11 +435,30 @@
       '</div>';
     }
 
+    /* Find this product's cart line for the current pricing mode (the base
+       line first, then any option-variant line). Used when the in-memory key
+       is gone — e.g. right after mount on a reloaded page whose cart
+       persisted in storage. */
+    function resolveMobileKey() {
+      try {
+        var mode = selectedPricingMode || 'retail';
+        var items = App.getCart ? App.getCart() : [];
+        var base = p.id + '_' + mode;
+        var i;
+        for (i = 0; i < items.length; i++) { if (items[i].key === base) return items[i].key; }
+        for (i = 0; i < items.length; i++) {
+          if (items[i].id === p.id && items[i].pricingMode === mode) return items[i].key;
+        }
+      } catch (e) {}
+      return null;
+    }
+
     function syncMobileBar() {
       var addBtn = document.getElementById('mobile-add-to-cart');
       var qtyWrap = document.getElementById('mobile-qty-wrap');
       var mEl = document.getElementById('mobile-qty');
       if (!addBtn || !qtyWrap) return;
+      if (!mobileCartKey) mobileCartKey = resolveMobileKey();
       var lineQty = 0;
       try {
         if (mobileCartKey && App.getCart) {
@@ -470,6 +479,88 @@
         if (mEl) mEl.textContent = Format.toPersianNumber(1);
       }
     }
+
+    /* Mount the fixed mobile purchase bar (once per page load).
+       buyBarHTML() only builds the inner markup, so the outer
+       .mobile-purchase-bar wrapper (the fixed, mobile-only shell from
+       components.css) is created here and reused on re-entry — never
+       duplicated. No delegated listeners are added (all actions use the
+       existing inline onclick handlers), so no duplicate handlers either. */
+    function mountMobileBar() {
+      try {
+        var mode = selectedPricingMode || 'retail';
+        var bar = document.getElementById('mobile-purchase-bar');
+        if (!bar) {
+          bar = document.createElement('div');
+          bar.className = 'mobile-purchase-bar';
+          bar.id = 'mobile-purchase-bar';
+          bar.setAttribute('role', 'region');
+          bar.setAttribute('aria-label', 'افزودن محصول به سبد خرید');
+          document.body.appendChild(bar);
+        }
+        bar.innerHTML = buyBarHTML(p, mode);
+        if (document.body) document.body.classList.add('has-mobile-purchase-bar');
+      } catch (e) {}
+    }
+
+    /* Checked add-on options on the page (if any). The seed catalog ships
+       without options UI, so this is a no-op there; it simply wires the
+       existing .pdp-option__checkbox markup through to App.addToCart()
+       whenever such checkboxes exist. */
+    function getSelectedOptions() {
+      var opts = [];
+      try {
+        var boxes = document.querySelectorAll('.pdp-option__checkbox:checked');
+        for (var i = 0; i < boxes.length; i++) {
+          var box = boxes[i];
+          var id = parseInt(box.value, 10);
+          if (!isFinite(id) || id <= 0) continue;
+          var label = box.closest ? box.closest('.pdp-option') : null;
+          var title = '';
+          var price = 0;
+          if (label) {
+            var nameEl = label.querySelector('.pdp-option__name');
+            if (nameEl) title = (nameEl.textContent || '').trim();
+            var priceVal = label.getAttribute('data-opt-price');
+            if (priceVal != null && priceVal !== '') price = Number(priceVal) || 0;
+          }
+          if (!title) title = 'گزینه ' + id;
+          opts.push({ id: id, title: title, price: price });
+        }
+      } catch (e) {}
+      return opts;
+    }
+
+    function findCartLine(key) {
+      try {
+        var items = App.getCart ? App.getCart() : [];
+        for (var i = 0; i < items.length; i++) {
+          if (items[i].key === key) return items[i];
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    function refreshDesktopControl(key) {
+      try {
+        var control = document.getElementById('product-cart-control');
+        if (!control || !key) return;
+        var item = findCartLine(key);
+        if (item) {
+          desktopCartKey = key;
+          control.innerHTML = desktopInCartHTML(item.quantity);
+        }
+      } catch (e) {}
+    }
+
+    /* Re-render the desktop buybox control from the current pricing mode's
+       cart line (shows the stepper when the line is already in the cart). */
+    function syncDesktopControl() {
+      try {
+        var mode = selectedPricingMode || 'retail';
+        refreshDesktopControl(p.id + '_' + mode);
+      } catch (e) {}
+    }
     window.ProductDetail = {
       changeQty: function (d) {
         qty = Math.max(1, qty + d);
@@ -480,34 +571,46 @@
       },
       getQty: function () { return qty; },
       getPricingMode: function () { return selectedPricingMode; },
-      /* Mobile purchase bar (Digikala-style): add â†’ swap button to stepper */
+      /* Mobile purchase bar (Digikala-style): add → swap button to stepper */
       addToCartWithOptions: function (id, mode) {
         var m = mode || selectedPricingMode;
-        var key = App.addToCart(id, m);
+        var pid = id || p.id;
+        var key = App.addToCart(pid, m, getSelectedOptions());
         if (key && qty > 1 && typeof App.updateCartQty === 'function') {
           App.updateCartQty(key, qty - 1);
         }
-        if (key) mobileCartKey = key;
+        if (key) {
+          mobileCartKey = key;
+          desktopCartKey = key;
+        }
         qty = 1;
         syncMobileBar();
+        if (key) refreshDesktopControl(key);
         return key;
       },
       updateMobileQty: function (d) {
         if (!mobileCartKey || typeof App.updateCartQty !== 'function') return;
         App.updateCartQty(mobileCartKey, d);
-        setTimeout(syncMobileBar, 30);
+        setTimeout(function () { syncMobileBar(); syncDesktopControl(); }, 30);
+      },
+      /* Desktop stepper (rendered by desktopInCartHTML) shares the same cart
+         line as the mobile bar, so both controls stay in sync. */
+      updateCartQty: function (d) {
+        var mode = selectedPricingMode || 'retail';
+        var key = desktopCartKey || mobileCartKey || (p.id + '_' + mode);
+        if (typeof App.updateCartQty === 'function') App.updateCartQty(key, d);
+        setTimeout(function () { syncMobileBar(); syncDesktopControl(); }, 30);
       },
       syncMobileBar: syncMobileBar,
       addDesktopToCart: function () {
         var mode = selectedPricingMode || 'retail';
-        var key = App.addToCart(p.id, mode);
+        var key = App.addToCart(p.id, mode, getSelectedOptions());
         if (key) {
           desktopCartKey = key;
-          var item = (App.getCart ? App.getCart() : []).find(function (x) { return x.key === key; });
-          var count = item ? item.quantity : 1;
-          var control = document.getElementById('product-cart-control');
-          if (control) control.innerHTML = desktopInCartHTML(count);
+          mobileCartKey = key;
+          refreshDesktopControl(key);
         }
+        syncMobileBar();
         return key;
       },
       desktopRemoveFromCart: function () {
@@ -539,6 +642,12 @@
         if (mPriceWrap) mPriceWrap.innerHTML = buyBarPriceHTML(p, mode);
         var mAddBtn = document.getElementById('mobile-add-to-cart');
         if (mAddBtn) mAddBtn.setAttribute('onclick', 'ProductDetail.addToCartWithOptions(' + p.id + ', \'' + mode + '\')');
+        /* A pricing mode addresses its own cart line: drop the cached keys so
+           both controls re-resolve to the new mode's line and re-sync. */
+        mobileCartKey = null;
+        desktopCartKey = null;
+        syncMobileBar();
+        syncDesktopControl();
       },
 
       /* â”€â”€ Wishlist toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -631,6 +740,12 @@
         if (tooltip) tooltip.textContent = 'Ø­Ø°Ù Ø§Ø² Ù…Ù‚Ø§ÛŒØ³Ù‡';
       }
     })();
+
+    /* Mount the fixed mobile purchase bar now that the page markup exists,
+       then reflect any cart line already stored for this product. */
+    mountMobileBar();
+    syncMobileBar();
+    syncDesktopControl();
   }
 
   function startPdpCountdown() {
@@ -731,7 +846,7 @@
       '<div class="mobile-purchase-bar__inner">' +
         '<div class="mobile-purchase-bar__cart-wrap">' +
           '<button id="mobile-add-to-cart" class="mobile-purchase-bar__add-btn ' + addBtnClass + '" ' + addBtnDisabled +
-            ' data-cro-id="pdp-add-to-cart" data-testid="add-to-cart" onclick="this.classList.toggle(\"added\"); ProductDetail.addToCartWithOptions(' + p.id + ', \'' + pricingMode + '\')">' +
+            ' data-cro-id="pdp-add-to-cart" data-testid="add-to-cart" onclick="this.classList.toggle(\'added\'); ProductDetail.addToCartWithOptions(' + p.id + ', \'' + pricingMode + '\')">' +
             '<span class="mobile-purchase-bar__add-btn-text">' + addBtnText + '</span>' +
           '</button>' +
           '<div class="mobile-purchase-bar__qty" id="mobile-qty-wrap" hidden>' +

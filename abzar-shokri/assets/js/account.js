@@ -20,11 +20,29 @@
     return 'dashboard';
   }
 
+  /* ── Sidebar nav visibility ─────────────────────────────
+     The sidebar is static HTML with a hardcoded logout link that would
+     otherwise remain visible on the auth-guard prompt. Hide account-only
+     links (logout) when logged out. */
+  function setNavLinksVisibility() {
+    var nav = $('.account-sidebar__nav');
+    if (!nav) return;
+    var loggedIn = App.isLoggedIn();
+    var links = nav.querySelectorAll('.account-nav-link');
+    links.forEach(function(link) {
+      var href = link.getAttribute('href') || '';
+      if (href === '/login' || href === 'login.html') {
+        link.style.display = loggedIn ? '' : 'none';
+      }
+    });
+  }
+
   function render() {
     /* ── Update sidebar with current user data ──────────── */
     updateSidebar();
     syncAdminPanelLink();
     bindLogout();
+    setNavLinksVisibility();
 
     /* ── Auth Guard ──────────────────────────────────────── */
     if (!App.isLoggedIn()) {

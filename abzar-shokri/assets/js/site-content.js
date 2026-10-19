@@ -191,11 +191,57 @@
   }
   function applyContent(c){
     if(!c) return;
-    // Promo top bar — three rotating msgs (skip Visual-Builder-saved page headers)
-    var promos=[]; try{ Array.prototype.forEach.call(document.querySelectorAll('.promo-topbar__msg'),function(el){ if(!(el.closest&&el.closest('[data-pb-page-header]'))) promos.push(el); }); }catch(e){ promos=document.querySelectorAll('.promo-topbar__msg'); }
-    for(var j=0;j<3;j++){
-      if(promos[j] && c['promo.topbar.'+(j+1)]!=null) promos[j].textContent=c['promo.topbar.'+(j+1)];
+    /* Promo top bar — DYNAMIC message count (promo.topbar.count). Legacy data
+       with no count key falls back to the highest non-empty slot (3 by default).
+       Skips Visual-Builder-saved page headers ([data-pb-page-header]), whose
+       spans are owned by the per-page saved markup.
+       Applied PER BAR: the desktop and mobile headers each ship their own
+       .promo-topbar with its own viewport. Aggregating both bars' messages into
+       one flat list and resizing against a single bar's viewport made
+       removeChild() target nodes owned by the OTHER bar (NotFoundError, which
+       aborted the whole applyContent run) and shifted the second bar onto the
+       wrong slot indexes. */
+    var rawCount=c['promo.topbar.count'];
+    var count=(rawCount!=null&&String(rawCount).trim()!=='')?parseInt(rawCount,10):NaN;
+    if(!isFinite(count)||count<0){
+      count=0;
+      for(var i=1;i<=20;i++){
+        var t=c['promo.topbar.'+i], im=c['promo.topbar.'+i+'.image'];
+        if((t!=null&&String(t)!=='')||(im!=null&&String(im)!=='')) count=i;
+      }
+      if(!count) count=3;
     }
+    count=Math.max(1,Math.min(count,20));
+    try{ Array.prototype.forEach.call(document.querySelectorAll('.promo-topbar'),function(bar){
+      if(bar.closest&&bar.closest('[data-pb-page-header]')) return;
+      var vp=bar.querySelector('.promo-topbar__viewport'); if(!vp) return;
+      var promos=vp.querySelectorAll('.promo-topbar__msg');
+      while(promos.length>count){
+        var last=promos[promos.length-1];
+        if(last&&last.parentNode===vp) vp.removeChild(last); else break;
+        promos=vp.querySelectorAll('.promo-topbar__msg');
+      }
+      while(promos.length<count){
+        var span=document.createElement('span'); span.className='promo-topbar__msg';
+        var imEl=document.createElement('img'); imEl.className='promo-topbar__img'; imEl.setAttribute('src',''); imEl.setAttribute('alt',''); imEl.style.display='none';
+        var txEl=document.createElement('span'); txEl.className='promo-topbar__text';
+        span.appendChild(imEl); span.appendChild(txEl);
+        vp.appendChild(span); promos=vp.querySelectorAll('.promo-topbar__msg');
+      }
+      for(var j=0;j<promos.length;j++){
+        var msg=promos[j]; if(!msg) continue;
+        msg.classList.toggle('is-active', j===0);
+        // Messages may contain an optional banner image + text span (common.js
+        // header markup). Update those in place — never replace with plain
+        // textContent, which would drop the image element.
+        var imgEl=msg.querySelector?msg.querySelector('.promo-topbar__img'):null;
+        var textEl=msg.querySelector?msg.querySelector('.promo-topbar__text'):null;
+        var imgUrl=c['promo.topbar.'+(j+1)+'.image']||'';
+        if(imgEl){ if(imgUrl){ imgEl.src=imgUrl; imgEl.style.display=''; msg.classList.add('has-image'); } else { imgEl.removeAttribute('src'); imgEl.style.display='none'; msg.classList.remove('has-image'); } }
+        if(textEl){ if(c['promo.topbar.'+(j+1)]!=null) textEl.textContent=c['promo.topbar.'+(j+1)]; }
+        else if(!imgEl && c['promo.topbar.'+(j+1)]!=null) msg.textContent=c['promo.topbar.'+(j+1)];
+      }
+    }); }catch(e){}
     // Footer brand desc
     if(c['footer.brand.desc']!=null){
       var fd=document.querySelector('.footer-brand__desc');
@@ -655,6 +701,11 @@
           a.setAttribute('href', __telHref(__phone2));
         });
         if (__email) document.querySelectorAll('a[href^="mailto:"]').forEach(function (a) { a.setAttribute('href', 'mailto:' + __email); });
+        // Directions quick-action follows the saved store address.
+        if (__addr) {
+          var __dirCard = document.querySelector('.quick-action-card--directions');
+          if (__dirCard) __dirCard.setAttribute('href', 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(__addr));
+        }
         try { __renderContactMap(__lat, __lng, __mapUrl, __addr); } catch (e) {}
       } catch (e) {}
       // Shipping info line on cart/checkout pages reflects threshold + cost.

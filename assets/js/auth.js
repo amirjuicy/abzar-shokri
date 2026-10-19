@@ -151,9 +151,9 @@
           }
           step1.style.display = 'none';
           step2.style.display = 'block';
-          App.showToast('کد تأیید ارسال شد! (شبیه‌سازی)', 'info');
+          App.showToast('ارسال کد تأیید هم‌اکنون پشتیبانی نمی‌شود. لطفاً با پشتیبانی تماس بگیرید.', 'info');
         } else {
-          App.showToast('رمز عبور با موفقیت تغییر کرد! (شبیه‌سازی)', 'success');
+          App.showToast('بازنشانی رمز عبور هم‌اکنون از این سامانه پشتیبانی نمی‌شود.', 'danger');
           setTimeout(function() { window.location.href = '/login'; }, 1000);
         }
       });
